@@ -1,0 +1,22 @@
+{
+  "name": "aida-frontend",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "dev:admin": "turbo dev --filter=portal-admin",
+    "dev:client": "turbo dev --filter=portal-client",
+    "build:admin": "turbo build --filter=portal-admin",
+    "build:client": "turbo build --filter=portal-client"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0",
+    "typescript": "^5.7.0"
+  },
+  "packageManager": "npm@10.8.0"
+}
