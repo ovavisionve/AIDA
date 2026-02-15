@@ -129,13 +129,61 @@ async def emitir_documento(
     if hasattr(doc, "uuid_seniat"):
         doc.uuid_seniat = doc_uuid
 
-    # URLs de descarga (se generarán cuando se implemente el generador de PDF/XML)
+    # URLs de descarga
     pdf_url = f"/api/v1/fiscal/documents/{doc.id}/pdf"
     xml_url = f"/api/v1/fiscal/documents/{doc.id}/xml"
     if hasattr(doc, "pdf_url"):
         doc.pdf_url = pdf_url
     if hasattr(doc, "xml_url"):
         doc.xml_url = xml_url
+
+    # Generar y almacenar PDF/XML, enviar email al receptor
+    try:
+        from app.services.fiscal.pdf_generator import generate_invoice_pdf
+        from app.services.fiscal.xml_generator import generate_document_xml
+        from app.services.storage import get_storage
+
+        # Proxy items para el generador
+        doc_items = []
+        for item in items_calculados:
+            class _P: pass
+            p = _P()
+            for attr in ("numero_linea", "codigo", "descripcion", "unidad", "cantidad",
+                         "precio_unitario", "descuento", "subtotal", "tipo_impuesto",
+                         "alicuota", "monto_impuesto", "total"):
+                setattr(p, attr, getattr(item, attr, 0))
+            p.line_number = item.numero_linea
+            p.product_code = item.codigo
+            p.unit_of_measure = item.unidad
+            p.unit_price = item.precio_unitario
+            p.discount_amount = item.descuento
+            p.tax_type = item.tipo_impuesto
+            p.tax_rate = item.alicuota
+            p.tax_amount = item.monto_impuesto
+            doc_items.append(p)
+
+        storage = get_storage()
+        nc = numero_control.replace("/", "-") if numero_control else doc.document_number
+        pdf_bytes = generate_invoice_pdf(doc, doc_items, request.tipo_documento)
+        await storage.save(pdf_bytes, str(client_id), "pdf", f"{request.tipo_documento}_{nc}.pdf")
+        xml_bytes = generate_document_xml(doc, doc_items, request.tipo_documento)
+        await storage.save(xml_bytes, str(client_id), "xml", f"{request.tipo_documento}_{nc}.xml")
+
+        # Email al receptor
+        if request.receptor.email:
+            try:
+                from app.services.notifications.email_service import get_email_service
+                await get_email_service().send_document_email(
+                    to=request.receptor.email, doc_type=request.tipo_documento,
+                    numero_control=numero_control, emisor_razon=emisor_razon,
+                    receptor_razon=request.receptor.razon_social,
+                    total=totales.total, moneda=request.moneda,
+                    pdf_bytes=pdf_bytes, xml_bytes=xml_bytes,
+                )
+            except Exception:
+                pass  # Email failure should not block emission
+    except Exception:
+        pass  # File generation failure should not block emission
 
     await db.flush()
 
