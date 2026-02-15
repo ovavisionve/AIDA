@@ -2,6 +2,7 @@ from fastapi import APIRouter
 from app.api.v1 import auth, users, clients, documents, admin
 from app.api.v1 import products, customers, invoicing, portal5, ai
 from app.api.v1 import validation, developers
+from app.api.v1 import uploads, document_templates
 from app.api.v1.fiscal import router as fiscal_router
 
 router = APIRouter()
@@ -29,6 +30,10 @@ router.include_router(validation.router, prefix="/validation", tags=["Validació
 
 # Portal 4 - Developers
 router.include_router(developers.router, prefix="/developers", tags=["Developers (Portal 4)"])
+
+# Plantillas y Uploads
+router.include_router(document_templates.router, prefix="/templates", tags=["Plantillas de Documentos"])
+router.include_router(uploads.router, prefix="/uploads", tags=["Upload de Archivos"])
 
 # API Fiscal Estándar (autenticación API Key)
 router.include_router(fiscal_router, prefix="/fiscal")

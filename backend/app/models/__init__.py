@@ -1,5 +1,6 @@
 from app.models.security import User, Role, Permission, RolePermission, UserRole, AuditLog, Session
 from app.models.clients import Client, ClientUser, ClientSetting, ClientSubscription
+from app.models.templates import DocumentTemplate, ClientTemplatePreference, ClientBanner
 from app.models.documents import (
     Invoice, CreditNote, DebitNote, DispatchGuide,
     Withholding, DocumentItem,
@@ -18,6 +19,7 @@ from app.models.integrations import (
 __all__ = [
     "User", "Role", "Permission", "RolePermission", "UserRole", "AuditLog", "Session",
     "Client", "ClientUser", "ClientSetting", "ClientSubscription",
+    "DocumentTemplate", "ClientTemplatePreference", "ClientBanner",
     "Invoice", "CreditNote", "DebitNote", "DispatchGuide",
     "Withholding", "DocumentItem",
     "ControlNumberRange", "ControlNumber", "ControlNumberAudit",

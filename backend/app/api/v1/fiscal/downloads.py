@@ -18,6 +18,7 @@ from sqlalchemy.orm import selectinload
 from app.database import get_db
 from app.models.clients import Client
 from app.models.documents import Invoice, CreditNote, DebitNote, DocumentItem
+from app.models.templates import DocumentTemplate, ClientTemplatePreference, ClientBanner
 from app.services.fiscal.api_auth import get_client_from_api_key
 from app.services.fiscal.pdf_generator import generate_invoice_pdf
 from app.services.fiscal.xml_generator import generate_document_xml
@@ -46,6 +47,54 @@ async def _find_document(db: AsyncSession, doc_id: uuid.UUID, client_id: uuid.UU
         if doc:
             return doc, dtype, doc.items
     return None, None, None
+
+
+async def _resolve_template_config(db: AsyncSession, client_id: uuid.UUID, doc_type: str) -> str | None:
+    """Resolve the layout_config JSON for a client's preferred template."""
+    from sqlalchemy import and_
+    result = await db.execute(
+        select(ClientTemplatePreference).where(
+            and_(
+                ClientTemplatePreference.client_id == client_id,
+                ClientTemplatePreference.document_type == doc_type,
+            )
+        )
+    )
+    pref = result.scalar_one_or_none()
+
+    template_id = pref.template_id if pref else None
+    if not template_id:
+        # Fall back to default template
+        result = await db.execute(
+            select(DocumentTemplate).where(
+                DocumentTemplate.is_default == True,
+                DocumentTemplate.is_active == True,
+            )
+        )
+        tpl = result.scalar_one_or_none()
+    else:
+        result = await db.execute(select(DocumentTemplate).where(DocumentTemplate.id == template_id))
+        tpl = result.scalar_one_or_none()
+
+    return tpl.layout_config if tpl else None
+
+
+async def _resolve_banner_path(db: AsyncSession, client_id: uuid.UUID, doc_type: str) -> tuple[str | None, str]:
+    """Resolve banner image path and position for a client/doc_type."""
+    from sqlalchemy import and_
+    result = await db.execute(
+        select(ClientBanner).where(
+            and_(
+                ClientBanner.client_id == client_id,
+                ClientBanner.is_active == True,
+                ClientBanner.document_type.in_([doc_type, "todos"]),
+            )
+        )
+    )
+    banner = result.scalars().first()
+    if banner:
+        return banner.banner_image_url, banner.position
+    return None, "footer"
 
 
 async def _collect_documents_for_export(
@@ -114,7 +163,17 @@ async def download_pdf(
     if not doc:
         raise HTTPException(status_code=404, detail="Documento no encontrado")
 
-    pdf_bytes = generate_invoice_pdf(doc, items, doc_type)
+    # Resolve template, logo, and banner for client
+    layout_config = await _resolve_template_config(db, client.id, doc_type)
+    banner_path, banner_position = await _resolve_banner_path(db, client.id, doc_type)
+
+    pdf_bytes = generate_invoice_pdf(
+        doc, items, doc_type,
+        layout_config=layout_config,
+        logo_path=client.logo_url,
+        banner_path=banner_path,
+        banner_position=banner_position,
+    )
 
     # Store in cache
     storage = get_storage()
@@ -239,7 +298,15 @@ async def send_document_email(
     if not recipient:
         raise HTTPException(status_code=400, detail="No se especifico email destinatario y el documento no tiene email del receptor")
 
-    pdf_bytes = generate_invoice_pdf(doc, items, doc_type)
+    layout_config = await _resolve_template_config(db, client.id, doc_type)
+    banner_path, banner_position = await _resolve_banner_path(db, client.id, doc_type)
+    pdf_bytes = generate_invoice_pdf(
+        doc, items, doc_type,
+        layout_config=layout_config,
+        logo_path=client.logo_url,
+        banner_path=banner_path,
+        banner_position=banner_position,
+    )
     xml_bytes = generate_document_xml(doc, items, doc_type)
 
     email_svc = get_email_service()
