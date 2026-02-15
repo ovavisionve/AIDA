@@ -37,6 +37,14 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = ""
     SMTP_FROM_EMAIL: str = "noreply@aida.com.ve"
 
+    # AI / LLM Provider
+    AI_PROVIDER: str = "groq"  # groq | anthropic | openai
+    AI_API_KEY: str = ""
+    AI_MODEL: str = "llama-3.3-70b-versatile"  # Groq default; cambiar a claude-sonnet-4-20250514 en prod
+    AI_BASE_URL: str = "https://api.groq.com/openai/v1"  # Groq es OpenAI-compatible
+    AI_MAX_TOKENS: int = 4096
+    AI_TEMPERATURE: float = 0.3
+
     # Storage
     STORAGE_BACKEND: str = "local"
     STORAGE_PATH: str = "/app/storage"

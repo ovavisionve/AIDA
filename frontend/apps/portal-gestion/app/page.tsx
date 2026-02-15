@@ -8,13 +8,16 @@ import WebhookManager from "@/components/WebhookManager";
 import ErrorManager from "@/components/ErrorManager";
 import TemplateGallery from "@/components/TemplateGallery";
 import ProjectList from "@/components/ProjectList";
+import AIChat from "@/components/AIChat";
+import AnalyticsDashboard from "@/components/AnalyticsDashboard";
+import ReportsPanel from "@/components/ReportsPanel";
 import LoginForm from "@/components/LoginForm";
 
-type Section = "dashboard" | "wizard" | "connections" | "webhooks" | "errors" | "templates" | "projects";
+type Section = "dashboard" | "wizard" | "connections" | "webhooks" | "errors" | "templates" | "projects" | "ai-chat" | "analytics" | "reports";
 
 export default function Home() {
   const [token, setToken] = useState<string | null>(null);
-  const [section, setSection] = useState<Section>("dashboard");
+  const [section, setSection] = useState<Section>("ai-chat");
 
   if (!token) {
     return <LoginForm onLogin={setToken} />;
@@ -22,6 +25,9 @@ export default function Home() {
 
   const renderSection = () => {
     switch (section) {
+      case "ai-chat": return <AIChat token={token} />;
+      case "analytics": return <AnalyticsDashboard token={token} />;
+      case "reports": return <ReportsPanel token={token} />;
       case "dashboard": return <MonitoringDashboard token={token} />;
       case "wizard": return <IntegrationWizard token={token} />;
       case "connections": return <ConnectionList token={token} />;
@@ -29,7 +35,7 @@ export default function Home() {
       case "errors": return <ErrorManager token={token} />;
       case "templates": return <TemplateGallery token={token} />;
       case "projects": return <ProjectList token={token} />;
-      default: return <MonitoringDashboard token={token} />;
+      default: return <AIChat token={token} />;
     }
   };
 

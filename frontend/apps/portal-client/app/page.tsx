@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import AIChatWidget from "@/components/AIChatWidget";
 
 export default function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -124,6 +125,9 @@ export default function Home() {
           </div>
         </div>
       </main>
+
+      {/* AI Chat Widget */}
+      <AIChatWidget token={localStorage.getItem("access_token") || ""} />
     </div>
   );
 }
