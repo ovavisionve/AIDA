@@ -16,7 +16,11 @@
     "build:client": "turbo build --filter=portal-client",
     "build:facturador": "turbo build --filter=portal-facturador",
     "dev:gestion": "turbo dev --filter=portal-gestion",
-    "build:gestion": "turbo build --filter=portal-gestion"
+    "build:gestion": "turbo build --filter=portal-gestion",
+    "dev:validacion": "turbo dev --filter=portal-validacion",
+    "build:validacion": "turbo build --filter=portal-validacion",
+    "dev:developers": "turbo dev --filter=portal-developers",
+    "build:developers": "turbo build --filter=portal-developers"
   },
   "devDependencies": {
     "turbo": "^2.3.0",
