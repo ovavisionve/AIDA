@@ -8,6 +8,7 @@ from app.models.control_numbers import ControlNumberRange, ControlNumber, Contro
 from app.models.products import Product, ProductCategory, Inventory
 from app.models.customers import Customer
 from app.models.config import SystemSetting, EmailTemplate, BusinessRule
+from app.models.projects import Project, ProjectLog
 
 __all__ = [
     "User", "Role", "Permission", "RolePermission", "UserRole", "AuditLog", "Session",
@@ -18,4 +19,5 @@ __all__ = [
     "Product", "ProductCategory", "Inventory",
     "Customer",
     "SystemSetting", "EmailTemplate", "BusinessRule",
+    "Project", "ProjectLog",
 ]

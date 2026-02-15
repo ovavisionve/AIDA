@@ -11,8 +11,10 @@
     "lint": "turbo lint",
     "dev:admin": "turbo dev --filter=portal-admin",
     "dev:client": "turbo dev --filter=portal-client",
+    "dev:facturador": "turbo dev --filter=portal-facturador",
     "build:admin": "turbo build --filter=portal-admin",
-    "build:client": "turbo build --filter=portal-client"
+    "build:client": "turbo build --filter=portal-client",
+    "build:facturador": "turbo build --filter=portal-facturador"
   },
   "devDependencies": {
     "turbo": "^2.3.0",
