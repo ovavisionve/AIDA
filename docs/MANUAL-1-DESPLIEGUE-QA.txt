@@ -1,0 +1,554 @@
+================================================================================
+  MANUAL 1: DESPLIEGUE QA - AIDA IMPRENTA DIGITAL
+  Guia paso a paso para liberar cada plataforma en ambiente de pruebas
+================================================================================
+
+INDICE
+------
+  1. Arquitectura del despliegue
+  2. Prerequisitos
+  3. Despliegue del Backend (Railway/Render)
+  4. Despliegue de la Base de Datos (Neon/Supabase)
+  5. Despliegue de Redis (Upstash)
+  6. Despliegue de los 6 Portales en Vercel
+  7. Configuracion de variables de entorno
+  8. Verificacion post-despliegue
+  9. Troubleshooting comun
+
+
+================================================================================
+1. ARQUITECTURA DEL DESPLIEGUE
+================================================================================
+
+  ┌─────────────────────────────────────────────────────────────┐
+  │                        VERCEL (Frontend)                     │
+  │                                                              │
+  │  Portal 1 (Cliente)      → aida-cliente-qa.vercel.app       │
+  │  Portal 2 (Facturador)   → aida-facturador-qa.vercel.app    │
+  │  Portal 3 (Validacion)   → aida-validacion-qa.vercel.app    │
+  │  Portal 4 (Developers)   → aida-developers-qa.vercel.app    │
+  │  Portal 5 (Gestion)      → aida-gestion-qa.vercel.app       │
+  │  Portal 6 (Admin)        → aida-admin-qa.vercel.app         │
+  └──────────────────────────┬──────────────────────────────────┘
+                             │ HTTPS
+                             ▼
+  ┌─────────────────────────────────────────────────────────────┐
+  │              RAILWAY o RENDER (Backend API)                  │
+  │              aida-api-qa.railway.app                         │
+  │              FastAPI + Uvicorn                                │
+  └──────────┬──────────────────────────┬───────────────────────┘
+             │                          │
+             ▼                          ▼
+  ┌──────────────────┐      ┌──────────────────────┐
+  │  NEON PostgreSQL  │      │   UPSTASH Redis      │
+  │  Base de datos    │      │   Cache + Sesiones   │
+  └──────────────────┘      └──────────────────────┘
+
+
+================================================================================
+2. PREREQUISITOS
+================================================================================
+
+Necesitas tener:
+
+  [ ] Cuenta en GitHub (tu repositorio AIDA ya subido)
+  [ ] Cuenta en Vercel        → https://vercel.com/signup
+  [ ] Cuenta en Railway       → https://railway.app  (o Render: https://render.com)
+  [ ] Cuenta en Neon          → https://neon.tech    (PostgreSQL gratis)
+  [ ] Cuenta en Upstash       → https://upstash.com  (Redis gratis)
+
+Herramientas locales:
+
+  [ ] Node.js 18+         → node --version
+  [ ] npm 10+             → npm --version
+  [ ] Python 3.11+        → python3 --version
+  [ ] Git                 → git --version
+  [ ] Vercel CLI          → npm install -g vercel
+  [ ] Railway CLI         → npm install -g @railway/cli  (opcional)
+
+Verificacion rapida:
+
+  $ node --version       # debe ser v18.x o superior
+  $ npm --version        # debe ser v10.x o superior
+  $ python3 --version    # debe ser v3.11 o superior
+  $ vercel --version     # debe responder con version
+
+
+================================================================================
+3. DESPLIEGUE DEL BACKEND (Railway)
+================================================================================
+
+Opcion A: RAILWAY (Recomendado para QA - tiene free tier)
+---------------------------------------------------------
+
+PASO 3.1: Crear proyecto en Railway
+  1. Ve a https://railway.app/dashboard
+  2. Click "New Project"
+  3. Selecciona "Deploy from GitHub repo"
+  4. Autoriza Railway para acceder a tu GitHub
+  5. Selecciona el repositorio "AIDA"
+  6. Railway detectara el proyecto. Click "Deploy"
+
+PASO 3.2: Configurar el servicio backend
+  1. Una vez creado, click en el servicio
+  2. Ve a "Settings"
+  3. En "Root Directory" escribe: backend
+  4. En "Build Command" escribe:
+     pip install -r requirements.txt
+  5. En "Start Command" escribe:
+     uvicorn app.main:app --host 0.0.0.0 --port $PORT
+  6. Click "Save"
+
+PASO 3.3: Variables de entorno en Railway
+  1. Ve a la pestana "Variables"
+  2. Agrega CADA una de estas variables (click "New Variable" para cada una):
+
+     Variable                    Valor
+     ─────────────────────────   ──────────────────────────────────────
+     ENVIRONMENT                 qa
+     DEBUG                       false
+     SECRET_KEY                  (genera uno: openssl rand -hex 64)
+     DATABASE_URL                (se configura en paso 4)
+     REDIS_URL                   (se configura en paso 5)
+     AI_PROVIDER                 groq
+     AI_API_KEY                  gsk_TU_API_KEY_DE_GROQ_AQUI
+     AI_MODEL                    llama-3.3-70b-versatile
+     AI_BASE_URL                 https://api.groq.com/openai/v1
+     SMTP_HOST                   (vacio por ahora, configurar luego)
+     SMTP_PORT                   587
+     SMTP_USER                   (vacio)
+     SMTP_PASSWORD               (vacio)
+     SMTP_FROM_EMAIL             noreply@aida.com.ve
+     STORAGE_BACKEND             local
+     STORAGE_PATH                /app/storage
+     ALLOWED_ORIGINS             (se configura en paso 6)
+
+  3. Click "Deploy" para que tome las variables
+
+PASO 3.4: Obtener la URL del backend
+  1. Ve a "Settings" → "Networking"
+  2. Click "Generate Domain"
+  3. Railway te dara algo como: aida-backend-production-xxxx.up.railway.app
+  4. ANOTA ESTA URL. La necesitaras para los frontends.
+     Ejemplo: https://aida-backend-production-xxxx.up.railway.app
+
+PASO 3.5: Verificar que el backend responde
+  Abre en el navegador:
+    https://TU-URL-RAILWAY.up.railway.app/api/v1/health
+
+  Debe responder:
+    {"status": "healthy", "version": "0.1.0"}
+
+  Si da error, revisa los logs en Railway → tu servicio → "Logs"
+
+
+Opcion B: RENDER (Alternativa)
+------------------------------
+  1. Ve a https://render.com/dashboard
+  2. "New" → "Web Service"
+  3. Conecta tu repo GitHub
+  4. Root Directory: backend
+  5. Build Command: pip install -r requirements.txt
+  6. Start Command: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+  7. Selecciona plan "Free" o "Starter"
+  8. Agrega las mismas variables de entorno del paso 3.3
+  9. Click "Create Web Service"
+
+
+================================================================================
+4. DESPLIEGUE DE LA BASE DE DATOS (Neon PostgreSQL)
+================================================================================
+
+PASO 4.1: Crear base de datos en Neon
+  1. Ve a https://console.neon.tech
+  2. Click "Create a project"
+  3. Nombre del proyecto: aida-qa
+  4. Region: US East (o la mas cercana a ti)
+  5. PostgreSQL version: 16
+  6. Click "Create project"
+
+PASO 4.2: Obtener la connection string
+  1. Neon te mostrara inmediatamente la connection string
+  2. Se ve asi:
+     postgresql://neondb_owner:XXXXXXXXXX@ep-xxxxx.us-east-2.aws.neon.tech/neondb?sslmode=require
+  3. IMPORTANTE: Para AIDA necesitas el formato asyncpg. Reemplaza:
+     - "postgresql://" por "postgresql+asyncpg://"
+  4. El resultado final sera:
+     postgresql+asyncpg://neondb_owner:XXXXXXXXXX@ep-xxxxx.us-east-2.aws.neon.tech/neondb?ssl=require
+
+PASO 4.3: Configurar en Railway
+  1. Ve a Railway → tu servicio backend → Variables
+  2. Edita la variable DATABASE_URL con el valor del paso 4.2
+  3. Click "Deploy"
+
+PASO 4.4: Ejecutar migraciones
+  Opcion A - Desde Railway shell:
+    1. En Railway, click en tu servicio → "Shell"
+    2. Ejecuta:
+       $ cd /app
+       $ alembic upgrade head
+
+  Opcion B - Desde tu maquina local:
+    1. Exporta la variable DATABASE_URL:
+       $ export DATABASE_URL="postgresql+asyncpg://..."
+    2. Ejecuta:
+       $ cd backend
+       $ alembic upgrade head
+
+  Si alembic no esta configurado, ejecuta el seed directamente:
+    Abre en el navegador (una vez el backend este corriendo):
+    POST https://TU-URL-RAILWAY/api/v1/admin/seed
+    (necesitas token de admin, ver seccion de verificacion)
+
+PASO 4.5: Verificar conexion
+  En los logs de Railway debes ver:
+    "Connected to database successfully"
+  Si ves errores de conexion, verifica:
+    - Que la URL esta bien copiada
+    - Que usaste postgresql+asyncpg:// (no postgresql://)
+    - Que ssl=require esta al final
+
+
+================================================================================
+5. DESPLIEGUE DE REDIS (Upstash)
+================================================================================
+
+PASO 5.1: Crear base Redis en Upstash
+  1. Ve a https://console.upstash.com
+  2. Click "Create Database"
+  3. Nombre: aida-qa
+  4. Region: US East 1 (o la mas cercana)
+  5. Type: Regional
+  6. Click "Create"
+
+PASO 5.2: Obtener la connection string
+  1. En el dashboard de Upstash, ve a tu base de datos
+  2. Copia la "Redis URL" (formato redis://)
+  3. Se ve asi:
+     rediss://default:XXXXXXXXXXXXXXX@us1-xxxxx-xxxxx.upstash.io:6379
+
+PASO 5.3: Configurar en Railway
+  1. Ve a Railway → tu servicio backend → Variables
+  2. Edita REDIS_URL con el valor de Upstash
+  3. Click "Deploy"
+
+
+================================================================================
+6. DESPLIEGUE DE LOS 6 PORTALES EN VERCEL
+================================================================================
+
+IMPORTANTE: Cada portal es un proyecto SEPARADO en Vercel porque cada uno
+tiene su propio directorio y puerto. Repetiras estos pasos 6 veces.
+
+----------------------------------------------------------------------
+PORTAL 1: CLIENTE (portal-client) - Puerto original 3000
+----------------------------------------------------------------------
+
+PASO 6.1.1: Crear proyecto en Vercel
+  1. Ve a https://vercel.com/dashboard
+  2. Click "Add New" → "Project"
+  3. Selecciona "Import Git Repository"
+  4. Selecciona tu repositorio "AIDA"
+  5. IMPORTANTE - Configuracion del proyecto:
+     - Project Name: aida-cliente-qa
+     - Framework Preset: Next.js
+     - Root Directory: click "Edit" y escribe:
+       frontend/apps/portal-client
+     - Build Command: (dejar vacio, Vercel detecta Next.js)
+     - Output Directory: (dejar vacio)
+     - Install Command: (dejar vacio)
+
+PASO 6.1.2: Variables de entorno
+  1. Antes de hacer deploy, en la seccion "Environment Variables" agrega:
+     - Key: NEXT_PUBLIC_API_URL
+     - Value: https://TU-URL-RAILWAY.up.railway.app/api/v1
+  2. Click "Deploy"
+
+PASO 6.1.3: Verificar
+  1. Espera que el build termine (2-3 minutos)
+  2. Vercel te dara una URL tipo: aida-cliente-qa.vercel.app
+  3. Abre esa URL en el navegador
+  4. Debes ver la pantalla de login del Portal Cliente
+  5. ANOTA LA URL para configurar CORS despues
+
+  Si el build falla:
+  - Ve a "Deployments" → click en el deployment fallido → "Logs"
+  - Error comun: "Module not found" → asegurate que Root Directory
+    es exactamente: frontend/apps/portal-client
+  - Error de dependencias: el monorepo necesita que Vercel instale
+    desde la raiz. Ve a Settings → General → Root Directory y
+    asegurate que esta correcto.
+
+----------------------------------------------------------------------
+PORTAL 6: ADMIN (portal-admin) - Puerto original 3001
+----------------------------------------------------------------------
+
+PASO 6.2.1: Crear proyecto en Vercel
+  1. "Add New" → "Project" → Selecciona "AIDA" de nuevo
+  2. Configuracion:
+     - Project Name: aida-admin-qa
+     - Framework Preset: Next.js
+     - Root Directory: frontend/apps/portal-admin
+
+PASO 6.2.2: Variables de entorno
+     - NEXT_PUBLIC_API_URL = https://TU-URL-RAILWAY.up.railway.app/api/v1
+
+PASO 6.2.3: Deploy y verificar
+  URL resultante: aida-admin-qa.vercel.app
+  Debe mostrar: Pantalla de login de Admin
+
+----------------------------------------------------------------------
+PORTAL 2: FACTURADOR (portal-facturador) - Puerto original 3002
+----------------------------------------------------------------------
+
+PASO 6.3.1: Crear proyecto en Vercel
+  1. "Add New" → "Project" → "AIDA"
+  2. Configuracion:
+     - Project Name: aida-facturador-qa
+     - Framework Preset: Next.js
+     - Root Directory: frontend/apps/portal-facturador
+
+PASO 6.3.2: Variables de entorno
+     - NEXT_PUBLIC_API_URL = https://TU-URL-RAILWAY.up.railway.app/api/v1
+
+PASO 6.3.3: Deploy y verificar
+  URL resultante: aida-facturador-qa.vercel.app
+
+----------------------------------------------------------------------
+PORTAL 3: VALIDACION PUBLICA (portal-validacion) - Puerto original 3003
+----------------------------------------------------------------------
+
+PASO 6.4.1: Crear proyecto en Vercel
+  1. "Add New" → "Project" → "AIDA"
+  2. Configuracion:
+     - Project Name: aida-validacion-qa
+     - Framework Preset: Next.js
+     - Root Directory: frontend/apps/portal-validacion
+
+PASO 6.4.2: Variables de entorno
+     - NEXT_PUBLIC_API_URL = https://TU-URL-RAILWAY.up.railway.app/api/v1
+
+PASO 6.4.3: Deploy y verificar
+  URL resultante: aida-validacion-qa.vercel.app
+  Debe mostrar: Pagina publica de verificacion (NO requiere login)
+
+----------------------------------------------------------------------
+PORTAL 4: DEVELOPERS (portal-developers) - Puerto original 3004
+----------------------------------------------------------------------
+
+PASO 6.5.1: Crear proyecto en Vercel
+  1. "Add New" → "Project" → "AIDA"
+  2. Configuracion:
+     - Project Name: aida-developers-qa
+     - Framework Preset: Next.js
+     - Root Directory: frontend/apps/portal-developers
+
+PASO 6.5.2: Variables de entorno
+     - NEXT_PUBLIC_API_URL = https://TU-URL-RAILWAY.up.railway.app/api/v1
+
+PASO 6.5.3: Deploy y verificar
+  URL resultante: aida-developers-qa.vercel.app
+
+----------------------------------------------------------------------
+PORTAL 5: GESTION (portal-gestion) - Puerto original 3005
+----------------------------------------------------------------------
+
+PASO 6.6.1: Crear proyecto en Vercel
+  1. "Add New" → "Project" → "AIDA"
+  2. Configuracion:
+     - Project Name: aida-gestion-qa
+     - Framework Preset: Next.js
+     - Root Directory: frontend/apps/portal-gestion
+
+PASO 6.6.2: Variables de entorno
+     - NEXT_PUBLIC_API_URL = https://TU-URL-RAILWAY.up.railway.app/api/v1
+
+PASO 6.6.3: Deploy y verificar
+  URL resultante: aida-gestion-qa.vercel.app
+
+
+================================================================================
+7. CONFIGURACION DE VARIABLES DE ENTORNO POST-DESPLIEGUE
+================================================================================
+
+PASO 7.1: Actualizar CORS en el backend
+  Ahora que tienes las 6 URLs de Vercel, ve a Railway → Variables y
+  actualiza ALLOWED_ORIGINS:
+
+  ALLOWED_ORIGINS=["https://aida-cliente-qa.vercel.app","https://aida-admin-qa.vercel.app","https://aida-facturador-qa.vercel.app","https://aida-validacion-qa.vercel.app","https://aida-developers-qa.vercel.app","https://aida-gestion-qa.vercel.app"]
+
+  IMPORTANTE: Debe ser un JSON array valido con las URLs EXACTAS
+  (sin barra al final, con https://).
+
+PASO 7.2: Redesplegar el backend
+  1. En Railway, el cambio de variables redespliega automaticamente
+  2. Espera 1-2 minutos
+  3. Verifica que /api/v1/health sigue respondiendo
+
+PASO 7.3: Verificar CORS
+  1. Abre aida-cliente-qa.vercel.app
+  2. Abre DevTools (F12) → Console
+  3. Intenta hacer login
+  4. Si ves errores de CORS tipo "blocked by CORS policy", revisa
+     que la URL en ALLOWED_ORIGINS coincide EXACTAMENTE con la URL
+     del portal (sin / al final)
+
+
+================================================================================
+8. VERIFICACION POST-DESPLIEGUE
+================================================================================
+
+Checklist de verificacion. Ejecuta cada paso en orden:
+
+PASO 8.1: Backend health
+  [ ] GET https://TU-BACKEND/api/v1/health → {"status": "healthy"}
+
+PASO 8.2: Crear usuario admin inicial
+  Desde tu terminal local:
+
+  $ curl -X POST https://TU-BACKEND/api/v1/auth/register \
+    -H "Content-Type: application/json" \
+    -d '{
+      "email": "admin@aida.com.ve",
+      "password": "Admin2024!Secure",
+      "first_name": "Admin",
+      "last_name": "AIDA"
+    }'
+
+  Guarda el token que te devuelve.
+
+PASO 8.3: Seed de roles y permisos
+  $ curl -X POST https://TU-BACKEND/api/v1/admin/seed \
+    -H "Authorization: Bearer TU_TOKEN"
+
+  Debe responder: {"message": "Seed completado", ...}
+
+PASO 8.4: Portal 6 - Admin
+  [ ] Abrir aida-admin-qa.vercel.app
+  [ ] Login con admin@aida.com.ve / Admin2024!Secure
+  [ ] Dashboard carga con estadisticas
+  [ ] Seccion Clientes: se ve la tabla (vacia)
+  [ ] Seccion Roles: aparecen los roles del seed
+  [ ] Seccion Auditoria: aparece el log del seed
+
+PASO 8.5: Portal 1 - Cliente
+  [ ] Abrir aida-cliente-qa.vercel.app
+  [ ] Login funciona
+  [ ] Dashboard muestra datos del usuario
+
+PASO 8.6: Portal 2 - Facturador
+  [ ] Abrir aida-facturador-qa.vercel.app
+  [ ] Login funciona
+  [ ] Puede crear una factura de prueba
+
+PASO 8.7: Portal 3 - Validacion
+  [ ] Abrir aida-validacion-qa.vercel.app
+  [ ] NO requiere login (es publico)
+  [ ] Buscador de documentos funciona
+  [ ] Si no hay documentos, muestra "No encontrado"
+
+PASO 8.8: Portal 4 - Developers
+  [ ] Abrir aida-developers-qa.vercel.app
+  [ ] Login funciona
+  [ ] Quick Start muestra pasos y codigo
+  [ ] API Docs muestra endpoints
+  [ ] Puede crear una API Key
+
+PASO 8.9: Portal 5 - Gestion
+  [ ] Abrir aida-gestion-qa.vercel.app
+  [ ] Login funciona
+  [ ] Chat IA responde (requiere AI_API_KEY configurada)
+  [ ] Analytics carga
+  [ ] Reportes genera datos
+
+PASO 8.10: Flujo completo de facturacion
+  1. En Portal 6, crear un cliente de prueba
+  2. En Portal 4, crear una API Key para ese cliente
+  3. Emitir una factura via API:
+
+  $ curl -X POST https://TU-BACKEND/api/v1/fiscal/emit \
+    -H "X-API-Key: TU_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "tipo_documento": "factura",
+      "receptor": {
+        "rif": "J-12345678-9",
+        "razon_social": "Empresa Prueba C.A.",
+        "direccion": "Caracas, Venezuela"
+      },
+      "items": [{
+        "descripcion": "Servicio de prueba",
+        "cantidad": 1,
+        "precio_unitario": 100.00,
+        "tipo_impuesto": "gravado"
+      }],
+      "moneda": "VES",
+      "condicion_pago": "contado"
+    }'
+
+  4. Verificar que el numero de control se asigno
+  5. En Portal 3, buscar la factura por numero de control
+  6. Descargar PDF: GET /api/v1/fiscal/documents/{id}/pdf
+
+
+================================================================================
+9. TROUBLESHOOTING COMUN
+================================================================================
+
+PROBLEMA: Build falla en Vercel con "Cannot find module '@aida/shared'"
+SOLUCION:
+  1. Ve a Settings → General
+  2. En "Root Directory" verifica que sea: frontend/apps/portal-XXXX
+  3. En "Install Command" pon: cd ../../.. && npm install
+  4. Redespliega
+
+PROBLEMA: Error CORS "Access-Control-Allow-Origin"
+SOLUCION:
+  1. Ve a Railway → Variables
+  2. Verifica que ALLOWED_ORIGINS tiene la URL EXACTA del portal
+  3. Sin barra final: https://aida-cliente-qa.vercel.app (NO .app/)
+  4. Redespliega
+
+PROBLEMA: "500 Internal Server Error" en el backend
+SOLUCION:
+  1. Ve a Railway → Logs
+  2. Busca el error especifico
+  3. Comun: DATABASE_URL mal formada o base de datos no accesible
+  4. Comun: Tablas no creadas (ejecutar alembic upgrade head)
+
+PROBLEMA: Login funciona pero las paginas no cargan datos
+SOLUCION:
+  1. Abre DevTools (F12) → Network
+  2. Busca requests en rojo
+  3. Si dice "401 Unauthorized": el token expiro, haz login de nuevo
+  4. Si dice "403 Forbidden": el usuario no tiene permisos, ejecuta seed
+
+PROBLEMA: Portal 5 IA no responde
+SOLUCION:
+  1. Verifica AI_API_KEY en Railway
+  2. Verifica AI_BASE_URL = https://api.groq.com/openai/v1
+  3. Verifica AI_MODEL = llama-3.3-70b-versatile
+  4. Prueba la key directamente:
+     $ curl https://api.groq.com/openai/v1/models \
+       -H "Authorization: Bearer TU_KEY"
+
+PROBLEMA: Vercel deploy exitoso pero pagina en blanco
+SOLUCION:
+  1. Abre DevTools → Console
+  2. Si hay error de "NEXT_PUBLIC_API_URL": la variable no esta configurada
+  3. Ve a Vercel → Settings → Environment Variables
+  4. Agrega NEXT_PUBLIC_API_URL
+  5. IMPORTANTE: Redespliega (las env vars de NEXT_PUBLIC_ se embeben en build)
+
+PROBLEMA: Base de datos "relation does not exist"
+SOLUCION:
+  Las tablas no se han creado. Ejecuta las migraciones:
+  1. En Railway Shell:
+     $ alembic upgrade head
+  2. O si no hay migraciones, el backend las crea al arrancar
+     si esta configurado en main.py
+
+
+================================================================================
+FIN DEL MANUAL 1
+================================================================================

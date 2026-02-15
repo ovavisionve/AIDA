@@ -8,7 +8,14 @@ class Settings(BaseSettings):
     APP_VERSION: str = "0.1.0"
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
-    ALLOWED_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:3001"]
+    ALLOWED_ORIGINS: list[str] = [
+        "http://localhost:3000",  # Portal 1 - Cliente
+        "http://localhost:3001",  # Portal 6 - Admin
+        "http://localhost:3002",  # Portal 2 - Facturador
+        "http://localhost:3003",  # Portal 3 - Validacion
+        "http://localhost:3004",  # Portal 4 - Developers
+        "http://localhost:3005",  # Portal 5 - Gestion
+    ]
 
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://aida:aida_secret_2024@localhost:5432/aida_db"

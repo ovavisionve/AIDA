@@ -1,0 +1,670 @@
+================================================================================
+  MANUAL 2: LANZAMIENTO A PRODUCCION - AIDA IMPRENTA DIGITAL
+  Todo lo necesario para sacar el sistema al aire como negocio
+================================================================================
+
+INDICE
+------
+  PARTE A: LEGAL Y EMPRESA
+    1. Registro de la empresa
+    2. Registro fiscal (RIF, SENIAT)
+    3. Autorizacion como Imprenta Digital
+    4. Cuentas bancarias
+
+  PARTE B: DOMINIO Y MARCA
+    5. Registro de dominio
+    6. Certificados SSL
+    7. Configuracion DNS
+
+  PARTE C: INFRAESTRUCTURA DE PRODUCCION
+    8. Proveedor de hosting backend
+    9. Base de datos produccion
+    10. Redis produccion
+    11. Almacenamiento de archivos
+    12. Email transaccional
+    13. CDN y performance
+
+  PARTE D: DESPLIEGUE FINAL
+    14. Configuracion de produccion
+    15. Dominios personalizados en Vercel
+    16. Seguridad y hardening
+    17. Monitoreo y alertas
+    18. Backup y recuperacion
+    19. Checklist final de lanzamiento
+
+
+================================================================================
+PARTE A: LEGAL Y EMPRESA
+================================================================================
+
+
+------------------------------------------------------------------------
+1. REGISTRO DE LA EMPRESA
+------------------------------------------------------------------------
+
+PASO 1.1: Definir tipo de empresa
+  Opciones en Venezuela:
+  - C.A. (Compania Anonima) → recomendada para tecnologia
+  - S.R.L. (Sociedad de Responsabilidad Limitada)
+  - Firma Personal → mas rapido pero menos profesional
+
+PASO 1.2: Reserva de nombre
+  1. Ir al Registro Mercantil de tu jurisdiccion
+  2. Solicitar reserva de nombre comercial
+  3. Nombres sugeridos: "AIDA Digital C.A.", "AIDA Soluciones Fiscales C.A."
+  4. Costo aproximado: 5-15 USD equivalentes
+  5. Tiempo: 3-5 dias habiles
+
+PASO 1.3: Redactar Acta Constitutiva
+  Debe incluir:
+  - Nombre de la empresa
+  - Objeto social: "Prestacion de servicios de facturacion electronica,
+    desarrollo de software, consultoria fiscal y tecnologica, servicios
+    de imprenta digital autorizada por el SENIAT"
+  - Capital social (minimo legal vigente)
+  - Datos de los socios/accionistas
+  - Direccion fiscal
+
+  IMPORTANTE: El objeto social DEBE mencionar "imprenta digital" y
+  "facturacion electronica" para poder solicitar la autorizacion SENIAT.
+
+  Recomendacion: Contrata un abogado mercantilista. Costo: 100-300 USD
+
+PASO 1.4: Registro Mercantil
+  1. Presentar el Acta Constitutiva en el Registro Mercantil
+  2. Documentos necesarios:
+     - Acta Constitutiva (3 copias)
+     - Cedulas de los socios
+     - Comprobante de reserva de nombre
+     - Comprobante de deposito del capital social
+  3. Costo: 30-80 USD equivalentes
+  4. Tiempo: 5-15 dias habiles
+  5. Te entregan: Registro Mercantil inscrito y sellado
+
+PASO 1.5: Publicacion en prensa
+  1. Publicar extracto del Acta Constitutiva en diario de circulacion local
+  2. Costo: 20-50 USD equivalentes
+  3. Guardar el ejemplar original del periodico
+
+
+------------------------------------------------------------------------
+2. REGISTRO FISCAL (RIF y SENIAT)
+------------------------------------------------------------------------
+
+PASO 2.1: Inscripcion en el RIF
+  1. Ir a https://seniat.gob.ve o a la oficina SENIAT mas cercana
+  2. Llenar formulario de inscripcion de persona juridica
+  3. Documentos:
+     - Acta Constitutiva registrada
+     - Cedula del representante legal
+     - Comprobante de domicilio fiscal
+  4. Te asignan un RIF tipo J-XXXXXXXX-X
+  5. Tiempo: 1-5 dias habiles
+
+PASO 2.2: Declaracion de actividades economicas
+  1. Registrarte como contribuyente ordinario del IVA
+  2. Codigo de actividad economica: servicios tecnologicos / informatica
+  3. Esto se hace en la misma inscripcion del RIF
+
+PASO 2.3: Licencia de actividades economicas municipal
+  1. Ir a la Alcaldia de tu municipio
+  2. Solicitar patente de industria y comercio
+  3. Clasificacion: Servicios de informatica y tecnologia
+  4. Costo variable por municipio (1-5 UT anuales)
+
+
+------------------------------------------------------------------------
+3. AUTORIZACION COMO IMPRENTA DIGITAL (SENIAT)
+------------------------------------------------------------------------
+
+PASO 3.1: Requisitos previos
+  Antes de solicitar, necesitas tener:
+  [ ] Empresa registrada con RIF
+  [ ] Domicilio fiscal verificable
+  [ ] Infraestructura tecnologica funcionando (tu sistema AIDA)
+  [ ] Certificados de seguridad informatica
+  [ ] Personal tecnico calificado
+
+PASO 3.2: Solicitud ante el SENIAT
+  1. Dirigirse a la Division de Tramites del SENIAT
+  2. Solicitar formulario de autorizacion como Imprenta Digital
+  3. Referencia legal: Providencia Administrativa SNAT/2014/0032
+     y Providencia Administrativa PA-00071
+
+PASO 3.3: Documentos a presentar
+  1. Carta de solicitud dirigida al Superintendente del SENIAT
+  2. Acta Constitutiva y RIF de la empresa
+  3. Cedula del representante legal
+  4. Descripcion tecnica del sistema:
+     - Arquitectura del software (AIDA)
+     - Medidas de seguridad informatica
+     - Procedimiento de asignacion de numeros de control
+     - Sistema de respaldo de datos
+     - Plan de continuidad operativa
+  5. Direccion y datos del servidor donde opera el sistema
+  6. Certificado de conformidad del software
+  7. Constancia de domicilio fiscal
+
+PASO 3.4: Inspeccion tecnica
+  - El SENIAT puede enviar inspectores para verificar:
+    - Que el sistema asigna numeros de control correctamente
+    - Que los documentos cumplen con el formato legal
+    - Que existe trazabilidad de todas las operaciones
+    - Que los datos se almacenan por minimo 10 anos
+    - Que existe firma digital en los documentos
+  - AIDA cumple con todo esto por diseno
+
+PASO 3.5: Resolucion
+  - Si aprueban, te dan un numero de autorizacion SENIAT
+  - Este numero se imprime en todas las facturas que emitas
+  - Tiempo estimado: 30-90 dias habiles
+  - Costo: variable, consultar con SENIAT
+
+NOTA: Mientras esperas la autorizacion, puedes operar en modo QA
+y preparar toda la infraestructura. NO puedes emitir facturas
+oficiales sin la autorizacion.
+
+
+------------------------------------------------------------------------
+4. CUENTAS BANCARIAS
+------------------------------------------------------------------------
+
+PASO 4.1: Cuenta bancaria empresarial
+  1. Ir al banco de tu preferencia con:
+     - Acta Constitutiva
+     - RIF de la empresa
+     - Cedula del representante legal
+     - Referencia bancaria personal
+  2. Abrir cuenta corriente juridica
+  3. Solicitar acceso a banca en linea
+  4. Bancos recomendados en Venezuela:
+     - Banesco, Mercantil, Provincial, BNC
+
+PASO 4.2: Pasarela de pago (para cobrar a clientes)
+  Para cobrar las suscripciones de tus clientes:
+  - Pago movil C2P → mas usado en Venezuela
+  - Transferencias bancarias
+  - Para pagos internacionales: Paypal, Stripe (via intermediario)
+
+PASO 4.3: Facturacion propia
+  Recuerda que TU como empresa tambien debes facturar a tus clientes
+  por el servicio de AIDA. Puedes usar tu propio sistema para esto.
+
+
+================================================================================
+PARTE B: DOMINIO Y MARCA
+================================================================================
+
+
+------------------------------------------------------------------------
+5. REGISTRO DE DOMINIO
+------------------------------------------------------------------------
+
+PASO 5.1: Elegir dominio
+  Opciones recomendadas:
+  - aida.com.ve (dominio venezolano, requiere RIF)
+  - aidafiscal.com (dominio internacional)
+  - aidaimprenta.com
+  - aidadigital.com.ve
+
+PASO 5.2: Registrar dominio .com.ve
+  1. Ir a https://nic.ve
+  2. Crear cuenta
+  3. Buscar disponibilidad del dominio
+  4. Documentos necesarios:
+     - RIF de la empresa
+     - Cedula del representante legal
+  5. Costo: ~10-20 USD/ano
+  6. Tiempo: 1-3 dias habiles
+
+PASO 5.3: Registrar dominio .com (respaldo)
+  1. Usar registrador como:
+     - Namecheap (https://namecheap.com) → recomendado
+     - GoDaddy (https://godaddy.com)
+     - Cloudflare Registrar (https://dash.cloudflare.com)
+  2. Costo: ~10-15 USD/ano
+  3. Registro inmediato
+
+PASO 5.4: Plan de subdominios
+  Configura los siguientes subdominios:
+
+  Subdominio                  Portal            Uso
+  ─────────────────────────   ────────────────   ──────────────────
+  app.aida.com.ve             Portal 1           Panel del cliente
+  admin.aida.com.ve           Portal 6           Backoffice admin
+  facturador.aida.com.ve      Portal 2           Facturacion rapida
+  validacion.aida.com.ve      Portal 3           Verificacion publica
+  developers.aida.com.ve      Portal 4           Portal developers
+  gestion.aida.com.ve         Portal 5           Gestion integraciones
+  api.aida.com.ve             Backend            API REST
+
+
+------------------------------------------------------------------------
+6. CERTIFICADOS SSL
+------------------------------------------------------------------------
+
+No necesitas comprar SSL por separado:
+- Vercel proporciona SSL automatico gratuito (Let's Encrypt)
+- Railway proporciona SSL automatico
+- Solo necesitas configurar los DNS correctamente
+
+
+------------------------------------------------------------------------
+7. CONFIGURACION DNS
+------------------------------------------------------------------------
+
+PASO 7.1: Acceder al panel DNS
+  1. Ve al panel de tu registrador de dominio (NIC.ve o Namecheap)
+  2. Busca la seccion "DNS Management" o "Nameservers"
+
+PASO 7.2: Opcion A - Usar Cloudflare (RECOMENDADO)
+  1. Crear cuenta gratuita en https://cloudflare.com
+  2. Agregar tu dominio
+  3. Cloudflare te dara 2 nameservers, ejemplo:
+     - anna.ns.cloudflare.com
+     - bob.ns.cloudflare.com
+  4. Ve a tu registrador y cambia los nameservers a los de Cloudflare
+  5. Espera 24-48 horas para propagacion
+
+  Ventajas de Cloudflare:
+  - CDN gratis (acelera tu sitio)
+  - Proteccion DDoS gratis
+  - SSL automatico
+  - Facil de configurar DNS
+
+PASO 7.3: Configurar registros DNS
+  En Cloudflare (o tu proveedor DNS), crea estos registros:
+
+  Tipo    Nombre              Valor                              Proxy
+  ────    ──────────────────  ─────────────────────────────────  ─────
+  CNAME   app                 cname.vercel-dns.com               ON
+  CNAME   admin               cname.vercel-dns.com               ON
+  CNAME   facturador          cname.vercel-dns.com               ON
+  CNAME   validacion          cname.vercel-dns.com               ON
+  CNAME   developers          cname.vercel-dns.com               ON
+  CNAME   gestion             cname.vercel-dns.com               ON
+  CNAME   api                 TU-BACKEND.railway.app             ON
+
+  NOTA: "cname.vercel-dns.com" es el CNAME que Vercel te pide configurar
+  cuando agregas un dominio personalizado. Vercel te indicara el valor
+  exacto en el paso 15.
+
+
+================================================================================
+PARTE C: INFRAESTRUCTURA DE PRODUCCION
+================================================================================
+
+
+------------------------------------------------------------------------
+8. PROVEEDOR DE HOSTING BACKEND
+------------------------------------------------------------------------
+
+Para produccion, Railway funciona pero considera estas opciones:
+
+OPCION A: Railway Pro ($5-20/mes)
+  - Mismo que QA pero plan pago
+  - Sin limites de horas
+  - Soporte prioritario
+  - Escala automatico
+
+OPCION B: Render Pro ($7-25/mes)
+  - Similar a Railway
+  - Mejor para cargas estables
+
+OPCION C: DigitalOcean App Platform ($12-24/mes)
+  - Mas control
+  - Mejor para Venezuela (servidores en Miami)
+
+OPCION D: AWS/GCP (empresarial)
+  - Para cuando tengas 50+ clientes
+  - Requiere DevOps dedicado
+
+RECOMENDACION INICIAL: Railway Pro ($5/mes) → escalar a DigitalOcean
+cuando el negocio crezca.
+
+
+------------------------------------------------------------------------
+9. BASE DE DATOS PRODUCCION
+------------------------------------------------------------------------
+
+OPCION A: Neon Pro ($19/mes) → RECOMENDADO para iniciar
+  - Mismo que QA pero con mas recursos
+  - Auto-scaling
+  - Backups automaticos
+  - 10GB almacenamiento
+
+OPCION B: Supabase Pro ($25/mes)
+  - PostgreSQL + extras
+  - Dashboard visual
+
+OPCION C: DigitalOcean Managed DB ($15/mes)
+  - Mas economico a largo plazo
+  - Backups diarios incluidos
+
+IMPORTANTE para SENIAT:
+  - Los datos deben almacenarse por MINIMO 10 ANOS
+  - Configura backups diarios automaticos
+  - Haz backup manual mensual en un storage separado
+  - Documenta tu politica de retencion de datos
+
+
+------------------------------------------------------------------------
+10. REDIS PRODUCCION
+------------------------------------------------------------------------
+
+OPCION A: Upstash Pro ($10/mes) → RECOMENDADO
+  - Mismo que QA pero con mas capacidad
+  - 10,000 comandos/dia gratis, luego pay-per-use
+
+OPCION B: Redis Cloud ($7/mes)
+  - Redis oficial
+
+
+------------------------------------------------------------------------
+11. ALMACENAMIENTO DE ARCHIVOS
+------------------------------------------------------------------------
+
+Para los PDFs, XMLs y archivos generados:
+
+OPCION A: Cloudflare R2 ($0.015/GB/mes) → RECOMENDADO
+  - Compatible con API S3
+  - Sin costos de egreso (descarga gratis)
+  - Muy economico
+  - Configuracion en AIDA:
+    STORAGE_BACKEND=s3
+    (requiere implementar boto3 en storage.py)
+
+OPCION B: AWS S3 ($0.023/GB/mes)
+  - Estandar de la industria
+  - Cobra por descarga
+
+OPCION C: DigitalOcean Spaces ($5/mes, 250GB)
+  - Buen precio fijo
+  - Compatible con S3
+
+Para empezar, el almacenamiento local de Railway funciona.
+Migrar a cloud storage cuando tengas 10+ clientes.
+
+
+------------------------------------------------------------------------
+12. EMAIL TRANSACCIONAL
+------------------------------------------------------------------------
+
+Para enviar facturas por email a los clientes:
+
+OPCION A: Resend ($0/mes para 100 emails/dia) → RECOMENDADO
+  - https://resend.com
+  - Gratis hasta 100 emails/dia
+  - API simple
+  - Configuracion:
+    SMTP_HOST=smtp.resend.com
+    SMTP_PORT=465
+    SMTP_USER=resend
+    SMTP_PASSWORD=re_XXXXXXXX (tu API key)
+
+OPCION B: SendGrid (gratis 100 emails/dia)
+  - https://sendgrid.com
+  - Mas establecido
+
+OPCION C: Amazon SES ($0.10 por 1000 emails)
+  - Mas barato a volumen
+  - Mas complejo de configurar
+
+OPCION D: Gmail SMTP (gratis, maximo 500/dia)
+  - Solo para pruebas, no profesional
+  - SMTP_HOST=smtp.gmail.com
+  - SMTP_USER=tu-email@gmail.com
+  - SMTP_PASSWORD=app-password (no tu contrasena normal)
+  - Para generar app password:
+    Google Account → Security → 2-Step Verification → App passwords
+
+
+------------------------------------------------------------------------
+13. CDN Y PERFORMANCE
+------------------------------------------------------------------------
+
+Cloudflare (gratuito) ya te da:
+  - CDN global
+  - Proteccion DDoS
+  - Compresion automatica
+  - Cache de assets estaticos
+
+Vercel ya incluye:
+  - CDN para los frontends
+  - ISR (Incremental Static Regeneration)
+  - Edge functions
+
+
+================================================================================
+PARTE D: DESPLIEGUE FINAL
+================================================================================
+
+
+------------------------------------------------------------------------
+14. CONFIGURACION DE PRODUCCION
+------------------------------------------------------------------------
+
+PASO 14.1: Variables de entorno del backend (produccion)
+
+  Variable                    Valor de produccion
+  ─────────────────────────   ──────────────────────────────────────
+  ENVIRONMENT                 production
+  DEBUG                       false
+  SECRET_KEY                  (64 caracteres aleatorios, DIFERENTE a QA)
+  DATABASE_URL                (URL de Neon/Supabase produccion)
+  REDIS_URL                   (URL de Upstash produccion)
+  AI_PROVIDER                 groq (o anthropic en produccion)
+  AI_API_KEY                  (key de produccion)
+  SMTP_HOST                   smtp.resend.com
+  SMTP_PORT                   465
+  SMTP_USER                   resend
+  SMTP_PASSWORD               re_XXXXXXXX
+  SMTP_FROM_EMAIL             facturas@aida.com.ve
+  STORAGE_BACKEND             local (o s3)
+  STORAGE_PATH                /app/storage
+  ALLOWED_ORIGINS             (URLs de produccion con dominios propios)
+
+PASO 14.2: Generar SECRET_KEY seguro
+  En tu terminal:
+  $ openssl rand -hex 64
+
+  Esto genera algo como:
+  a3f2b8c9d1e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0
+
+  NUNCA uses el mismo SECRET_KEY en QA y produccion.
+
+
+------------------------------------------------------------------------
+15. DOMINIOS PERSONALIZADOS EN VERCEL
+------------------------------------------------------------------------
+
+Repite para CADA portal:
+
+PASO 15.1: Agregar dominio en Vercel
+  1. Ve a Vercel → tu proyecto (ej: aida-cliente-qa)
+  2. Settings → Domains
+  3. Escribe tu dominio: app.aida.com.ve
+  4. Click "Add"
+  5. Vercel te mostrara los registros DNS necesarios:
+     - Tipo: CNAME
+     - Nombre: app
+     - Valor: cname.vercel-dns.com
+
+PASO 15.2: Configurar DNS
+  1. Ve a Cloudflare (o tu proveedor DNS)
+  2. Crea el registro CNAME como indica Vercel
+  3. Espera 5-30 minutos para propagacion
+
+PASO 15.3: Verificar
+  1. Vercel mostrara un check verde cuando detecte el DNS
+  2. SSL se configura automaticamente (2-5 minutos)
+  3. Tu portal ahora funciona en https://app.aida.com.ve
+
+  Mapa completo de dominios:
+
+  Proyecto Vercel           Dominio
+  ───────────────────────   ──────────────────────────
+  aida-cliente-qa       →   app.aida.com.ve
+  aida-admin-qa         →   admin.aida.com.ve
+  aida-facturador-qa    →   facturador.aida.com.ve
+  aida-validacion-qa    →   validacion.aida.com.ve
+  aida-developers-qa    →   developers.aida.com.ve
+  aida-gestion-qa       →   gestion.aida.com.ve
+
+PASO 15.4: Actualizar CORS del backend
+  En Railway, actualiza ALLOWED_ORIGINS con los dominios reales:
+
+  ALLOWED_ORIGINS=["https://app.aida.com.ve","https://admin.aida.com.ve","https://facturador.aida.com.ve","https://validacion.aida.com.ve","https://developers.aida.com.ve","https://gestion.aida.com.ve"]
+
+PASO 15.5: Actualizar NEXT_PUBLIC_API_URL
+  En CADA proyecto Vercel, actualiza la variable:
+  NEXT_PUBLIC_API_URL=https://api.aida.com.ve/api/v1
+
+  Luego redespliega cada portal (Vercel → Deployments → Redeploy)
+
+
+------------------------------------------------------------------------
+16. SEGURIDAD Y HARDENING
+------------------------------------------------------------------------
+
+[ ] SECRET_KEY unico de 64+ caracteres para produccion
+[ ] DEBUG=false en produccion
+[ ] CORS configurado SOLO con dominios de produccion
+[ ] HTTPS obligatorio en todos los portales (Vercel/Cloudflare lo manejan)
+[ ] Rate limiting configurado en Cloudflare:
+    - API: 100 requests/minuto por IP
+    - Login: 10 intentos/minuto por IP
+[ ] Contrasenas de admin con minimo 12 caracteres
+[ ] 2FA habilitado para usuarios admin
+[ ] Backups de base de datos diarios
+[ ] Logs de auditoria activos (AIDA los maneja automaticamente)
+[ ] Variables de entorno NUNCA en el codigo fuente
+[ ] .env en .gitignore (ya configurado)
+
+
+------------------------------------------------------------------------
+17. MONITOREO Y ALERTAS
+------------------------------------------------------------------------
+
+PASO 17.1: Uptime monitoring (gratis)
+  1. Crear cuenta en https://uptimerobot.com
+  2. Agregar monitores para:
+     - https://api.aida.com.ve/api/v1/health (cada 5 min)
+     - https://app.aida.com.ve (cada 5 min)
+     - https://admin.aida.com.ve (cada 5 min)
+     - https://validacion.aida.com.ve (cada 5 min)
+  3. Configurar alertas por email y/o Telegram
+
+PASO 17.2: Logs
+  - Railway: logs disponibles en el dashboard
+  - Vercel: logs de funciones disponibles en el dashboard
+  - Para produccion avanzada: usar Datadog o Sentry
+
+PASO 17.3: Alertas de base de datos
+  - Neon: alertas de espacio disponible en dashboard
+  - Configurar alerta cuando quede <20% de espacio
+
+
+------------------------------------------------------------------------
+18. BACKUP Y RECUPERACION
+------------------------------------------------------------------------
+
+PASO 18.1: Backup automatico de base de datos
+  - Neon: backup automatico diario incluido en plan Pro
+  - Configura retencion de 30 dias minimo
+
+PASO 18.2: Backup manual mensual
+  1. Descargar dump de la base de datos:
+     $ pg_dump "TU_DATABASE_URL" > backup_$(date +%Y%m%d).sql
+  2. Almacenar en Cloudflare R2 o Google Drive
+  3. Etiquetar: aida_backup_YYYY-MM-DD.sql
+
+PASO 18.3: Plan de recuperacion
+  Si el backend cae:
+  1. Railway redespliega automaticamente
+  2. Si Railway tiene problemas, migrar temporalmente a Render
+  3. La base de datos en Neon es independiente y sigue funcionando
+
+  Si la base de datos se corrompe:
+  1. Restaurar desde el ultimo backup de Neon
+  2. Si Neon falla, restaurar desde el dump manual
+  3. Ejecutar: psql "NUEVA_URL" < backup_YYYYMMDD.sql
+
+PASO 18.4: Retencion de datos SENIAT
+  - Todos los documentos fiscales: 10 ANOS minimo
+  - Logs de auditoria: 10 ANOS minimo
+  - Esto es obligatorio por normativa SENIAT (PA-00121)
+  - AIDA almacena todo en la base de datos con soft-delete
+
+
+------------------------------------------------------------------------
+19. CHECKLIST FINAL DE LANZAMIENTO
+------------------------------------------------------------------------
+
+LEGAL
+  [ ] Empresa registrada en Registro Mercantil
+  [ ] RIF asignado por SENIAT
+  [ ] Solicitud de autorizacion como Imprenta Digital presentada
+  [ ] Cuenta bancaria empresarial abierta
+  [ ] Patente de industria y comercio municipal
+
+INFRAESTRUCTURA
+  [ ] Dominio registrado y DNS configurado
+  [ ] Backend desplegado en Railway/Render (produccion)
+  [ ] Base de datos PostgreSQL en Neon (produccion)
+  [ ] Redis en Upstash (produccion)
+  [ ] Los 6 portales desplegados en Vercel con dominios propios
+  [ ] SSL activo en todos los dominios (automatico)
+  [ ] CORS configurado con dominios de produccion
+  [ ] Email transaccional configurado (Resend/SendGrid)
+
+SEGURIDAD
+  [ ] SECRET_KEY unico de produccion
+  [ ] DEBUG=false
+  [ ] Contrasenas fuertes para admin
+  [ ] Backups automaticos diarios configurados
+  [ ] Monitoreo de uptime activo
+  [ ] Cloudflare activo con proteccion DDoS
+
+FUNCIONAL
+  [ ] Seed de roles y permisos ejecutado
+  [ ] Usuario super-admin creado
+  [ ] Cliente de prueba creado y factura emitida exitosamente
+  [ ] PDF se genera correctamente
+  [ ] Email se envia correctamente
+  [ ] Portal de validacion publica funciona
+  [ ] Exportacion CSV/Excel/TXT funciona
+
+COMERCIAL
+  [ ] Pagina web/landing page de ventas
+  [ ] Planes y precios definidos (basic, professional, enterprise)
+  [ ] Proceso de onboarding de nuevos clientes documentado
+  [ ] Soporte: email/telefono/WhatsApp configurado
+
+
+================================================================================
+COSTOS ESTIMADOS MENSUALES (INICIO)
+================================================================================
+
+  Servicio                    Plan               Costo/mes
+  ────────────────────────    ─────────────────   ──────────
+  Railway (backend)           Pro                 $5-20
+  Neon (PostgreSQL)           Pro                 $19
+  Upstash (Redis)             Pro                 $10
+  Vercel (6 portales)         Free/Pro            $0-20
+  Cloudflare (CDN+DNS)        Free                $0
+  Resend (email)              Free                $0
+  Dominio .com.ve             Anual               ~$15/ano
+  UptimeRobot                 Free                $0
+  ─────────────────────────────────────────────────────────
+  TOTAL ESTIMADO INICIAL                          $34-69/mes
+
+  Esto sube cuando creces:
+  - 10 clientes: ~$50-80/mes
+  - 50 clientes: ~$100-150/mes
+  - 100+ clientes: ~$200-400/mes
+
+
+================================================================================
+FIN DEL MANUAL 2
+================================================================================

@@ -1,0 +1,863 @@
+================================================================================
+  MANUAL 3: MANUAL DE USO - AIDA IMPRENTA DIGITAL
+  Guia de usuario para cada uno de los 6 portales
+================================================================================
+
+INDICE
+------
+  Portal 1: Cliente         (app.aida.com.ve)
+  Portal 2: Facturador      (facturador.aida.com.ve)
+  Portal 3: Validacion      (validacion.aida.com.ve)
+  Portal 4: Developers      (developers.aida.com.ve)
+  Portal 5: Gestion         (gestion.aida.com.ve)
+  Portal 6: Admin           (admin.aida.com.ve)
+
+
+================================================================================
+PORTAL 1: CLIENTE
+URL: app.aida.com.ve
+Audiencia: Los clientes finales (empresas que contratan AIDA para facturar)
+================================================================================
+
+DESCRIPCION
+-----------
+Este es el portal principal para los clientes de AIDA. Aqui pueden ver sus
+documentos emitidos, estadisticas de facturacion, y chatear con el asistente
+de IA para consultas fiscales.
+
+
+ACCESO
+------
+  1. Abrir app.aida.com.ve
+  2. Ingresar email y contrasena proporcionados por AIDA
+  3. Si tiene 2FA activado, ingresar el codigo del autenticador
+
+
+PANTALLA PRINCIPAL (Dashboard)
+------------------------------
+Al ingresar, veras:
+
+  ┌──────────────────────────────────────────────┐
+  │  AIDA - Panel del Cliente                     │
+  ├──────────────────────────────────────────────┤
+  │                                               │
+  │  Bienvenido, [Nombre del usuario]             │
+  │                                               │
+  │  ┌────────┐  ┌────────┐  ┌────────┐          │
+  │  │ Docs   │  │ Docs   │  │ Estado │          │
+  │  │ Hoy: 5 │  │ Mes:42 │  │ Activo │          │
+  │  └────────┘  └────────┘  └────────┘          │
+  │                                               │
+  │  Documentos recientes:                        │
+  │  NC-00000001  Factura   J-123..  VES 500.00  │
+  │  NC-00000002  Factura   J-456..  VES 1200.00 │
+  │                                               │
+  │  [Chatbot IA flotante en esquina inferior]    │
+  └──────────────────────────────────────────────┘
+
+SECCIONES:
+
+  1. Dashboard
+     - Estadisticas: documentos emitidos hoy, este mes, total
+     - Documentos recientes con numero de control, tipo, monto
+     - Estado de la cuenta (activo/suspendido)
+     - Numeros de control disponibles
+
+  2. Chatbot IA (boton flotante abajo a la derecha)
+     - Click en el icono de chat
+     - Puedes preguntar cosas como:
+       * "Cuantas facturas emiti este mes?"
+       * "Cual es mi total facturado en USD?"
+       * "Explica la alicuota del IVA reducido"
+       * "Como anulo una factura?"
+     - El asistente responde con informacion de TU cuenta
+     - Usa el boton de sugerencias rapidas para preguntas comunes
+
+
+ACCIONES COMUNES:
+
+  Ver detalle de un documento:
+    1. Click en cualquier documento en la lista
+    2. Veras toda la informacion: emisor, receptor, items, totales
+    3. Opciones: Descargar PDF, Descargar XML, Reenviar por email
+
+  Cerrar sesion:
+    1. Click en tu nombre/avatar (arriba a la derecha)
+    2. Click "Cerrar sesion"
+
+
+================================================================================
+PORTAL 2: FACTURADOR
+URL: facturador.aida.com.ve
+Audiencia: Operadores de facturacion de los clientes de AIDA
+================================================================================
+
+DESCRIPCION
+-----------
+Portal para crear y gestionar facturas, notas de credito, notas de debito
+y otros documentos fiscales. Interfaz simplificada para el dia a dia de
+facturacion.
+
+
+ACCESO
+------
+  1. Abrir facturador.aida.com.ve
+  2. Login con credenciales de operador de facturacion
+
+
+PANTALLA PRINCIPAL
+------------------
+
+  ┌──────────────────────────────────────────────┐
+  │  SIDEBAR        │   AREA PRINCIPAL            │
+  │  ──────────     │                             │
+  │  Facturar       │   [Contenido segun seccion] │
+  │  Documentos     │                             │
+  │  Clientes       │                             │
+  │  Productos      │                             │
+  └──────────────────────────────────────────────┘
+
+
+SECCIONES Y USO:
+
+  1. FACTURAR (crear nuevo documento)
+  ─────────────────────────────────
+     Paso 1: Seleccionar tipo de documento
+       - Factura (el mas comun)
+       - Nota de Credito
+       - Nota de Debito
+       - Guia de Despacho
+
+     Paso 2: Datos del receptor (cliente)
+       - RIF: escribir el RIF (ej: J-12345678-9)
+       - Si el cliente ya existe, se autocompleta
+       - Si es nuevo, llenar: Razon Social, Direccion, Email, Telefono
+
+     Paso 3: Agregar items/productos
+       - Click "+ Agregar item"
+       - Buscar producto por codigo o descripcion
+       - O escribir manualmente: descripcion, cantidad, precio unitario
+       - Seleccionar tipo de impuesto:
+         * Gravado 16% (por defecto)
+         * Gravado 8% (alicuota reducida)
+         * Exento
+         * No sujeto
+       - El sistema calcula automaticamente: subtotal, IVA, total
+
+     Paso 4: Condiciones
+       - Moneda: VES (Bolivares), USD, EUR
+       - Si es USD/EUR, el sistema aplica la tasa de cambio del dia
+       - Forma de pago: Efectivo, Transferencia, Cheque, Tarjeta, etc.
+       - Condicion de pago: Contado, Credito 30 dias, Credito 60 dias
+       - Observaciones (opcional)
+
+     Paso 5: Revisar y emitir
+       - El sistema muestra un resumen completo
+       - Verificar todos los datos
+       - Click "Emitir documento"
+       - El sistema:
+         * Asigna numero de control automaticamente
+         * Genera firma digital
+         * Genera QR de verificacion
+         * Genera PDF y XML
+         * Envia por email al receptor (si tiene email)
+
+     Paso 6: Confirmacion
+       - Se muestra el numero de control asignado
+       - Opciones: Ver PDF, Descargar PDF, Descargar XML, Imprimir
+
+  2. DOCUMENTOS (historial)
+  ─────────────────────────
+     - Lista de todos los documentos emitidos
+     - Filtros: por fecha, tipo, estado, RIF receptor
+     - Buscador por numero de control o numero de documento
+     - Click en un documento para ver detalle
+     - Acciones por documento: Ver PDF, Descargar, Reenviar email, Anular
+
+     Para ANULAR un documento:
+       1. Buscar el documento
+       2. Click "Anular"
+       3. Escribir motivo de anulacion (obligatorio)
+       4. Confirmar
+       5. El documento queda marcado como ANULADO
+       6. NOTA: La anulacion es irreversible
+
+  3. CLIENTES (directorio)
+  ────────────────────────
+     - Lista de clientes receptores (a quienes facturas)
+     - Buscar por RIF o razon social
+     - Crear nuevo cliente: RIF, Razon Social, Direccion, Email, Telefono
+     - Editar datos de un cliente existente
+     - Al facturar, puedes seleccionar de esta lista
+
+  4. PRODUCTOS (catalogo)
+  ──────────────────────
+     - Lista de productos/servicios frecuentes
+     - Crear producto: Codigo, Descripcion, Precio, Tipo impuesto
+     - Editar precios o descripcion
+     - Al facturar, puedes buscar productos de esta lista
+     - Ahorra tiempo al no tener que escribir lo mismo cada vez
+
+
+================================================================================
+PORTAL 3: VALIDACION PUBLICA
+URL: validacion.aida.com.ve
+Audiencia: Cualquier persona (publico general, auditores, contadores)
+================================================================================
+
+DESCRIPCION
+-----------
+Portal publico para verificar la autenticidad de documentos fiscales emitidos
+a traves de AIDA. NO requiere login ni registro.
+
+
+USO
+---
+  1. Abrir validacion.aida.com.ve
+
+  2. Seleccionar modo de busqueda (3 pestanas):
+
+     a) NUMERO DE CONTROL (mas comun)
+        - Escribir el numero de control exacto: 00-00000001
+        - Este numero aparece impreso en la factura
+        - Click "Verificar"
+
+     b) UUID
+        - Escribir el UUID del documento
+        - Se encuentra en la factura o en el XML
+        - Formato: 550e8400-e29b-41d4-a716-446655440000
+
+     c) RIF EMISOR
+        - Escribir el RIF de la empresa que emitio la factura
+        - Muestra TODOS los documentos emitidos por ese RIF
+        - Util para auditores
+
+  3. Resultado de la verificacion:
+
+     SI EL DOCUMENTO EXISTE:
+     ┌──────────────────────────────────────┐
+     │  ✓ Documento Verificado              │
+     │                                       │
+     │  Tipo: Factura                        │
+     │  N.Control: 00-00000001               │
+     │  Fecha: 15/02/2026                    │
+     │  RIF Emisor: J-12345678-9             │
+     │  Emisor: Empresa X C.A.               │
+     │  RIF Receptor: J-98765432-1           │
+     │  Receptor: Empresa Y C.A.             │
+     │  Total: VES 1,160.00                  │
+     │  Estado: Emitido                      │
+     │                                       │
+     │  [Ver detalle completo]               │
+     └──────────────────────────────────────┘
+
+     SI NO EXISTE:
+     ┌──────────────────────────────────────┐
+     │  ✗ Documento no encontrado            │
+     │  Verifique el dato ingresado          │
+     └──────────────────────────────────────┘
+
+  4. Ver detalle completo:
+     - Click "Ver detalle completo"
+     - Muestra todos los items/lineas del documento
+     - Muestra desglose de impuestos
+     - Muestra UUID y hash de seguridad
+     - Click "Volver al resumen" para regresar
+
+
+================================================================================
+PORTAL 4: DEVELOPERS
+URL: developers.aida.com.ve
+Audiencia: Desarrolladores que integran AIDA en sus sistemas
+================================================================================
+
+DESCRIPCION
+-----------
+Portal para desarrolladores que necesitan integrar la API fiscal de AIDA
+en sus sistemas (ERP, tiendas en linea, sistemas contables, etc.).
+
+
+ACCESO
+------
+  1. Abrir developers.aida.com.ve
+  2. Login con credenciales de developer
+
+
+SECCIONES:
+
+  1. QUICK START
+  ─────────────
+     Guia de 4 pasos para empezar a integrar:
+
+     Paso 1: Obtener API Key
+       - Ve a la seccion "API Keys"
+       - Crea una nueva key
+
+     Paso 2: Configurar autenticacion
+       - Incluir header: X-API-Key: aida_tu_key_aqui
+       - En CADA request a la API
+
+     Paso 3: Emitir primera factura
+       - Usar POST /api/v1/fiscal/emit
+
+     Paso 4: Verificar emision
+       - Consultar GET /api/v1/fiscal/documents
+
+     Ejemplos de codigo disponibles en:
+       - cURL (terminal/linea de comandos)
+       - Python (requests library)
+       - JavaScript (fetch API)
+
+     Selecciona tu lenguaje preferido para ver el ejemplo adaptado.
+
+  2. API DOCS
+  ──────────
+     Documentacion completa de todos los endpoints:
+
+     Cada endpoint muestra:
+       - Metodo HTTP (GET, POST, PUT, DELETE)
+       - Ruta completa
+       - Descripcion de lo que hace
+       - Tipo de autenticacion requerida
+       - Ejemplo de request body (si aplica)
+       - Ejemplo de response
+
+     Endpoints documentados:
+       POST /api/v1/fiscal/emit         → Emitir documento
+       POST /api/v1/fiscal/void         → Anular documento
+       GET  /api/v1/fiscal/documents    → Listar documentos
+       GET  /api/v1/fiscal/validate/{nc}→ Validar documento
+       GET  /api/v1/fiscal/status       → Estado de cuenta
+       GET  /api/v1/validation/verify/* → Verificacion publica
+
+     Click en un endpoint para expandir los detalles.
+
+  3. API KEYS
+  ──────────
+     Gestion de tus llaves de acceso a la API:
+
+     Crear nueva API Key:
+       1. Click "+ Nueva API Key"
+       2. Nombre: dar un nombre descriptivo (ej: "Produccion", "Testing")
+       3. Descripcion: opcional
+       4. Click "Crear"
+       5. IMPORTANTE: La key completa se muestra UNA SOLA VEZ
+       6. Click "Copiar" para copiar al portapapeles
+       7. Guardar en un lugar seguro (gestor de contrasenas)
+
+     Revocar una API Key:
+       1. Buscar la key en la lista
+       2. Click "Revocar"
+       3. La key deja de funcionar inmediatamente
+       4. Esto es IRREVERSIBLE
+
+     Cada key muestra:
+       - Nombre
+       - Prefijo (primeros 12 caracteres, para identificarla)
+       - Estado (Activa / Revocada)
+       - Fecha de creacion
+
+  4. USAGE (Metricas de uso)
+  ─────────────────────────
+     Monitorea el consumo de tu integracion:
+
+     Metricas principales:
+       - Total de requests realizados
+       - Requests hoy
+       - Requests este mes
+
+     Desglose:
+       - Por accion (emit, void, documents, validate, etc.)
+       - Por recurso (invoice, credit_note, debit_note, etc.)
+       - Barras de progreso visuales
+
+
+================================================================================
+PORTAL 5: GESTION DE INTEGRACIONES
+URL: gestion.aida.com.ve
+Audiencia: Equipo tecnico de AIDA y clientes avanzados
+================================================================================
+
+DESCRIPCION
+-----------
+Portal avanzado para gestionar integraciones, monitorear conexiones,
+consultar al asistente IA, ver analytics y generar reportes.
+
+
+ACCESO
+------
+  1. Abrir gestion.aida.com.ve
+  2. Login con credenciales de usuario con permisos de gestion
+
+
+SIDEBAR (MENU LATERAL)
+─────────────────────
+El sidebar agrupa las secciones en categorias:
+
+  IA
+    - Chat IA
+    - Analytics
+    - Reportes
+
+  Monitoreo
+    - Dashboard
+    - Conexiones
+    - Errores
+
+  Integraciones
+    - Templates
+    - Webhooks
+
+  Proyectos
+    - Clientes
+
+
+SECCIONES DETALLADAS:
+
+  1. CHAT IA (Asistente Fiscal Inteligente)
+  ─────────────────────────────────────────
+     Chat completo con el asistente de IA de AIDA.
+
+     Como usar:
+       1. Escribe tu pregunta en el campo de texto
+       2. Click "Enviar" o presiona Enter
+       3. El asistente responde con informacion fiscal personalizada
+
+     Preguntas que puedes hacer:
+       - "Resume mi actividad fiscal de enero 2026"
+       - "Cuales son mis clientes con mayor facturacion?"
+       - "Analiza este patron de ventas"
+       - "Que documentos tengo pendientes de cobro?"
+       - "Explicame las retenciones de IVA"
+       - "Genera un analisis de mi libro de ventas"
+
+     Acciones rapidas (botones de sugerencia):
+       - Resumen fiscal del mes
+       - Analizar documento
+       - Optimizacion tributaria
+       - Proyecciones
+
+     Las respuestas aparecen en streaming (se van escribiendo en tiempo real).
+     El historial del chat se mantiene durante la sesion.
+
+  2. ANALYTICS (Panel de Metricas)
+  ────────────────────────────────
+     Dashboard con graficos y KPIs:
+
+     KPIs principales (tarjetas superiores):
+       - Total facturado (monto)
+       - Documentos emitidos (cantidad)
+       - IVA generado
+       - Ticket promedio
+
+     Graficos:
+       - Facturacion diaria (barras, ultimos 30 dias)
+       - Prediccion de tendencia (linea)
+       - Distribucion por forma de pago (porcentajes)
+       - Consumo de numeros de control
+       - Patrones por hora del dia
+
+     AI Insights:
+       - El sistema genera automaticamente observaciones inteligentes
+       - Ejemplo: "Tu facturacion aumento 15% respecto al mes anterior"
+       - Ejemplo: "El 60% de tus facturas se emiten entre 9am y 12pm"
+
+  3. REPORTES
+  ──────────
+     Generacion de reportes fiscales con analisis IA:
+
+     Tipos de reporte disponibles:
+       a) Libro de Ventas
+          - Seleccionar periodo (mes/ano)
+          - Genera lista completa de ventas
+          - Desglose por alicuota IVA
+          - Totales por tipo de documento
+          - Analisis IA del periodo
+
+       b) Resumen Tributario
+          - IVA debito fiscal
+          - IVA credito fiscal
+          - Retenciones realizadas
+          - Balance tributario
+          - Analisis IA con recomendaciones
+
+       c) Resumen Fiscal General
+          - Panorama completo del periodo
+          - Comparativa con periodos anteriores
+          - Analisis IA de tendencias
+
+       d) Optimizacion Tributaria
+          - El IA analiza tu situacion fiscal
+          - Sugiere estrategias legales de optimizacion
+          - Identifica deducciones aplicables
+
+     Para generar un reporte:
+       1. Seleccionar tipo de reporte
+       2. Click "Generar"
+       3. El sistema procesa los datos (puede tomar unos segundos)
+       4. Se muestra el reporte con los datos y el analisis IA
+
+  4. DASHBOARD (Monitoreo)
+  ────────────────────────
+     Panel de monitoreo de integraciones en tiempo real:
+
+     - Estado de conexiones (saludable/degradado/caido)
+     - Metricas de las ultimas 24 horas
+     - Documentos emitidos por hora
+     - Alertas activas
+     - Tasa de error
+
+  5. CONEXIONES
+  ─────────────
+     Gestionar las conexiones a sistemas externos:
+
+     - Listar todas las conexiones configuradas
+     - Ver estado de cada una (conectado/desconectado/error)
+     - Historial de sincronizaciones
+     - Forzar re-sincronizacion
+
+  6. ERRORES
+  ──────────
+     Panel de errores de integracion:
+
+     - Lista de errores recientes
+     - Detalle de cada error: timestamp, tipo, mensaje, stack trace
+     - Resolver errores (marcar como resuelto)
+     - Resolucion masiva
+     - Filtros por tipo de error, fecha, severidad
+
+  7. TEMPLATES
+  ────────────
+     Galeria de templates de integracion:
+
+     Templates disponibles:
+       - Odoo (ERP)
+       - SAP Business One
+       - World Office
+       - QuickBooks
+       - Personalizado (API generica)
+
+     Cada template muestra:
+       - Nombre y logo
+       - Descripcion
+       - Campos de configuracion necesarios
+       - Soporte de emision batch (si/no)
+
+     Para configurar una integracion:
+       1. Click en el template deseado
+       2. Llenar los campos de conexion (URL, credenciales, etc.)
+       3. Click "Guardar"
+       4. Probar conexion
+       5. Activar sincronizacion
+
+  8. WEBHOOKS
+  ──────────
+     Configurar notificaciones automaticas a sistemas externos:
+
+     Crear webhook:
+       1. Click "+ Nuevo Webhook"
+       2. URL destino: la URL de tu sistema que recibira la notificacion
+       3. Eventos: seleccionar que eventos disparan el webhook
+          - document.emitted (factura emitida)
+          - document.voided (documento anulado)
+          - sync.completed (sincronizacion completada)
+          - sync.error (error de sincronizacion)
+       4. Secret: clave para verificar la autenticidad
+       5. Click "Guardar"
+
+     Ver historial de webhooks:
+       - Cada ejecucion muestra: fecha, evento, status HTTP, respuesta
+       - Reintentar webhooks fallidos
+
+
+================================================================================
+PORTAL 6: ADMINISTRACION (BACKOFFICE)
+URL: admin.aida.com.ve
+Audiencia: Equipo administrativo de AIDA (la empresa)
+================================================================================
+
+DESCRIPCION
+-----------
+Panel de administracion global del sistema AIDA. Desde aqui se gestionan
+todos los clientes, usuarios, roles, configuracion y auditoria.
+
+
+ACCESO
+------
+  1. Abrir admin.aida.com.ve
+  2. Login con credenciales de administrador
+  3. Solo usuarios con rol admin pueden acceder
+
+
+SIDEBAR (MENU LATERAL)
+─────────────────────
+  - Dashboard
+  - Clientes
+  - Usuarios
+  - Roles
+  - Configuracion
+  - Auditoria
+
+
+SECCIONES DETALLADAS:
+
+  1. DASHBOARD
+  ────────────
+     Vista general del sistema:
+
+     Tarjetas de estadisticas:
+       - Clientes activos (de X totales)
+       - Usuarios totales del sistema
+       - Documentos emitidos hoy
+       - Documentos emitidos este mes
+
+     Alertas del sistema:
+       - Se muestran alertas automaticas si hay problemas
+       - Ejemplo: "No hay clientes activos en el sistema"
+
+     Estado de portales:
+       - Grid con los 6 portales y su estado (activo/inactivo)
+       - Puerto de cada portal
+
+  2. CLIENTES (CRUD completo)
+  ──────────────────────────
+     Gestionar los clientes de AIDA (las empresas que contratan el servicio):
+
+     Ver clientes:
+       - Tabla con: RIF, Razon Social, Email, Plan, Estado
+       - Buscador: buscar por RIF, razon social o email
+       - Paginacion: navegar entre paginas
+
+     Crear nuevo cliente:
+       1. Click "+ Nuevo Cliente"
+       2. Llenar formulario:
+          - RIF: J-12345678-9
+          - Razon Social: Nombre legal de la empresa
+          - Nombre Comercial: Nombre con el que opera
+          - Email: email principal de contacto
+          - Telefono: telefono de contacto
+          - Plan: Basic / Professional / Enterprise
+       3. Click "Crear"
+
+     Activar/Desactivar cliente:
+       - Click "Desactivar" para suspender un cliente
+       - Click "Activar" para reactivar
+       - Un cliente desactivado no puede emitir documentos
+
+  3. USUARIOS (CRUD completo)
+  ──────────────────────────
+     Gestionar todos los usuarios del sistema:
+
+     Ver usuarios:
+       - Tabla con: Nombre, Email, Telefono, Estado
+       - Buscador por email o nombre
+       - Paginacion
+
+     Crear nuevo usuario:
+       1. Click "+ Nuevo Usuario"
+       2. Llenar: Nombre, Apellido, Email, Password, Telefono
+       3. Click "Crear"
+
+     Desactivar usuario:
+       - Click "Desactivar" → el usuario no puede hacer login
+       - No se puede eliminar un usuario (soft delete por cumplimiento)
+
+  4. ROLES Y PERMISOS
+  ───────────────────
+     Sistema RBAC (Role-Based Access Control):
+
+     Seed inicial:
+       - Si es la primera vez, click "Seed Roles y Permisos"
+       - Esto crea todos los roles y permisos por defecto
+       - Solo un super-admin puede ejecutar el seed
+
+     Ver roles:
+       - Panel izquierdo: lista de roles
+       - Cada rol muestra: nombre, nivel (platform/client), tipo (sistema/custom)
+       - Click en un rol para ver sus permisos
+
+     Ver permisos de un rol:
+       - Panel derecho: lista de permisos asignados al rol seleccionado
+       - Cada permiso muestra: nombre legible y codigo interno
+
+     Ver todos los permisos:
+       - Sin seleccionar ningun rol, el panel derecho muestra
+         todos los permisos del sistema agrupados por modulo
+       - Modulos: clientes, usuarios, documentos, admin, fiscal, etc.
+
+  5. CONFIGURACION DEL SISTEMA
+  ────────────────────────────
+     Parametros globales del sistema, agrupados por categoria:
+
+     Categorias:
+       - Empresa: datos de la empresa (nombre, RIF, direccion)
+       - Facturacion: parametros de facturacion (IVA, formatos)
+       - Seguridad: parametros de seguridad (tiempo de sesion, 2FA)
+       - Email: configuracion de correo electronico
+       - Almacenamiento: rutas y backends de almacenamiento
+
+     Para editar un parametro:
+       1. Click "Editar" junto al parametro
+       2. Modificar el valor
+       3. Click "Guardar"
+       4. El cambio es inmediato
+
+     NOTA: Los valores sensibles (passwords, API keys) se muestran
+     como "********" por seguridad.
+
+  6. AUDITORIA
+  ────────────
+     Registro completo de todas las operaciones del sistema.
+     Retencion: 10 anos (cumplimiento SENIAT PA-00121).
+
+     Filtros:
+       - Por accion: create, update, delete, login, seed, emit, void, etc.
+       - Por recurso: client, user, invoice, system_setting, etc.
+
+     Cada registro muestra:
+       - Fecha y hora exacta
+       - Accion realizada (con color segun tipo)
+       - Tipo de recurso afectado
+       - ID del recurso (primeros 8 caracteres)
+       - Detalles de la operacion
+       - IP del usuario que realizo la accion
+
+     Colores de acciones:
+       - Verde: create (creacion)
+       - Azul: update (actualizacion)
+       - Rojo: delete (eliminacion)
+       - Naranja: deactivate (desactivacion)
+       - Indigo: login
+       - Ambar: seed
+       - Morado: assign_role
+       - Teal: emit (emision fiscal)
+
+     Paginacion: 25 registros por pagina, con navegacion.
+
+
+================================================================================
+FLUJOS COMUNES DE TRABAJO
+================================================================================
+
+
+FLUJO 1: ONBOARDING DE UN NUEVO CLIENTE
+────────────────────────────────────────
+  1. [Portal 6] Admin → Clientes → + Nuevo Cliente
+  2. Llenar datos fiscales (RIF, Razon Social, Plan)
+  3. [Portal 6] Admin → Usuarios → + Nuevo Usuario
+  4. Crear usuario para el cliente (email, password)
+  5. [Portal 6] Admin → Roles → Asignar rol al usuario
+  6. Entregar credenciales al cliente por email/WhatsApp
+  7. El cliente puede acceder a Portal 1 y Portal 2
+
+FLUJO 2: EMISION DE FACTURA DIARIA
+───────────────────────────────────
+  1. [Portal 2] Operador abre Facturador
+  2. Click "Facturar"
+  3. Seleccionar o crear receptor
+  4. Agregar items del catalogo
+  5. Revisar totales
+  6. Click "Emitir"
+  7. Sistema asigna NC, genera PDF, envia email
+  8. Operador puede imprimir o descargar
+
+FLUJO 3: ANULACION DE DOCUMENTO
+────────────────────────────────
+  1. [Portal 2] Facturador → Documentos
+  2. Buscar el documento por NC
+  3. Click "Anular"
+  4. Escribir motivo
+  5. Confirmar
+  6. El documento queda anulado (visible en auditoria)
+
+FLUJO 4: VERIFICACION PUBLICA
+──────────────────────────────
+  Un cliente de tu cliente recibe una factura y quiere verificarla:
+  1. Abrir validacion.aida.com.ve (no necesita login)
+  2. Escribir el numero de control de la factura
+  3. Click "Verificar"
+  4. Si es autentica, muestra todos los datos
+  5. Puede ver el detalle completo con items
+
+FLUJO 5: INTEGRACION VIA API
+─────────────────────────────
+  Un developer quiere integrar AIDA en su ERP:
+  1. [Portal 4] Login en Developers
+  2. Leer Quick Start para entender el flujo
+  3. Crear API Key en seccion "API Keys"
+  4. Copiar la key (se muestra 1 sola vez)
+  5. Leer API Docs para ver endpoints disponibles
+  6. Implementar integracion en su sistema
+  7. Monitorear uso en seccion "Usage"
+
+FLUJO 6: REPORTE MENSUAL PARA SENIAT
+─────────────────────────────────────
+  Al cierre de cada mes fiscal:
+  1. [Portal 5] Gestion → Reportes
+  2. Seleccionar "Libro de Ventas"
+  3. Generar para el mes correspondiente
+  4. Descargar en formato TXT SENIAT (via API export)
+  5. Subir el TXT al portal SENIAT para la declaracion
+  6. Opcionalmente: generar Excel para archivo interno
+
+FLUJO 7: CONSULTA AL ASISTENTE IA
+──────────────────────────────────
+  1. [Portal 5] Gestion → Chat IA
+  2. Escribir: "Dame un resumen de febrero 2026"
+  3. El IA analiza tus datos y responde con:
+     - Total facturado
+     - Cantidad de documentos
+     - Comparativa con mes anterior
+     - Sugerencias
+
+  O desde [Portal 1] (cliente):
+  1. Click en el boton de chat flotante
+  2. Escribir la consulta
+  3. El IA responde contextualizado a tu cuenta
+
+
+================================================================================
+GLOSARIO DE TERMINOS
+================================================================================
+
+  NC (Numero de Control): Numero secuencial asignado por SENIAT a cada
+    documento fiscal. Formato: 00-00000001. Es unico e irrepetible.
+
+  RIF: Registro de Informacion Fiscal. Identificacion tributaria venezolana.
+    Formato: J-12345678-9 (Juridica) o V-12345678-9 (Natural).
+
+  IVA: Impuesto al Valor Agregado. En Venezuela:
+    - Alicuota general: 16%
+    - Alicuota reducida: 8%
+    - Exento: 0%
+
+  Base Imponible: Monto sobre el cual se calcula el IVA.
+
+  SENIAT: Servicio Nacional Integrado de Administracion Aduanera y Tributaria.
+    Ente fiscal del gobierno venezolano.
+
+  Imprenta Digital: Empresa autorizada por el SENIAT para emitir documentos
+    fiscales electronicos con numeros de control.
+
+  Nota de Credito: Documento que reduce el monto de una factura
+    (devolucion total o parcial).
+
+  Nota de Debito: Documento que aumenta el monto de una factura
+    (cargos adicionales).
+
+  Guia de Despacho: Documento que ampara el traslado de mercancia.
+
+  Firma Digital: Hash SHA-256 que garantiza la integridad del documento.
+
+  UBL: Universal Business Language. Estandar XML para documentos comerciales.
+
+  RBAC: Role-Based Access Control. Sistema de permisos basado en roles.
+
+  API Key: Llave de acceso para usar la API programaticamente.
+
+  Webhook: Notificacion automatica HTTP que se envia cuando ocurre un evento.
+
+
+================================================================================
+FIN DEL MANUAL 3
+================================================================================
