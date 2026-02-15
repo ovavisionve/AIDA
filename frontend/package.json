@@ -14,7 +14,9 @@
     "dev:facturador": "turbo dev --filter=portal-facturador",
     "build:admin": "turbo build --filter=portal-admin",
     "build:client": "turbo build --filter=portal-client",
-    "build:facturador": "turbo build --filter=portal-facturador"
+    "build:facturador": "turbo build --filter=portal-facturador",
+    "dev:gestion": "turbo dev --filter=portal-gestion",
+    "build:gestion": "turbo build --filter=portal-gestion"
   },
   "devDependencies": {
     "turbo": "^2.3.0",

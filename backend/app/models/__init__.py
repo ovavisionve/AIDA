@@ -9,6 +9,11 @@ from app.models.products import Product, ProductCategory, Inventory
 from app.models.customers import Customer
 from app.models.config import SystemSetting, EmailTemplate, BusinessRule
 from app.models.projects import Project, ProjectLog
+from app.models.integrations import (
+    IntegrationTemplate, IntegrationConnection,
+    Webhook, WebhookLog,
+    IntegrationError, MonitoringMetric,
+)
 
 __all__ = [
     "User", "Role", "Permission", "RolePermission", "UserRole", "AuditLog", "Session",
@@ -20,4 +25,7 @@ __all__ = [
     "Customer",
     "SystemSetting", "EmailTemplate", "BusinessRule",
     "Project", "ProjectLog",
+    "IntegrationTemplate", "IntegrationConnection",
+    "Webhook", "WebhookLog",
+    "IntegrationError", "MonitoringMetric",
 ]
