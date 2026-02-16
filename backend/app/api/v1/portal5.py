@@ -703,8 +703,8 @@ async def list_webhooks(
 @router.post("/webhooks", status_code=201)
 async def create_webhook(
     data: WebhookCreate,
-    client_id: uuid.UUID = Query(...),
     request: Request,
+    client_id: uuid.UUID = Query(...),
     user: User = require_permissions(P5_APIS_MANAGE),
     db: AsyncSession = Depends(get_db),
 ):

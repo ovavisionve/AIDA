@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.core.deps import get_current_user, require_permissions, log_audit
 from app.core.permissions import (
-    P6_SYSTEM_CONFIG, P6_ROLES_MANAGE, P6_AUDIT_VIEW,
+    P6_SYSTEM_CONFIG, P6_ROLES_MANAGE, P6_AUDIT_VIEW, P6_CLIENTS_VIEW,
     ALL_PERMISSIONS, DEFAULT_ROLES,
 )
 from app.models.security import User, Role, Permission, RolePermission, AuditLog
