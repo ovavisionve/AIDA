@@ -23,6 +23,8 @@ def _fix_database_url(url: str) -> str:
     # (urlparse doesn't handle custom schemes like postgresql+asyncpg://)
     if "?" in url:
         base, query = url.split("?", 1)
+        # Clean up malformed URLs: strip leading ? from query (handles ??ssl=...)
+        query = query.lstrip("?")
         # Strip ssl params: handle both "ssl=true" and bare "ssl" (no value)
         params = [p for p in query.split("&") if p.split("=")[0] not in ("sslmode", "ssl")]
         url = base + ("?" + "&".join(params) if params else "")
