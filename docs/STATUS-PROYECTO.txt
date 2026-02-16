@@ -1,6 +1,6 @@
 ================================================================================
               AIDA - IMPRENTA DIGITAL | STATUS DE PROYECTO
-              Fecha: 15 de febrero de 2026
+              Fecha: 16 de febrero de 2026
 ================================================================================
 
 1. RESUMEN EJECUTIVO
@@ -113,16 +113,16 @@ DOCUMENTACIÓN                                         [COMPLETADA] commit 384eb
 
 Portal | Nombre            | Puerto | Auth     | Estado       | Completitud
 -------|-------------------|--------|----------|--------------|------------
-  1    | Portal Cliente    | 3000   | JWT+2FA  | Funcional    | 85%
-  2    | Portal Facturador | 3001   | JWT+2FA  | Funcional    | 80%
-  3    | Validación Pública| 3002   | Ninguna  | Funcional    | 90%
-  4    | Portal Developers | 3003   | JWT+Key  | Funcional    | 80%
-  5    | Portal Gestión    | 3004   | JWT+2FA  | Funcional    | 85%
-  6    | Portal Admin      | 3005   | JWT+2FA  | Funcional    | 90%
+  1    | Portal Cliente    | 3000   | JWT+2FA  | Funcional    | 95%
+  2    | Portal Facturador | 3001   | JWT+2FA  | Funcional    | 95%
+  3    | Validación Pública| 3002   | Ninguna  | Funcional    | 95%
+  4    | Portal Developers | 3003   | JWT+Key  | Funcional    | 95%
+  5    | Portal Gestión    | 3004   | JWT+2FA  | Funcional    | 95%
+  6    | Portal Admin      | 3005   | JWT+2FA  | Funcional    | 95%
 
 Notas de completitud:
-  - Portal 1: Falta sección de Documentos con filtros, descarga PDF
-  - Portal 2: Secciones "Documentos" y "Reportes" son placeholder
+  - Portal 1: Documentos, Plantillas y Perfil implementados (Fase 9)
+  - Portal 2: Documentos y Reportes completos (Fase 9)
   - Portal 3: Totalmente funcional
   - Portal 4: Falta examples interactivos en sandbox
   - Portal 5: Totalmente funcional
@@ -279,17 +279,28 @@ venezolanos reales (formatos adjuntos del usuario) y requisitos de negocio:
   - Infraestructura lista, credenciales pendientes
   - Depende de tener la autorización de imprenta digital
 
-[FALTA] Pasarela de pagos
-  - Modelos de suscripción existen, falta gateway
+[LISTO] Pasarela de pagos
+  - Modelo Payment + PaymentTransaction en BD
+  - PaymentGateway service con flujo completo (crear, procesar, confirmar, fallar, reembolsar)
+  - API endpoints en /billing/ (crear, listar, confirmar, reembolsar)
+  - Soporte para transferencia, pago movil, zelle, stripe, paypal
 
-[FALTA] Tests automatizados
-  - pytest configurado pero sin tests escritos
+[LISTO] Tests automatizados
+  - conftest.py con fixtures (SQLite async in-memory)
+  - test_fiscal_calculator.py: 15+ tests de cálculo IVA/descuentos/totales
+  - test_batch_processor.py: 12+ tests de parsing CSV/JSON/XML
+  - test_api_keys.py: 7+ tests de hashing y persistencia
+  - test_payments.py: 10+ tests del flujo de pagos completo
+  - pytest.ini configurado con asyncio_mode=auto
 
 [FALTA] Versionado de documentos
   - Sin historial de cambios en documentos
 
-[FALTA] API keys para Portal 4 persistidas en BD
-  - Actualmente en memoria (se pierden al reiniciar)
+[LISTO] API keys para Portal 4 persistidas en BD
+  - Modelo APIKey con hash SHA-256, key_prefix, request_count, rate_limit
+  - developers.py reescrito: in-memory → DB (PostgreSQL)
+  - authenticate_api_key dependency para validar X-API-Key header
+  - Migración Alembic incluida
 
 
 6. RESUMEN DE LO QUE FUNCIONA BIEN
@@ -449,14 +460,26 @@ Prioridad: MEDIA
        - Preview de cómo se verá el documento
 
 
-FASE 10 — SFTP + API Keys Persistentes + Misceláneos
+FASE 10 — SFTP + API Keys + Pagos + Tests  [COMPLETADA]
 ─────────────────────────────────────────────────────────────────
 Prioridad: BAJA (puede ser post-lanzamiento)
 
-  10.1 Receptor SFTP para carga masiva de documentos
-  10.2 Persistir API keys del Portal 4 en base de datos
-  10.3 Tests automatizados (al menos para el pipeline fiscal)
-  10.4 Pasarela de pagos
+  10.1 [LISTO] Receptor batch/SFTP para carga masiva de documentos
+       - SFTPDocumentProcessor: parseo CSV, JSON, XML
+       - API /fiscal/batch/upload con hasta 10MB
+       - Templates descargables CSV/JSON
+       - Resultados por fila con número de control asignado
+  10.2 [LISTO] Persistir API keys del Portal 4 en base de datos
+       - Modelo APIKey con SHA-256 hash, request_count, rate_limit
+       - developers.py reescrito de in-memory a DB
+       - authenticate_api_key dependency
+  10.3 [LISTO] Tests automatizados (pipeline fiscal + batch + api keys + pagos)
+       - 44+ tests en 4 archivos de test
+       - conftest.py con SQLite async fixtures
+  10.4 [LISTO] Pasarela de pagos
+       - Modelos Payment + PaymentTransaction
+       - PaymentGateway service con flujo completo
+       - API /billing/ con CRUD + confirm/fail/refund
   10.5 Integración real SENIAT (cuando se tenga autorización)
 
 

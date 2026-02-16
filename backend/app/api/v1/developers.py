@@ -1,13 +1,14 @@
 """Portal 4 - API para Developers: gestión de API keys, documentación, uso."""
-import uuid
 import secrets
+import hashlib
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.core.deps import get_current_user, log_audit
 from app.models.security import User, AuditLog
+from app.models.api_keys import APIKey
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -51,29 +52,39 @@ class EndpointDoc(BaseModel):
     response: str
 
 
-# --- In-memory API key store (production would use DB table) ---
-_api_keys: dict[str, dict] = {}
+# --- Helpers ---
 
+def _hash_key(raw_key: str) -> str:
+    """SHA-256 hash of the API key for storage."""
+    return hashlib.sha256(raw_key.encode()).hexdigest()
+
+
+# --- API Key endpoints (DB-backed) ---
 
 @router.get("/api-keys", response_model=list[APIKeyResponse])
 async def list_api_keys(
     user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """Listar API keys del usuario."""
-    user_keys = [
+    result = await db.execute(
+        select(APIKey)
+        .where(APIKey.user_id == user.id)
+        .order_by(APIKey.created_at.desc())
+    )
+    keys = result.scalars().all()
+    return [
         APIKeyResponse(
-            id=k["id"],
-            name=k["name"],
-            key_prefix=k["key_prefix"],
-            description=k["description"],
-            created_at=k["created_at"],
-            last_used=k.get("last_used"),
-            is_active=k.get("is_active", True),
+            id=str(k.id),
+            name=k.name,
+            key_prefix=k.key_prefix,
+            description=k.description,
+            created_at=k.created_at.isoformat(),
+            last_used=k.last_used_at.isoformat() if k.last_used_at else None,
+            is_active=k.is_active,
         )
-        for k in _api_keys.values()
-        if k["user_id"] == str(user.id)
+        for k in keys
     ]
-    return user_keys
 
 
 @router.post("/api-keys", response_model=APIKeyCreatedResponse)
@@ -83,30 +94,29 @@ async def create_api_key(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Crear una nueva API key."""
+    """Crear una nueva API key. La clave completa solo se muestra una vez."""
     raw_key = f"aida_{secrets.token_urlsafe(32)}"
-    key_id = str(uuid.uuid4())
+    key_prefix = raw_key[:12] + "..."
 
-    key_data = {
-        "id": key_id,
-        "user_id": str(user.id),
-        "name": data.name,
-        "description": data.description,
-        "key_prefix": raw_key[:12] + "...",
-        "full_key": raw_key,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "is_active": True,
-    }
-    _api_keys[key_id] = key_data
+    api_key = APIKey(
+        user_id=user.id,
+        name=data.name,
+        description=data.description,
+        key_hash=_hash_key(raw_key),
+        key_prefix=key_prefix,
+        is_active=True,
+    )
+    db.add(api_key)
+    await db.flush()
 
-    await log_audit(db, user.id, "create", "api_key", key_id, request=request)
+    await log_audit(db, user.id, "create", "api_key", str(api_key.id), request=request)
 
     return APIKeyCreatedResponse(
-        id=key_id,
+        id=str(api_key.id),
         name=data.name,
-        key_prefix=raw_key[:12] + "...",
+        key_prefix=key_prefix,
         description=data.description,
-        created_at=key_data["created_at"],
+        created_at=api_key.created_at.isoformat(),
         is_active=True,
         full_key=raw_key,
     )
@@ -120,14 +130,16 @@ async def revoke_api_key(
     db: AsyncSession = Depends(get_db),
 ):
     """Revocar una API key."""
-    if key_id not in _api_keys:
+    result = await db.execute(
+        select(APIKey).where(APIKey.id == key_id, APIKey.user_id == user.id)
+    )
+    api_key = result.scalar_one_or_none()
+
+    if not api_key:
         raise HTTPException(status_code=404, detail="API key no encontrada")
 
-    key_data = _api_keys[key_id]
-    if key_data["user_id"] != str(user.id):
-        raise HTTPException(status_code=403, detail="No autorizado")
-
-    key_data["is_active"] = False
+    api_key.is_active = False
+    api_key.revoked_at = datetime.now(timezone.utc)
     await log_audit(db, user.id, "delete", "api_key", key_id, request=request)
 
     return {"message": "API key revocada exitosamente"}
@@ -161,7 +173,6 @@ async def get_usage(
         )
     )).scalar() or 0
 
-    # By action
     action_result = await db.execute(
         select(AuditLog.action, func.count(AuditLog.id))
         .where(AuditLog.user_id == user.id)
@@ -169,7 +180,6 @@ async def get_usage(
     )
     by_action = {row[0]: row[1] for row in action_result.all()}
 
-    # By resource
     resource_result = await db.execute(
         select(AuditLog.resource_type, func.count(AuditLog.id))
         .where(AuditLog.user_id == user.id)
@@ -185,6 +195,35 @@ async def get_usage(
         by_resource=by_resource,
     )
 
+
+# --- API Key authentication dependency ---
+
+async def authenticate_api_key(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+) -> APIKey:
+    """Validates X-API-Key header and returns the associated APIKey record."""
+    raw_key = request.headers.get("X-API-Key")
+    if not raw_key:
+        raise HTTPException(status_code=401, detail="X-API-Key header requerido")
+
+    key_hash = _hash_key(raw_key)
+    result = await db.execute(
+        select(APIKey).where(APIKey.key_hash == key_hash, APIKey.is_active == True)
+    )
+    api_key = result.scalar_one_or_none()
+
+    if not api_key:
+        raise HTTPException(status_code=401, detail="API key invalida o revocada")
+
+    api_key.last_used_at = datetime.now(timezone.utc)
+    api_key.last_used_ip = request.client.host if request.client else None
+    api_key.request_count += 1
+
+    return api_key
+
+
+# --- Documentation endpoints ---
 
 @router.get("/docs/endpoints", response_model=list[EndpointDoc])
 async def get_api_docs():
@@ -274,17 +313,25 @@ async def get_quickstart():
 @router.get("/account")
 async def get_developer_account(
     user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """Información de la cuenta del developer."""
-    active_keys = sum(1 for k in _api_keys.values() if k["user_id"] == str(user.id) and k.get("is_active", True))
-    total_keys = sum(1 for k in _api_keys.values() if k["user_id"] == str(user.id))
+    active_count = (await db.execute(
+        select(func.count(APIKey.id)).where(
+            APIKey.user_id == user.id, APIKey.is_active == True
+        )
+    )).scalar() or 0
+
+    total_count = (await db.execute(
+        select(func.count(APIKey.id)).where(APIKey.user_id == user.id)
+    )).scalar() or 0
 
     return {
         "user_id": str(user.id),
         "email": user.email,
         "name": f"{user.first_name} {user.last_name}",
-        "active_api_keys": active_keys,
-        "total_api_keys": total_keys,
+        "active_api_keys": active_count,
+        "total_api_keys": total_count,
         "plan": "developer",
         "rate_limit": "1000 requests/hour",
     }

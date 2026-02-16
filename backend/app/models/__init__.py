@@ -10,6 +10,8 @@ from app.models.products import Product, ProductCategory, Inventory
 from app.models.customers import Customer
 from app.models.config import SystemSetting, EmailTemplate, BusinessRule
 from app.models.projects import Project, ProjectLog
+from app.models.api_keys import APIKey
+from app.models.payments import Payment, PaymentTransaction
 from app.models.integrations import (
     IntegrationTemplate, IntegrationConnection,
     Webhook, WebhookLog,
@@ -27,6 +29,8 @@ __all__ = [
     "Customer",
     "SystemSetting", "EmailTemplate", "BusinessRule",
     "Project", "ProjectLog",
+    "APIKey",
+    "Payment", "PaymentTransaction",
     "IntegrationTemplate", "IntegrationConnection",
     "Webhook", "WebhookLog",
     "IntegrationError", "MonitoringMetric",
