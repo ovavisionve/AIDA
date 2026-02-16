@@ -84,19 +84,8 @@ async def health_check():
     except Exception as e:
         db_error = str(e)
 
-    # Debug info (temporary) - mask password in URLs
-    from app.database import database_url, _original_url, _needs_ssl
-    import re
-    masked_original = re.sub(r"://[^:]+:[^@]+@", "://***:***@", _original_url)
-    masked_final = re.sub(r"://[^:]+:[^@]+@", "://***:***@", database_url)
-
     return {
         "status": "ok" if db_ok else "degraded",
         "version": settings.APP_VERSION,
         "database": "connected" if db_ok else f"error: {db_error}",
-        "debug": {
-            "original_url": masked_original,
-            "final_url": masked_final,
-            "needs_ssl": _needs_ssl,
-        },
     }
