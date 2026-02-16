@@ -4,17 +4,16 @@ Endpoint público de setup/bootstrap para inicialización del sistema.
 Este endpoint se usa SOLO la primera vez para crear tablas y datos iniciales.
 Una vez que existen usuarios, devuelve un mensaje indicando que ya está configurado.
 """
-from fastapi import APIRouter, Depends
-from sqlalchemy import select, func
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.database import get_db, engine, Base
-from app.models.security import User
+import traceback
+from fastapi import APIRouter
+from sqlalchemy import select, func, text
+from app.database import engine, async_session, Base
 
 router = APIRouter()
 
 
 @router.post("/bootstrap")
-async def bootstrap_system(db: AsyncSession = Depends(get_db)):
+async def bootstrap_system():
     """
     Inicializa el sistema: crea tablas + datos iniciales.
 
@@ -25,15 +24,27 @@ async def bootstrap_system(db: AsyncSession = Depends(get_db)):
       - Email: admin@aida.com.ve
       - Password: Admin2024!
     """
-    # Check if already initialized
+    errors = []
+
+    # Step 1: Create tables
     try:
-        count = (await db.execute(select(func.count(User.id)))).scalar() or 0
-    except Exception:
-        # Tables might not exist yet, create them
         import app.models  # noqa: F401
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-        count = 0
+    except Exception as e:
+        errors.append(f"Error creando tablas: {str(e)}")
+        traceback.print_exc()
+        return {"status": "error", "errors": errors}
+
+    # Step 2: Check if already initialized
+    try:
+        from app.models.security import User
+        async with async_session() as session:
+            count = (await session.execute(select(func.count(User.id)))).scalar() or 0
+    except Exception as e:
+        errors.append(f"Error consultando usuarios: {str(e)}")
+        traceback.print_exc()
+        return {"status": "error", "errors": errors}
 
     if count > 0:
         return {
@@ -42,9 +53,14 @@ async def bootstrap_system(db: AsyncSession = Depends(get_db)):
             "users": count,
         }
 
-    # Run full seed
-    from app.services.seed import seed_database
-    await seed_database()
+    # Step 3: Run full seed
+    try:
+        from app.services.seed import seed_database
+        await seed_database()
+    except Exception as e:
+        errors.append(f"Error en seed: {str(e)}")
+        traceback.print_exc()
+        return {"status": "error", "message": "Tablas creadas pero seed falló", "errors": errors}
 
     return {
         "status": "initialized",
@@ -60,18 +76,42 @@ async def bootstrap_system(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/status")
-async def system_status(db: AsyncSession = Depends(get_db)):
-    """Verificar si el sistema está inicializado."""
+async def system_status():
+    """Verificar si el sistema está inicializado y la DB está conectada."""
+    # Test DB connection
+    db_ok = False
+    db_error = None
     try:
-        count = (await db.execute(select(func.count(User.id)))).scalar() or 0
+        async with async_session() as session:
+            await session.execute(text("SELECT 1"))
+            db_ok = True
+    except Exception as e:
+        db_error = str(e)
+
+    if not db_ok:
+        return {
+            "initialized": False,
+            "database": "disconnected",
+            "error": db_error,
+            "message": "No se puede conectar a la base de datos. Verifique DATABASE_URL en Railway.",
+        }
+
+    # Check if tables exist and have users
+    try:
+        from app.models.security import User
+        async with async_session() as session:
+            count = (await session.execute(select(func.count(User.id)))).scalar() or 0
         return {
             "initialized": count > 0,
+            "database": "connected",
             "users": count,
             "message": "Sistema listo" if count > 0 else "Sistema no inicializado. Use POST /api/v1/setup/bootstrap",
         }
-    except Exception:
+    except Exception as e:
         return {
             "initialized": False,
-            "users": 0,
-            "message": "Tablas no creadas. Use POST /api/v1/setup/bootstrap",
+            "database": "connected",
+            "tables_exist": False,
+            "error": str(e),
+            "message": "DB conectada pero tablas no existen. Use POST /api/v1/setup/bootstrap",
         }

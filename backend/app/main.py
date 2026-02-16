@@ -1,3 +1,4 @@
+import traceback
 import structlog
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
@@ -17,11 +18,15 @@ async def lifespan(app: FastAPI):
         from app.database import engine, Base
         import app.models  # noqa: F401 — register all models
 
+        logger.info("creating_tables")
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
         logger.info("database_tables_ready")
+    except Exception as e:
+        logger.error("table_creation_failed", error=str(e))
+        traceback.print_exc()
 
-        # Auto-seed if no users exist
+    try:
         from sqlalchemy import select, func
         from app.database import async_session
         from app.models.security import User
@@ -32,11 +37,13 @@ async def lifespan(app: FastAPI):
                 logger.info("no_users_found_running_seed")
                 from app.services.seed import seed_database
                 await seed_database()
-                logger.info("seed_completed")
+                logger.info("seed_completed_admin_created",
+                            email="admin@aida.com.ve", password="Admin2024!")
             else:
                 logger.info("users_exist_skipping_seed", user_count=count)
     except Exception as e:
-        logger.error("startup_error", error=str(e))
+        logger.error("seed_failed", error=str(e))
+        traceback.print_exc()
 
     yield
 
@@ -65,4 +72,20 @@ app.include_router(api_v1_router, prefix="/api/v1")
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok", "version": settings.APP_VERSION}
+    """Health check con verificación de DB."""
+    db_ok = False
+    db_error = None
+    try:
+        from sqlalchemy import text
+        from app.database import async_session
+        async with async_session() as session:
+            await session.execute(text("SELECT 1"))
+            db_ok = True
+    except Exception as e:
+        db_error = str(e)
+
+    return {
+        "status": "ok" if db_ok else "degraded",
+        "version": settings.APP_VERSION,
+        "database": "connected" if db_ok else f"error: {db_error}",
+    }
