@@ -2,10 +2,13 @@ from fastapi import APIRouter
 from app.api.v1 import auth, users, clients, documents, admin
 from app.api.v1 import products, customers, invoicing, portal5, ai
 from app.api.v1 import validation, developers
-from app.api.v1 import uploads, document_templates, payments, batch
+from app.api.v1 import uploads, document_templates, payments, batch, setup
 from app.api.v1.fiscal import router as fiscal_router
 
 router = APIRouter()
+
+# Setup público (sin auth) — solo funciona si no hay usuarios
+router.include_router(setup.router, prefix="/setup", tags=["Setup Inicial"])
 
 # Portales Web (autenticación JWT)
 router.include_router(auth.router, prefix="/auth", tags=["Autenticación"])

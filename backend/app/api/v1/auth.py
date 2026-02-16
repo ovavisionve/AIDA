@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.core.security import (
@@ -22,6 +22,54 @@ settings = get_settings()
 
 MAX_LOGIN_ATTEMPTS = 5
 LOCKOUT_MINUTES = 30
+
+
+@router.post("/register")
+async def register(
+    data: RegisterRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Registro público de usuario.
+
+    Si no existe ningún usuario en el sistema, el primero será superadmin.
+    Los demás se crean como usuarios normales (requiere activación por admin).
+    """
+    # Check if email already taken
+    existing = await db.execute(select(User).where(User.email == data.email))
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="El email ya está registrado")
+
+    # First user ever? Make them superadmin automatically
+    count = (await db.execute(select(func.count(User.id)))).scalar() or 0
+    is_first_user = count == 0
+
+    user = User(
+        email=data.email,
+        hashed_password=hash_password(data.password),
+        first_name=data.first_name,
+        last_name=data.last_name,
+        phone=data.phone,
+        is_active=True,
+        is_superadmin=is_first_user,
+        is_verified=is_first_user,
+    )
+    db.add(user)
+    await db.flush()
+
+    await log_audit(db, user.id, "register", "auth", str(user.id), request=request)
+
+    return {
+        "id": str(user.id),
+        "email": user.email,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "is_superadmin": user.is_superadmin,
+        "message": "Usuario registrado exitosamente" + (
+            ". Como primer usuario, tiene permisos de super administrador." if is_first_user else ""
+        ),
+    }
 
 
 @router.post("/login", response_model=LoginResponse)
