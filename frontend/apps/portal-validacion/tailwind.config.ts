@@ -6,7 +6,14 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        aida: { dark: "#1a1a2e", primary: "#16213e", accent: "#0f3460", highlight: "#e94560" },
+        aida: {
+          dark: "#0a1628",
+          primary: "#1e3a5f",
+          accent: "#3b82f6",
+          cyan: "#06b6d4",
+          light: "#f1f5f9",
+          highlight: "#06b6d4",
+        },
       },
     },
   },

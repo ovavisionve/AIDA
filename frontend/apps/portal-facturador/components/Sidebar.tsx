@@ -18,27 +18,35 @@ const navItems: { id: Section; label: string; icon: string }[] = [
 
 export default function Sidebar({ active, onNavigate }: SidebarProps) {
   return (
-    <aside className="flex w-56 flex-col bg-aida-dark text-white">
-      <div className="flex h-14 items-center gap-2 px-4">
-        <span className="text-lg font-bold">AIDA</span>
-        <span className="rounded bg-aida-highlight/20 px-1.5 py-0.5 text-[10px] text-aida-highlight">Facturador</span>
+    <aside className="flex w-56 flex-col aida-sidebar text-white">
+      <div className="flex h-14 items-center gap-2 px-4 border-b border-white/10">
+        <span className="text-lg font-bold tracking-tight">AIDA</span>
+        <span className="rounded-full bg-aida-cyan/20 px-2 py-0.5 text-[10px] font-medium text-aida-cyan">Facturador</span>
       </div>
-      <nav className="mt-4 flex-1 space-y-0.5 px-2">
+      <nav className="mt-3 flex-1 space-y-0.5 px-2">
         {navItems.map((item) => (
           <button
             key={item.id}
             onClick={() => onNavigate(item.id)}
-            className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] transition ${
-              active === item.id ? "bg-aida-highlight text-white" : "text-gray-400 hover:bg-white/10 hover:text-white"
+            className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] transition-all duration-200 ${
+              active === item.id
+                ? "bg-aida-accent text-white shadow-lg shadow-aida-accent/25"
+                : "text-slate-400 hover:bg-white/10 hover:text-white"
             }`}
           >
             <svg className="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
             </svg>
             {item.label}
           </button>
         ))}
       </nav>
+      <div className="p-3 border-t border-white/10">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="text-[11px] text-slate-500">Conectado</span>
+        </div>
+      </div>
     </aside>
   );
 }

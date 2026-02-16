@@ -1,3 +1,21 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply rounded-2xl border border-white/20 bg-white/80 shadow-lg backdrop-blur-sm;
+  }
+  .aida-gradient {
+    background: linear-gradient(135deg, #0a1628 0%, #1e3a5f 50%, #0a1628 100%);
+  }
+  .code-block {
+    @apply rounded-lg bg-slate-900 p-4 font-mono text-sm text-slate-100;
+  }
+}

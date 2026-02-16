@@ -35,26 +35,26 @@ const SECTIONS = [
 
 export default function Sidebar({ active, onNavigate }: { active: string; onNavigate: (key: string) => void }) {
   return (
-    <aside className="w-60 bg-aida-dark text-white flex flex-col min-h-screen">
+    <aside className="w-60 aida-sidebar text-white flex flex-col min-h-screen">
       <div className="p-5 border-b border-white/10">
-        <h2 className="text-lg font-bold">AIDA Gestion</h2>
-        <p className="text-xs text-gray-400 mt-0.5">Portal 5 - IA & Integraciones</p>
+        <h2 className="text-lg font-bold tracking-tight">AIDA</h2>
+        <p className="text-[11px] text-slate-400 mt-0.5">Portal 5 — IA & Integraciones</p>
       </div>
 
       <nav className="flex-1 py-2 overflow-auto">
         {SECTIONS.map(section => (
           <div key={section.label}>
-            <p className="px-5 pt-4 pb-1 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
+            <p className="px-5 pt-4 pb-1 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
               {section.label}
             </p>
             {section.items.map(item => (
               <button key={item.key} onClick={() => onNavigate(item.key)}
-                className={`w-full flex items-center gap-3 px-5 py-2 text-sm transition-colors ${
+                className={`w-full flex items-center gap-3 px-5 py-2 text-sm transition-all duration-200 ${
                   active === item.key
-                    ? "bg-aida-accent text-white"
-                    : "text-gray-300 hover:bg-white/5 hover:text-white"
+                    ? "bg-aida-accent text-white shadow-lg shadow-aida-accent/25"
+                    : "text-slate-400 hover:bg-white/5 hover:text-white"
                 }`}>
-                <svg className="w-4.5 h-4.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
                 </svg>
                 <span>{item.label}</span>
@@ -66,8 +66,8 @@ export default function Sidebar({ active, onNavigate }: { active: string; onNavi
 
       <div className="p-4 border-t border-white/10">
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-          <span className="text-xs text-gray-400">Sistema operativo</span>
+          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="text-[11px] text-slate-500">Sistema operativo</span>
         </div>
       </div>
     </aside>
