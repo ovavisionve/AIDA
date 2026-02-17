@@ -27,8 +27,12 @@ const testimonials = [
 
 export default function Testimonials() {
   return (
-    <section className="py-24 sm:py-32">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="relative py-24 sm:py-32">
+      {/* Ambient */}
+      <div className="absolute top-1/2 left-1/4 w-64 h-64 bg-aida-accent/6 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-10 right-1/4 w-56 h-56 bg-aida-cyan/6 rounded-full blur-[80px] pointer-events-none" />
+
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-aida-cyan">
             Testimonios
@@ -36,15 +40,26 @@ export default function Testimonials() {
           <p className="mt-3 text-3xl sm:text-4xl font-bold">
             Lo que dicen <span className="gradient-text">nuestros clientes</span>
           </p>
+          <p className="mt-4 text-slate-400 max-w-xl mx-auto">
+            Empresas reales en Venezuela que ya transformaron su facturación con AIDA.
+          </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="perspective-container grid gap-6 md:grid-cols-3">
           {testimonials.map((t) => (
-            <div key={t.name} className="glass-card p-6 flex flex-col">
+            <div
+              key={t.name}
+              className="tilt-card glass-card p-6 flex flex-col hover:bg-white/[0.08] hover:border-aida-accent/20 transition-all duration-500"
+            >
               {/* Stars */}
               <div className="flex gap-1 mb-4">
                 {[...Array(5)].map((_, i) => (
-                  <svg key={i} className="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                  <svg
+                    key={i}
+                    className="w-4 h-4 text-amber-400"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                   </svg>
                 ))}
@@ -55,7 +70,7 @@ export default function Testimonials() {
               </blockquote>
 
               <div className="mt-6 flex items-center gap-3 pt-4 border-t border-white/5">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-aida-accent to-aida-cyan flex items-center justify-center text-white text-xs font-bold">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-aida-accent to-aida-cyan flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-aida-accent/20">
                   {t.initials}
                 </div>
                 <div>

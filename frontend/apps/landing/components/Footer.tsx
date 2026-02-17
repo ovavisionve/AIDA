@@ -29,7 +29,8 @@ export default function Footer() {
               <li><Link href="/calculadora" className="hover:text-white transition-colors">Calculadora de Ahorro</Link></li>
               <li><Link href="/productos" className="hover:text-white transition-colors">Productos y SKUs</Link></li>
               <li><Link href="/como-funciona" className="hover:text-white transition-colors">Cómo Funciona</Link></li>
-              <li><Link href="/comparativa" className="hover:text-white transition-colors">AIDA vs Competencia</Link></li>
+              <li><Link href="/comparativa" className="hover:text-white transition-colors">AIDA vs Otros</Link></li>
+              <li><Link href="/blog" className="hover:text-white transition-colors">Blog</Link></li>
               <li><Link href="/planes" className="hover:text-white transition-colors">Planes y Precios</Link></li>
             </ul>
           </div>

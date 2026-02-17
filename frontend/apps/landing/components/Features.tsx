@@ -74,16 +74,16 @@ export default function Features() {
           </p>
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="perspective-container grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {features.map((f) => (
             <div
               key={f.title}
-              className="group glass-card p-6 hover:bg-white/[0.08] hover:border-aida-accent/20 transition-all duration-300"
+              className="tilt-card group glass-card p-6 hover:bg-white/[0.08] hover:border-aida-accent/20 transition-all duration-500"
             >
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-aida-accent/20 to-aida-cyan/20 flex items-center justify-center text-aida-cyan group-hover:scale-110 transition-transform">
                 {f.icon}
               </div>
-              <h3 className="mt-4 text-lg font-semibold text-white">{f.title}</h3>
+              <h3 className="mt-4 text-lg font-semibold text-white group-hover:text-aida-cyan transition-colors">{f.title}</h3>
               <p className="mt-2 text-sm text-slate-400 leading-relaxed">{f.desc}</p>
             </div>
           ))}

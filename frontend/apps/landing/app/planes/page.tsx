@@ -3,9 +3,16 @@ import CTA from "@/components/CTA";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Planes y Precios",
+  title: "Planes y Precios - Facturación Electrónica desde $29/mes",
   description:
-    "Planes de AIDA desde $29/mes. Básico, Profesional y Empresarial. Precios transparentes, sin costos ocultos. Todos incluyen cumplimiento SENIAT y actualizaciones.",
+    "Planes AIDA: Básico ($29/mes, 500 docs), Profesional ($79/mes, 5,000 docs), Empresarial ($149/mes, ilimitado). Incluye IA, cumplimiento SENIAT, soporte 24/7 y actualizaciones. Sin costos ocultos.",
+  keywords: [
+    "precios facturación electrónica Venezuela",
+    "planes imprenta digital",
+    "cuánto cuesta AIDA",
+    "precio documentos fiscales",
+    "suscripción facturación SENIAT",
+  ],
 };
 
 export default function PlanesPage() {

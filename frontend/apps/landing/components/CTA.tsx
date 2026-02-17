@@ -1,7 +1,8 @@
 export default function CTA() {
   return (
     <section id="contacto" className="py-24 sm:py-32 relative">
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-aida-accent/5 to-transparent pointer-events-none" />
+      <div className="orb orb-blue w-72 h-72 top-10 right-10" />
+      <div className="orb orb-cyan w-56 h-56 bottom-10 left-10" />
 
       <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <div className="glass-card p-10 sm:p-16 glow-blue">
@@ -20,25 +21,32 @@ export default function CTA() {
               <input
                 type="text"
                 placeholder="Nombre"
+                aria-label="Nombre completo"
                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-aida-accent/50 focus:bg-white/[0.08] transition-all text-sm"
               />
               <input
                 type="text"
                 placeholder="Empresa"
+                aria-label="Nombre de la empresa"
                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-aida-accent/50 focus:bg-white/[0.08] transition-all text-sm"
               />
             </div>
             <input
               type="email"
               placeholder="Email corporativo"
+              aria-label="Email corporativo"
               className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-aida-accent/50 focus:bg-white/[0.08] transition-all text-sm"
             />
             <input
               type="tel"
               placeholder="Teléfono / WhatsApp"
+              aria-label="Teléfono o WhatsApp"
               className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-aida-accent/50 focus:bg-white/[0.08] transition-all text-sm"
             />
-            <select className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-slate-400 focus:outline-none focus:border-aida-accent/50 transition-all text-sm appearance-none">
+            <select
+              aria-label="Sistema ERP actual"
+              className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-slate-400 focus:outline-none focus:border-aida-accent/50 transition-all text-sm appearance-none"
+            >
               <option value="">¿Qué sistema usas actualmente?</option>
               <option value="sap">SAP Business One</option>
               <option value="odoo">Odoo</option>
