@@ -76,7 +76,7 @@ export default function Home() {
               offerCount: "3",
             },
             featureList:
-              "IA integrada, API REST, Integración SAP/Odoo/WooCommerce, Cumplimiento SENIAT, Procesamiento batch masivo, Soporte 24/7",
+              "IA integrada, API REST, Compatible con +100 ERPs, Cumplimiento SENIAT, Providencia 102 y 121, Procesamiento batch masivo, Soporte 24/7",
           }),
         }}
       />
@@ -101,7 +101,7 @@ export default function Home() {
                 name: "¿AIDA cumple con la normativa del SENIAT?",
                 acceptedAnswer: {
                   "@type": "Answer",
-                  text: "Sí. AIDA es una imprenta digital autorizada bajo la Providencia SNAT/2024/000121. Todos los documentos incluyen número de control, firma digital, QR de verificación y trazabilidad completa según lo exige el SENIAT.",
+                  text: "Sí. AIDA cumple con la Providencia 102 (Facturación Digital) y la Providencia 121 (Homologación de Sistemas). Todos los documentos incluyen número de control, firma digital, QR de verificación y trazabilidad completa según lo exige el SENIAT.",
                 },
               },
               {
@@ -117,7 +117,7 @@ export default function Home() {
                 name: "¿Se puede integrar AIDA con mi ERP?",
                 acceptedAnswer: {
                   "@type": "Answer",
-                  text: "Sí. AIDA ofrece conectores nativos para SAP Business One, Odoo, WooCommerce y PrestaShop. También cuenta con una API REST documentada para integraciones personalizadas. El wizard de integración permite conectar tu sistema en horas sin escribir código.",
+                  text: "Sí. AIDA es compatible con más de 100 ERPs del mercado. Si tu sistema no está en la lista, nos adaptamos. También cuenta con una API REST documentada para integraciones personalizadas. El wizard de integración permite conectar tu sistema en horas sin escribir código.",
                 },
               },
             ],

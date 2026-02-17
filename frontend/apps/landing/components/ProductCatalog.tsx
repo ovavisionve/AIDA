@@ -88,6 +88,22 @@ const skuCategories = [
         pricePerUnit: "Incluido",
         features: ["Dirección de destino", "Transportista asignado", "Items y cantidades", "Formato SENIAT"],
       },
+      {
+        sku: "AIDA-RET-IVA",
+        name: "Comprobante de Retención IVA",
+        volume: "Por unidad",
+        price: 0,
+        pricePerUnit: "Incluido",
+        features: ["Cálculo automático 75% / 100%", "Vinculado a factura original", "Formato SENIAT vigente", "Numeración correlativa"],
+      },
+      {
+        sku: "AIDA-RET-ISLR",
+        name: "Comprobante de Retención ISLR",
+        volume: "Por unidad",
+        price: 0,
+        pricePerUnit: "Incluido",
+        features: ["Tabla de retenciones actualizada", "Cálculo automático según actividad", "Formato SENIAT vigente", "Acumulado por período"],
+      },
     ],
   },
   {
@@ -100,33 +116,33 @@ const skuCategories = [
     ),
     products: [
       {
-        sku: "AIDA-INT-SAP",
-        name: "Conector SAP B1",
-        volume: "Licencia mensual",
-        price: 49,
-        pricePerUnit: "/mes",
-        features: ["Service Layer OData", "Sync bidireccional", "Mapeo automático de campos", "Soporte técnico incluido"],
+        sku: "AIDA-INT-ERP",
+        name: "Conector ERP Universal",
+        volume: "Incluido en tu plan",
+        price: 0,
+        pricePerUnit: "Incluido",
+        features: ["Compatible con más de 100 ERPs", "Wizard de integración guiado", "Sync bidireccional", "Soporte técnico incluido"],
       },
       {
-        sku: "AIDA-INT-ODOO",
-        name: "Conector Odoo",
-        volume: "Licencia mensual",
-        price: 39,
-        pricePerUnit: "/mes",
-        features: ["XML-RPC / JSON-RPC", "Odoo 14+ compatible", "Webhook bidireccional", "Setup wizard incluido"],
+        sku: "AIDA-INT-ECOM",
+        name: "Conector E-Commerce",
+        volume: "Incluido en tu plan",
+        price: 0,
+        pricePerUnit: "Incluido",
+        features: ["Tiendas online compatibles", "Auto-factura al pagar", "Sync inventario", "Multi-tienda soportado"],
       },
       {
-        sku: "AIDA-INT-WOO",
-        name: "Conector WooCommerce",
-        volume: "Licencia mensual",
-        price: 29,
-        pricePerUnit: "/mes",
-        features: ["REST API nativa", "Auto-factura al pagar", "Sync inventario", "Multi-tienda soportado"],
+        sku: "AIDA-INT-CUSTOM",
+        name: "Adaptación a tu Sistema",
+        volume: "Incluido en tu plan",
+        price: 0,
+        pricePerUnit: "Incluido",
+        features: ["Nos adaptamos a tu ERP", "Integración personalizada", "Acompañamiento técnico", "Sin importar el sistema que uses"],
       },
       {
         sku: "AIDA-INT-API",
-        name: "API Directa (Custom)",
-        volume: "Licencia mensual",
+        name: "API REST Directa",
+        volume: "Incluido en tu plan",
         price: 0,
         pricePerUnit: "Incluido",
         features: ["REST API documentada", "API Keys ilimitadas", "Rate limiting configurable", "Webhooks + callbacks"],
@@ -155,7 +171,7 @@ export default function ProductCatalog() {
           </p>
           <p className="mt-4 text-slate-400 max-w-2xl mx-auto">
             Desde la asignación de números de control hasta la integración con tu ERP.
-            Cada producto tiene su SKU, su precio transparente y se activa al instante.
+            Cada servicio tiene precio transparente y se activa al instante.
           </p>
         </div>
 
@@ -192,9 +208,9 @@ export default function ProductCatalog() {
                 </div>
               )}
 
-              {/* SKU Badge */}
+              {/* Category indicator */}
               <div className="inline-flex self-start items-center px-2.5 py-0.5 rounded-md bg-aida-dark border border-white/10 text-[10px] font-mono text-slate-500 mb-3">
-                {product.sku}
+                {product.price > 0 ? `Desde $${product.price}` : "Incluido"}
               </div>
 
               <h3 className="text-base font-bold text-white">{product.name}</h3>

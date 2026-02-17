@@ -10,7 +10,7 @@ const features = [
       </svg>
     ),
     title: "Facturación en Segundos",
-    desc: "Emite facturas, notas de crédito, notas de débito, guías de despacho y retenciones con un solo click o request API. PDF profesional, XML UBL 2.1, código QR y firma digital SHA-256, todo generado automáticamente.",
+    desc: "Emite facturas, notas de crédito, notas de débito, guías de despacho y comprobantes de retención de IVA e ISLR con un solo click o request API. PDF profesional, XML UBL 2.1, código QR y firma digital SHA-256, todo generado automáticamente.",
     highlight: "< 3 segundos",
     gradient: "from-aida-accent to-blue-400",
   },
@@ -21,7 +21,7 @@ const features = [
       </svg>
     ),
     title: "Cumplimiento SENIAT Total",
-    desc: "Números de control con asignación atómica, firma digital, QR de verificación pública, retención de datos 10 años. Todo según la Providencia SNAT/2024/000121. Cero sorpresas en fiscalizaciones.",
+    desc: "Números de control con asignación atómica, firma digital, QR de verificación pública, retención de datos 10 años. Cumplimiento total con la Providencia 102 (Facturación Digital) y la Providencia 121 (Homologación de Sistemas). Cero sorpresas en fiscalizaciones.",
     highlight: "100% conforme",
     gradient: "from-green-500 to-emerald-400",
   },
@@ -43,8 +43,8 @@ const features = [
       </svg>
     ),
     title: "Integración Universal",
-    desc: "Conecta SAP Business One, Odoo, WooCommerce, PrestaShop, CONTPAQi o tu sistema custom. Wizard guiado de 6 pasos sin escribir código, o API REST completa para tu equipo técnico.",
-    highlight: "6+ conectores",
+    desc: "Compatible con más de 100 ERPs, plataformas contables y e-commerce del mercado. Y si tu sistema no está en la lista, nos adaptamos. Wizard guiado de 6 pasos sin escribir código, o API REST completa para tu equipo técnico.",
+    highlight: "100+ ERPs",
     gradient: "from-aida-cyan to-teal-400",
   },
   {
@@ -120,9 +120,9 @@ export default function Features() {
         <AnimateOnScroll animation="slide-up" delay={400}>
           <div className="mt-16 glass-card p-6 flex flex-wrap justify-center gap-8 sm:gap-16">
             {[
-              { value: "5", label: "Tipos de documento" },
+              { value: "7", label: "Tipos de documento" },
               { value: "4", label: "Plantillas PDF" },
-              { value: "6+", label: "Conectores ERP" },
+              { value: "100+", label: "ERPs compatibles" },
               { value: "3", label: "Formatos export" },
               { value: "50K", label: "Docs por batch" },
             ].map((stat) => (

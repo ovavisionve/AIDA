@@ -4,69 +4,69 @@ import AnimateOnScroll from "@/components/AnimateOnScroll";
 
 const articles = [
   {
-    category: "Educación",
+    category: "Normativa",
     categoryColor: "from-aida-accent to-blue-400",
-    title: "¿Qué es una imprenta digital autorizada por el SENIAT?",
+    title: "Providencia 102: Todo sobre la Facturación Digital en Venezuela",
     description:
-      "Una imprenta digital autorizada es una empresa habilitada por el SENIAT mediante Providencia Administrativa para generar documentos fiscales electrónicos con validez legal. Conoce los requisitos de autorización, las obligaciones que implica y por qué tu empresa debe trabajar exclusivamente con imprentas autorizadas para garantizar el cumplimiento tributario.",
-    readTime: "8 min de lectura",
-    date: "12 Ene 2025",
-    slug: "/blog/imprenta-digital-autorizada-seniat",
+      "La Providencia 102 del SENIAT establece las normas para la facturación digital en Venezuela. Conoce qué exige, cómo afecta a tu empresa, cuáles son los plazos de cumplimiento y por qué es fundamental que tu sistema de facturación esté alineado con esta normativa para evitar sanciones y garantizar la validez legal de tus documentos fiscales.",
+    readTime: "10 min de lectura",
+    date: "15 Ene 2025",
+    slug: "/blog/providencia-102-facturacion-digital",
     featured: true,
   },
   {
-    category: "Guía",
+    category: "Homologación",
     categoryColor: "from-aida-cyan to-teal-400",
-    title: "Facturación electrónica en Venezuela: Guía completa 2025",
+    title: "Providencia 121: Homologación de Sistemas Fiscales ante el SENIAT",
     description:
-      "Todo lo que necesitas saber sobre facturación electrónica en Venezuela: desde los requisitos legales establecidos en la Providencia SNAT/2024/000121, el proceso de emisión de documentos fiscales, hasta los beneficios de migrar de facturación manual a digital. Incluye pasos detallados para iniciar.",
+      "La Providencia 121 regula la homologación de los sistemas de facturación y emisión de documentos fiscales en Venezuela. Entiende qué significa homologar tu sistema, qué requisitos técnicos debe cumplir tu plataforma, y cómo AIDA ya está homologada para que tú no tengas que preocuparte por este proceso.",
     readTime: "12 min de lectura",
     date: "28 Dic 2024",
-    slug: "/blog/facturacion-electronica-venezuela-guia-2025",
+    slug: "/blog/providencia-121-homologacion-sistemas",
+    featured: false,
+  },
+  {
+    category: "Cumplimiento",
+    categoryColor: "from-violet-500 to-purple-400",
+    title: "¿Por qué es urgente que tu empresa migre a la facturación digital?",
+    description:
+      "Las providencias 102 y 121 del SENIAT no son opcionales. Las empresas que no cumplan con la normativa de facturación digital y homologación de sistemas enfrentan sanciones, multas y la invalidez de sus documentos fiscales. Te explicamos los riesgos de no cumplir y cómo puedes migrar de forma rápida y segura.",
+    readTime: "8 min de lectura",
+    date: "15 Dic 2024",
+    slug: "/blog/urgencia-migracion-facturacion-digital",
+    featured: false,
+  },
+  {
+    category: "Fiscal",
+    categoryColor: "from-amber-500 to-orange-400",
+    title: "Homologación fiscal: Qué es, por qué importa y cómo cumplir",
+    description:
+      "La homologación es el proceso mediante el cual el SENIAT certifica que tu sistema de facturación cumple con los estándares técnicos y legales vigentes. Si tu empresa emite documentos fiscales, este proceso es obligatorio. Conoce los pasos, requisitos y cómo AIDA simplifica todo el camino hacia la homologación.",
+    readTime: "7 min de lectura",
+    date: "3 Dic 2024",
+    slug: "/blog/homologacion-fiscal-como-cumplir",
     featured: false,
   },
   {
     category: "Legal",
-    categoryColor: "from-violet-500 to-purple-400",
-    title: "Números de control fiscal: Todo lo que debes saber",
-    description:
-      "Los números de control son secuencias únicas asignadas por el SENIAT a cada imprenta autorizada para garantizar la trazabilidad de los documentos fiscales. Aprende cómo se asignan, cómo se validan, qué pasa si se agotan y cómo AIDA gestiona automáticamente tus rangos.",
-    readTime: "6 min de lectura",
-    date: "15 Dic 2024",
-    slug: "/blog/numeros-de-control-fiscal",
-    featured: false,
-  },
-  {
-    category: "Tecnología",
-    categoryColor: "from-amber-500 to-orange-400",
-    title: "Cómo la IA está transformando la facturación empresarial",
-    description:
-      "La inteligencia artificial aplicada a la facturación permite detectar anomalías en documentos fiscales antes de emitirlos, automatizar la clasificación de gastos, predecir patrones de facturación y asistir en tiempo real a contadores y administradores. Descubre cómo AIDA usa IA para proteger tu empresa.",
-    readTime: "7 min de lectura",
-    date: "3 Dic 2024",
-    slug: "/blog/ia-transformando-facturacion",
-    featured: false,
-  },
-  {
-    category: "Tips",
     categoryColor: "from-rose-500 to-pink-400",
-    title: "5 errores comunes al emitir documentos fiscales y cómo evitarlos",
+    title: "Sanciones del SENIAT por incumplimiento de normativas fiscales",
     description:
-      "Desde emitir notas de crédito con montos superiores al documento original, hasta usar números de control vencidos o no incluir la alícuota de IVA correcta. Estos errores pueden resultar en multas del SENIAT. Te mostramos los 5 más frecuentes y cómo la tecnología te protege.",
-    readTime: "5 min de lectura",
+      "No cumplir con las providencias 102 y 121 puede resultar en multas significativas, cierre temporal del establecimiento y la invalidez de tus documentos fiscales. Conoce las sanciones específicas, los plazos que tienes para regularizarte y cómo proteger tu empresa con una plataforma ya homologada.",
+    readTime: "6 min de lectura",
     date: "20 Nov 2024",
-    slug: "/blog/errores-comunes-documentos-fiscales",
+    slug: "/blog/sanciones-seniat-incumplimiento",
     featured: false,
   },
   {
-    category: "Integraciones",
+    category: "Guía",
     categoryColor: "from-emerald-500 to-green-400",
-    title: "Integración ERP + Imprenta Digital: La combinación perfecta",
+    title: "Guía paso a paso: Cómo cumplir con las normativas fiscales digitales",
     description:
-      "Conectar tu ERP (SAP Business One, Odoo, WooCommerce, PrestaShop) con una imprenta digital elimina la doble carga de datos y los errores humanos. Conoce cómo funciona la integración, qué datos se sincronizan y por qué el wizard de AIDA lo hace posible sin escribir código.",
+      "Una guía práctica para empresas que necesitan cumplir con la Providencia 102 y la Providencia 121 del SENIAT. Desde entender los requisitos hasta implementar una solución homologada, te mostramos el camino más rápido para estar al día con las normativas fiscales en Venezuela.",
     readTime: "9 min de lectura",
     date: "8 Nov 2024",
-    slug: "/blog/integracion-erp-imprenta-digital",
+    slug: "/blog/guia-cumplimiento-normativas-fiscales",
     featured: false,
   },
 ];
@@ -86,13 +86,13 @@ export default function Blog() {
               Blog e Insights
             </h2>
             <p className="mt-3 text-3xl sm:text-4xl font-bold">
-              Contenido educativo sobre{" "}
-              <span className="gradient-text">facturación digital</span>
+              Normativas fiscales y{" "}
+              <span className="gradient-text">cumplimiento SENIAT</span>
             </p>
             <p className="mt-4 text-slate-400 max-w-2xl mx-auto">
-              Artículos, guías y recursos para que entiendas todo sobre imprentas
-              digitales, cumplimiento SENIAT, números de control y cómo la
-              tecnología está revolucionando la facturación en Venezuela.
+              Artículos, guías y recursos sobre la Providencia 102, la Providencia 121,
+              homologación de sistemas, cumplimiento fiscal y todo lo que tu empresa
+              necesita saber para operar dentro de la normativa SENIAT.
             </p>
           </div>
         </AnimateOnScroll>

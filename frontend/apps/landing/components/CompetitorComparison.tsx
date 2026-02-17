@@ -4,35 +4,35 @@ import AnimateOnScroll from "@/components/AnimateOnScroll";
 
 const comparisonCategories = [
   {
-    category: "Tecnologia",
+    category: "Implementación",
     icon: (
       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714a2.25 2.25 0 00.659 1.591L19 14.5M14.25 3.104c.251.023.501.05.75.082M19 14.5l-2.47 2.47a2.25 2.25 0 01-1.59.659H9.06a2.25 2.25 0 01-1.591-.659L5 14.5m14 0V5.846a2.25 2.25 0 00-1.35-2.064 18.67 18.67 0 00-3.4-1.104m-7.5 0A18.672 18.672 0 003.35 3.782 2.25 2.25 0 002 5.846V14.5" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
     ),
     others: {
-      title: "Imprentas tradicionales",
-      desc: "Portales web basicos, formularios manuales, tecnologia obsoleta",
+      title: "Lo convencional",
+      desc: "Proceso de implementación que puede tomar semanas o meses, con múltiples reuniones y configuraciones",
     },
     aida: {
       title: "AIDA",
-      desc: "IA integrada, arquitectura API-first, infraestructura cloud nativa",
+      desc: "Implementación en menos de 48 horas. Autogestión completa sin costo de implementación. Tu empresa opera desde el primer día",
     },
   },
   {
-    category: "Velocidad",
+    category: "Resolución de problemas",
     icon: (
       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11.42 15.17l-5.1-5.1m0 0L12 4.37m-5.68 5.7h11.8M4.26 19.72a9.94 9.94 0 005.74 2.27c5.52 0 10-4.48 10-10" />
       </svg>
     ),
     others: {
-      title: "Imprentas tradicionales",
-      desc: "Minutos u horas por lote, procesamiento secuencial, cuellos de botella constantes",
+      title: "Lo convencional",
+      desc: "Tickets de soporte con tiempos de espera variables, resolución que depende de disponibilidad del equipo",
     },
     aida: {
       title: "AIDA",
-      desc: "Menos de 3 segundos por documento, procesamiento paralelo masivo",
+      desc: "Resolución inmediata con IA 24/7. Detección proactiva de problemas antes de que ocurran. Respuestas instantáneas a cualquier consulta fiscal",
     },
   },
   {
@@ -43,44 +43,44 @@ const comparisonCategories = [
       </svg>
     ),
     others: {
-      title: "Imprentas tradicionales",
-      desc: "Sin API, sin conectores, integracion manual via correo o portal",
+      title: "Lo convencional",
+      desc: "Integraciones limitadas a ciertos ERPs, procesos de conexión que requieren desarrollo a medida",
     },
     aida: {
       title: "AIDA",
-      desc: "SAP, Odoo, WooCommerce, API REST documentada, webhooks en tiempo real",
+      desc: "Más de 100 ERPs compatibles, API REST documentada, webhooks en tiempo real, y nos adaptamos a cualquier sistema que uses",
     },
   },
   {
-    category: "Automatizacion",
+    category: "Inteligencia Artificial",
     icon: (
       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.5 12a7.5 7.5 0 0015 0m-15 0a7.5 7.5 0 1115 0m-15 0H3m16.5 0H21m-1.5 0H12m-8.457 3.077l1.41-.513m14.095-5.13l1.41-.513M5.106 17.785l1.15-.964m11.49-9.642l1.149-.964M7.501 19.795l.75-1.3m7.5-12.99l.75-1.3m-6.063 16.658l.26-1.477m2.605-14.772l.26-1.477m0 17.726l-.26-1.477M10.698 4.614l-.26-1.477M16.5 19.794l-.75-1.299M7.5 4.205L12 12m0 0l4.5 7.795" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
       </svg>
     ),
     others: {
-      title: "Imprentas tradicionales",
-      desc: "Proceso manual, intervencion humana constante, revision documento por documento",
+      title: "Lo convencional",
+      desc: "Validaciones basicas y emisión de documentos estándar sin asistencia inteligente",
     },
     aida: {
       title: "AIDA",
-      desc: "Deteccion de anomalias, validacion automatica, cero intervencion humana",
+      desc: "IA entrenada en normativa fiscal venezolana: detecta anomalías, valida campos, sugiere correcciones y responde consultas fiscales 24/7",
     },
   },
   {
-    category: "Soporte",
+    category: "Autogestión",
     icon: (
       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
       </svg>
     ),
     others: {
-      title: "Imprentas tradicionales",
-      desc: "Horario de oficina limitado, tickets con esperas de dias, sin respuestas inmediatas",
+      title: "Lo convencional",
+      desc: "Dependencia del proveedor para configuraciones, cambios y ajustes en la plataforma",
     },
     aida: {
       title: "AIDA",
-      desc: "IA disponible 24/7, respuestas instantaneas, resolucion autonoma de consultas",
+      desc: "Autogestión total: configura plantillas, usuarios, integraciones y emite documentos sin depender de nadie. Tú controlas todo",
     },
   },
   {
@@ -91,12 +91,12 @@ const comparisonCategories = [
       </svg>
     ),
     others: {
-      title: "Imprentas tradicionales",
-      desc: "Servidores locales, limites de capacidad, caidas en picos de demanda",
+      title: "Lo convencional",
+      desc: "Escalado que requiere negociaciones, contratos adicionales y tiempos de espera",
     },
     aida: {
       title: "AIDA",
-      desc: "Cloud nativo, escala automatica, sin limites de volumen, disponibilidad 99.9%",
+      desc: "Cloud nativo, escala automática según tu demanda. Sin límites de volumen, disponibilidad 99.9%. Cuando tu negocio crece, AIDA crece contigo",
     },
   },
 ];
@@ -138,8 +138,8 @@ const pillars = [
     label: "API-First",
     title: "Infraestructura fiscal como servicio",
     description:
-      "AIDA no es un formulario web con un PDF al final. Es infraestructura fiscal como servicio. API REST completamente documentada con ejemplos en cURL, Python y JavaScript. API Keys, rate limiting, webhooks, callbacks y procesamiento batch de hasta 50,000 documentos por request. Tu sistema ERP, tu e-commerce o tu aplicacion personalizada se conectan con AIDA en horas, no en semanas. Las soluciones convencionales no ofrecen API publica documentada.",
-    highlight: "Integracion en horas, no en semanas",
+      "AIDA es infraestructura fiscal como servicio. API REST completamente documentada con ejemplos en cURL, Python y JavaScript. API Keys, rate limiting, webhooks, callbacks y procesamiento batch de hasta 50,000 documentos por request. Compatible con más de 100 ERPs del mercado, y si el tuyo no está en la lista, nos adaptamos. Tu sistema se conecta con AIDA en horas, no en semanas.",
+    highlight: "Más de 100 ERPs compatibles",
     gradient: "from-aida-cyan/20 to-blue-500/20",
     border: "border-aida-cyan/20",
   },
@@ -150,10 +150,10 @@ const pillars = [
       </svg>
     ),
     label: "Velocidad",
-    title: "Menos de 3 segundos por documento",
+    title: "Implementación en 48 horas",
     description:
-      "Mientras las imprentas tradicionales toman minutos u horas para procesar lotes de documentos, AIDA emite cualquier documento fiscal en menos de 3 segundos. Procesamiento batch paralelo para volumenes masivos. Cloud nativo que escala automaticamente segun la demanda: sin servidores locales, sin licencias, sin mantenimiento. Disponibilidad garantizada del 99.9%. Cuando tu negocio crece, AIDA crece contigo sin intervenciones manuales.",
-    highlight: "99.9% de disponibilidad garantizada",
+      "Nuestra mayor ventaja: velocidad de implementación. Mientras otros procesos de alta pueden tomar semanas, con AIDA tu empresa emite documentos fiscales en menos de 48 horas. Autogestión completa, sin costo de implementación. Cloud nativo que escala automáticamente según la demanda: sin servidores locales, sin licencias, sin mantenimiento. Cuando tu negocio crece, AIDA crece contigo.",
+    highlight: "48 horas de implementación",
     gradient: "from-amber-500/20 to-orange-500/20",
     border: "border-amber-500/20",
   },
@@ -163,11 +163,11 @@ const pillars = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
     ),
-    label: "Ahorro",
-    title: "Hasta 95% mas economico",
+    label: "Resolución",
+    title: "Resolución inmediata de problemas",
     description:
-      "Con paquetes desde $0.006 por numero de control en volumen corporativo, AIDA es significativamente mas economica que cualquier otra plataforma en el mercado. Precios publicados y transparentes desde el primer dia. Sin costos ocultos de implementacion, sin cobros por soporte, sin licencias adicionales. Una empresa que emite 20,000 documentos al mes puede ahorrar mas de $6,700 mensuales comparado con las soluciones convencionales.",
-    highlight: "Ahorro de hasta $6,700/mes",
+      "Cuando tienes un problema fiscal, no puedes esperar. AIDA ofrece resolución inmediata a través de una IA entrenada en normativa venezolana que está disponible 24/7. Detección proactiva de anomalías, alertas inteligentes y un equipo de soporte que responde de forma inmediata. Sin tickets, sin esperas, sin incertidumbre. Tu operación fiscal nunca se detiene.",
+    highlight: "Soporte inmediato 24/7",
     gradient: "from-green-500/20 to-emerald-500/20",
     border: "border-green-500/20",
   },
@@ -181,15 +181,15 @@ export default function CompetitorComparison() {
         <AnimateOnScroll animation="fade-in">
           <div className="text-center mb-20">
             <h2 className="text-sm font-semibold uppercase tracking-wider text-aida-cyan">
-              AIDA vs Imprentas Tradicionales
+              ¿Por qué AIDA?
             </h2>
             <p className="mt-3 text-3xl sm:text-4xl lg:text-5xl font-bold">
               La unica imprenta digital en Venezuela{" "}
               <span className="gradient-text">gestionada por IA</span>
             </p>
             <p className="mt-5 text-slate-400 max-w-2xl mx-auto text-base sm:text-lg leading-relaxed">
-              Comparamos lo que ofrecen las plataformas convencionales con lo que
-              AIDA hace posible. Sin marketing vacio, solo hechos verificables.
+              Velocidad de implementación, resolución inmediata de problemas y
+              autogestión total. Estas son nuestras verdaderas ventajas.
             </p>
           </div>
         </AnimateOnScroll>
@@ -198,11 +198,11 @@ export default function CompetitorComparison() {
         <div className="mb-24">
           <AnimateOnScroll animation="fade-in">
             <h3 className="text-center text-xl sm:text-2xl font-bold text-white mb-4">
-              Lo que ofrecen las demas vs lo que ofrece{" "}
+              Lo convencional vs lo que ofrece{" "}
               <span className="gradient-text">AIDA</span>
             </h3>
             <p className="text-center text-sm text-slate-500 mb-12 max-w-xl mx-auto">
-              Seis categorias clave donde la diferencia es absoluta
+              Seis áreas clave donde AIDA marca la diferencia
             </p>
           </AnimateOnScroll>
 
@@ -419,11 +419,11 @@ export default function CompetitorComparison() {
           <div className="text-center">
             <div className="glass-card glow-blue inline-block p-8 sm:p-10">
               <p className="text-lg sm:text-xl font-bold text-white mb-2">
-                La diferencia no es de grado, es de categoria
+                Velocidad, resolución y autogestión
               </p>
               <p className="text-sm text-slate-400 max-w-md mx-auto mb-6">
-                AIDA no es una mejora incremental. Es un cambio completo en como
-                funciona la impresion fiscal digital en Venezuela.
+                Implementación en 48 horas, resolución inmediata de problemas y
+                una plataforma que tú controlas. Así funciona AIDA.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <a

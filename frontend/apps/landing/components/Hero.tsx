@@ -7,10 +7,10 @@ export default function Hero() {
   const stats = [
     {
       target: 3,
-      prefix: "< ",
-      suffix: "s",
+      prefix: "",
+      suffix: " seg",
       decimals: 0,
-      label: "Emisión de documento",
+      label: "Emisión por documento",
       icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -30,11 +30,11 @@ export default function Hero() {
       ),
     },
     {
-      target: 6,
-      prefix: "",
-      suffix: "+",
+      target: 100,
+      prefix: "+",
+      suffix: "",
       decimals: 0,
-      label: "Integraciones ERP",
+      label: "ERPs compatibles",
       icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
@@ -95,9 +95,10 @@ export default function Hero() {
         {/* === SUBTITULO === */}
         <AnimateOnScroll animation="slide-up" delay={250} duration={900}>
           <p className="mt-8 text-lg sm:text-xl md:text-2xl text-slate-400 max-w-3xl mx-auto leading-relaxed">
-            Emite facturas, notas de crédito, guías de despacho y retenciones en{" "}
+            Emite facturas, notas de crédito, notas de débito, guías de despacho y comprobantes de retención de IVA e ISLR en{" "}
             <span className="text-white font-semibold">segundos</span>. Cumplimiento SENIAT
-            automático, integración con tu ERP, y una IA que te asiste{" "}
+            automático, integración con{" "}
+            <span className="text-white font-semibold">más de 100 ERPs</span>, y una IA que te asiste{" "}
             <span className="text-aida-cyan font-semibold">24/7</span>.
           </p>
         </AnimateOnScroll>

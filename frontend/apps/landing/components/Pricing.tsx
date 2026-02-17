@@ -9,7 +9,8 @@ const plans = [
       "1 usuario",
       "5 GB almacenamiento",
       "Plantilla Clásica SENIAT",
-      "Portal de cliente",
+      "Portal de autogestión",
+      "Sin costo de implementación",
       "Soporte por email",
     ],
     cta: "Comenzar",
@@ -25,9 +26,10 @@ const plans = [
       "5 usuarios",
       "20 GB almacenamiento",
       "4 plantillas de diseño",
-      "1 integración ERP",
+      "Integración con tu ERP",
       "Asistente IA",
-      "Webhooks",
+      "Sin costo de implementación",
+      "Autogestión completa",
       "Soporte prioritario",
     ],
     cta: "Elegir Profesional",
@@ -46,8 +48,9 @@ const plans = [
       "Integraciones ilimitadas",
       "IA avanzada con analytics",
       "API completa + batch",
-      "Soporte dedicado",
-      "SLA 99.9%",
+      "Sin costo de implementación",
+      "Autogestión completa",
+      "Soporte dedicado + SLA 99.9%",
     ],
     cta: "Contactar Ventas",
     featured: false,
@@ -68,7 +71,8 @@ export default function Pricing() {
             Precios <span className="gradient-text">transparentes</span>
           </p>
           <p className="mt-4 text-slate-400 max-w-xl mx-auto">
-            Sin costos ocultos, sin sorpresas. Paga solo por lo que necesitas.
+            Sin costos ocultos, sin sorpresas, <span className="text-white font-semibold">sin costo de implementación</span>.
+            Tu empresa se autogestiona desde el primer día.
             Todos los planes incluyen actualizaciones y cumplimiento SENIAT.
           </p>
         </div>

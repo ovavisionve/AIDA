@@ -51,7 +51,8 @@ export default function Footer() {
           <div>
             <h4 className="text-sm font-semibold text-white mb-4">Cumplimiento SENIAT</h4>
             <ul className="space-y-2 text-sm text-slate-500">
-              <li>Providencia SNAT/2024/000121</li>
+              <li>Providencia 102 — Facturación Digital</li>
+              <li>Providencia 121 — Homologación de Sistemas</li>
               <li>Imprenta Autorizada SENIAT</li>
               <li>Datos almacenados en Venezuela</li>
               <li>Retención 10 años SENIAT</li>

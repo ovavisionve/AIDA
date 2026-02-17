@@ -1,50 +1,38 @@
-const integrations = [
+const integrationBenefits = [
   {
-    name: "SAP Business One",
-    category: "ERP",
-    desc: "Sincronización bidireccional vía Service Layer OData. Facturas, clientes, productos y números de control sincronizados automáticamente entre SAP y AIDA.",
-    color: "#0070C0",
-    features: ["Service Layer OData", "Sync bidireccional", "Mapeo automático"],
+    icon: (
+      <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+      </svg>
+    ),
+    title: "Más de 100 ERPs compatibles",
+    desc: "Nos integramos con los principales sistemas del mercado: ERPs, plataformas contables, e-commerce y soluciones empresariales. Si tu sistema puede hacer requests HTTP, se conecta con AIDA.",
+    highlight: "+100 sistemas",
   },
   {
-    name: "Odoo",
-    category: "ERP",
-    desc: "Conector nativo XML-RPC / JSON-RPC para Odoo 14+. Emite facturas desde Odoo y AIDA genera el documento fiscal completo con NC, firma y QR.",
-    color: "#714B67",
-    features: ["XML-RPC / JSON-RPC", "Odoo 14+", "Facturación directa"],
+    icon: (
+      <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11.42 15.17l-5.1-5.1m0 0L12 4.37m-5.68 5.7h11.8M4.26 19.72a9.94 9.94 0 005.74 2.27c5.52 0 10-4.48 10-10S15.52 2 10 2 0 6.48 0 12c0 2.38.83 4.56 2.22 6.28" />
+      </svg>
+    ),
+    title: "Nos adaptamos a tu sistema",
+    desc: "¿Tu ERP no está en la lista de los 100+? No importa. Nuestro equipo técnico se adapta a cualquier sistema que utilices. Te acompañamos en todo el proceso de integración para que no tengas que cambiar nada de tu operación actual.",
+    highlight: "Adaptación total",
   },
   {
-    name: "WooCommerce",
-    category: "E-Commerce",
-    desc: "Plugin de integración con webhooks. Cada venta en tu tienda online genera automáticamente la factura fiscal con cumplimiento SENIAT.",
-    color: "#96588A",
-    features: ["REST API + Webhooks", "Auto-facturación", "Catálogo sync"],
-  },
-  {
-    name: "PrestaShop",
-    category: "E-Commerce",
-    desc: "Módulo para PrestaShop 1.7+ via Web Service API. Automatiza la emisión de documentos fiscales para cada orden procesada en tu tienda.",
-    color: "#DF0067",
-    features: ["Web Service API 1.7+", "Módulo nativo", "Orden → Factura"],
-  },
-  {
-    name: "CONTPAQi",
-    category: "Contabilidad",
-    desc: "Integración con CONTPAQi Comercial Premium vía SDK. Sincroniza pólizas, facturas y reportes contables entre ambas plataformas.",
-    color: "#E63946",
-    features: ["SDK Premium", "Pólizas contables", "Sync reportes"],
-  },
-  {
-    name: "API REST Directa",
-    category: "Custom",
-    desc: "API REST completamente documentada con ejemplos en cURL, Python y JavaScript. Para cualquier sistema que no esté en esta lista. Integra en horas.",
-    color: "#3b82f6",
-    features: ["Docs interactivos", "SDKs oficiales", "Sandbox incluido"],
+    icon: (
+      <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+      </svg>
+    ),
+    title: "API REST documentada",
+    desc: "Para equipos técnicos que prefieren integrarse directamente: API REST completamente documentada con ejemplos en cURL, Python y JavaScript. Sandbox de pruebas incluido, SDKs oficiales y soporte técnico dedicado.",
+    highlight: "Docs interactivos",
   },
 ];
 
 const wizardSteps = [
-  { num: "1", label: "Selecciona", desc: "Elige tu sistema de la galería de conectores" },
+  { num: "1", label: "Selecciona", desc: "Elige tu sistema o cuéntanos cuál usas" },
   { num: "2", label: "Configura", desc: "Ingresa credenciales y endpoint del sistema" },
   { num: "3", label: "Mapea", desc: "Asocia campos entre tu sistema y AIDA" },
   { num: "4", label: "Prueba", desc: "Emite un documento de prueba para verificar" },
@@ -63,13 +51,24 @@ export default function Integrations() {
             Integraciones
           </h2>
           <p className="mt-3 text-3xl sm:text-4xl font-bold">
-            Conecta <span className="gradient-text">cualquier sistema</span>
+            Compatible con <span className="gradient-text">más de 100 ERPs</span>
           </p>
           <p className="mt-4 text-slate-400 max-w-2xl mx-auto">
-            No importa qué ERP, e-commerce o sistema contable uses. AIDA se conecta con un wizard
-            guiado de 6 pasos, sin escribir una línea de código. Y si prefieres hacerlo
-            por código, nuestra API REST está completamente documentada.
+            No importa qué ERP, e-commerce o sistema contable uses. AIDA se integra con más de 100 sistemas
+            del mercado. Y si el tuyo no está en la lista, nos adaptamos. Wizard guiado de 6 pasos
+            sin escribir una línea de código, o API REST completamente documentada.
           </p>
+        </div>
+
+        {/* Big number highlight */}
+        <div className="mb-16 text-center">
+          <div className="inline-flex items-center gap-6 glass-card px-10 py-8 glow-blue">
+            <div className="text-6xl sm:text-7xl font-black gradient-text">+100</div>
+            <div className="text-left">
+              <div className="text-lg font-bold text-white">ERPs y sistemas compatibles</div>
+              <div className="text-sm text-slate-400 mt-1">Y si el tuyo no está, nos adaptamos sin problema</div>
+            </div>
+          </div>
         </div>
 
         {/* Wizard visual */}
@@ -95,42 +94,21 @@ export default function Integrations() {
           </div>
         </div>
 
-        {/* Integration cards */}
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {integrations.map((integ) => (
+        {/* Integration benefits cards */}
+        <div className="grid gap-6 lg:grid-cols-3">
+          {integrationBenefits.map((benefit) => (
             <div
-              key={integ.name}
-              className="group glass-card p-6 hover:bg-white/[0.08] hover:border-white/20 transition-all duration-300"
+              key={benefit.title}
+              className="group glass-card p-7 hover:bg-white/[0.08] hover:border-white/20 transition-all duration-300"
             >
-              <div className="flex items-start gap-4 mb-4">
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shrink-0"
-                  style={{ backgroundColor: `${integ.color}20`, color: integ.color }}
-                >
-                  {integ.name.charAt(0)}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-white">{integ.name}</h3>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full border border-white/10 text-slate-500">
-                      {integ.category}
-                    </span>
-                  </div>
-                  <p className="mt-1.5 text-sm text-slate-400 leading-relaxed">{integ.desc}</p>
-                </div>
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-aida-accent/20 to-aida-cyan/20 flex items-center justify-center text-aida-cyan mb-5 group-hover:scale-110 transition-transform">
+                {benefit.icon}
               </div>
-
-              {/* Feature tags */}
-              <div className="flex flex-wrap gap-2 mt-auto pt-4 border-t border-white/5">
-                {integ.features.map((f) => (
-                  <span
-                    key={f}
-                    className="text-[10px] px-2.5 py-1 rounded-full bg-white/5 text-slate-400 border border-white/5"
-                  >
-                    {f}
-                  </span>
-                ))}
-              </div>
+              <span className="inline-flex items-center px-3 py-1 rounded-full bg-aida-cyan/10 border border-aida-cyan/20 text-[10px] text-aida-cyan font-bold uppercase tracking-wider mb-3">
+                {benefit.highlight}
+              </span>
+              <h3 className="text-lg font-bold text-white mb-2">{benefit.title}</h3>
+              <p className="text-sm text-slate-400 leading-relaxed">{benefit.desc}</p>
             </div>
           ))}
         </div>
@@ -140,7 +118,7 @@ export default function Integrations() {
           <div className="grid lg:grid-cols-2 gap-8 items-center">
             <div>
               <h3 className="text-xl font-bold text-white mb-3">
-                ¿Tu sistema no está en la lista?
+                ¿Tienes un equipo técnico?
               </h3>
               <p className="text-slate-400 leading-relaxed mb-4">
                 Nuestra API REST se integra con cualquier sistema que pueda hacer requests HTTP.
@@ -192,7 +170,7 @@ export default function Integrations() {
                 {"\n"}
                 )
                 {"\n\n"}
-                <span className="text-slate-500"># PDF + XML + QR en &lt; 3 segundos</span>
+                <span className="text-slate-500"># PDF + XML + QR en 3 segundos</span>
                 {"\n"}
                 factura = response.json()
               </pre>

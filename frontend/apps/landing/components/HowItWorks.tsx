@@ -17,11 +17,11 @@ const steps = [
   {
     num: "02",
     title: "Conectas tu sistema (o usas el nuestro)",
-    desc: "¿Usas SAP, Odoo, WooCommerce? Nuestro wizard de integración te guía paso a paso sin escribir código. ¿No tienes sistema? Usa nuestro facturador completo directamente desde el navegador.",
+    desc: "Somos compatibles con más de 100 ERPs del mercado, y si el tuyo no está, nos adaptamos. Nuestro wizard de integración te guía paso a paso sin escribir código. ¿No tienes sistema? Usa nuestro facturador completo directamente desde el navegador.",
     color: "from-aida-cyan to-teal-400",
     details: [
       "Wizard guiado de 6 pasos: selección → configuración → mapeo → prueba → activación → monitoreo",
-      "Conectores nativos: SAP Business One, Odoo, WooCommerce, PrestaShop",
+      "Compatible con más de 100 ERPs, e-commerce y sistemas contables",
       "API REST documentada con ejemplos en cURL, Python y JavaScript",
       "Webhooks para notificaciones en tiempo real de cada documento emitido",
       "Portal facturador propio con gestión de productos, clientes y documentos",
@@ -32,10 +32,10 @@ const steps = [
   {
     num: "03",
     title: "Emites documentos fiscales",
-    desc: "Factura, nota de crédito, nota de débito, guía de despacho, retención. Un click en el portal o un request a la API. AIDA genera el PDF profesional, XML UBL 2.1, código QR, firma digital SHA-256 y número de control automáticamente.",
+    desc: "Factura, nota de crédito, nota de débito, guía de despacho, comprobantes de retención IVA e ISLR. Un click en el portal o un request a la API. AIDA genera el PDF profesional, XML UBL 2.1, código QR, firma digital SHA-256 y número de control automáticamente.",
     color: "from-violet-500 to-purple-400",
     details: [
-      "5 tipos de documento: factura, nota de crédito, nota de débito, guía de despacho, retención",
+      "7 tipos de documento: factura, nota de crédito, nota de débito, guía de despacho, retención IVA, retención ISLR y más",
       "Cálculo automático de IVA (16%, 8%, exento) e IGTF (3% en divisas)",
       "Firma digital SHA-256 con hash verificable en portal público",
       "Código QR funcional que enlaza al portal de validación pública",
@@ -169,9 +169,9 @@ export default function HowItWorks() {
             En resumen: <span className="gradient-text">48 horas</span> de tu primer contacto a tu primera factura
           </h3>
           <p className="text-slate-400 max-w-2xl mx-auto mb-6">
-            Mientras que con imprentas tradicionales el proceso de alta, configuración e integración
-            toma semanas o meses, con AIDA tu empresa emite documentos fiscales electrónicos
-            con cumplimiento SENIAT completo en menos de 2 días hábiles.
+            Con AIDA, tu empresa emite documentos fiscales electrónicos con cumplimiento SENIAT
+            completo en menos de 2 días hábiles. Sin costo de implementación, autogestión total
+            y resolución inmediata de cualquier problema.
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-2xl mx-auto">
             {[

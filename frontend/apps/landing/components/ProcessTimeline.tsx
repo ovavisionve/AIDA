@@ -10,7 +10,7 @@ const steps = [
       "Analizamos tu situación fiscal actual: volumen mensual de documentos, tipos de documento que emites (facturas, notas de crédito, guías de despacho), sistemas ERP o contables que usas, y tus necesidades específicas. La IA evalúa tu operación y diseña un plan de migración personalizado con estimación de ahorro real.",
     points: [
       "Análisis de volumen: ¿cuántos documentos emites al mes?",
-      "Evaluación técnica de tus sistemas actuales (SAP, Odoo, WooCommerce, Excel...)",
+      "Evaluación técnica de tus sistemas actuales (compatible con más de 100 ERPs)",
       "Plan de migración personalizado sin interrupciones operativas",
       "Estimación de ahorro proyectado basado en tus datos reales",
     ],
@@ -36,7 +36,7 @@ const steps = [
       "Conectamos AIDA con tu sistema mediante un wizard de 6 pasos: selección del conector, configuración de credenciales, mapeo de campos, prueba de emisión, activación en producción y monitoreo. Si no tienes sistema, activas nuestro portal facturador completo directamente desde el navegador.",
     points: [
       "Wizard de 6 pasos: selección → configuración → mapeo → prueba → activación → monitoreo",
-      "Conectores nativos: SAP Business One, Odoo, WooCommerce, PrestaShop, CONTPAQi",
+      "Compatible con más de 100 ERPs, y nos adaptamos al tuyo si no está en la lista",
       "API REST documentada con ejemplos en cURL, Python y JavaScript",
       "Portal facturador propio incluido (para empresas sin sistema)",
     ],
