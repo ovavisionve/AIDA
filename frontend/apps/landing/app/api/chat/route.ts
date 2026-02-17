@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const GROQ_MODEL = "llama-3.3-70b-versatile";
+const GROQ_API_KEY = process.env.GROQ_API_KEY || process.env.AI_API_KEY;
+const GROQ_MODEL = process.env.AI_MODEL || "llama-3.3-70b-versatile";
 
 const SYSTEM_PROMPT = `Eres AIDA, la asistente de inteligencia artificial de AIDA Imprenta Digital — la primera imprenta digital en Venezuela potenciada por IA.
 
@@ -26,7 +26,7 @@ SERVICIOS:
 FUNCIONALIDADES CLAVE:
 - Emisión en menos de 3 segundos por documento
 - IA entrenada en normativa fiscal venezolana (no es un chatbot genérico)
-- Integración con 100+ ERPs (SAP, Odoo, WooCommerce, etc.)
+- Integración con 100+ ERPs (Profit Plus, Galac, Saint, Valery, SAP, Odoo, Softland, Omninexo, CONTPAQi, QuickBooks, WooCommerce, Shopify, PrestaShop, MicroTech, NovaCaja, Hybrid LiteOS, Fina, Mónica, World Office, Innova Soft Pro, y más)
 - API REST completa con webhooks y procesamiento batch (hasta 50,000 docs)
 - 4 plantillas PDF (Clásica SENIAT, Moderna, Corporativa, Compacta)
 - Dashboard en tiempo real con analíticas
@@ -71,7 +71,7 @@ COMPETENCIA:
 - Implementación en 48 horas vs semanas con competidores
 - $0 costos de implementación
 - IA real vs soporte genérico
-- 100+ ERPs vs integraciones limitadas
+- 100+ ERPs (Profit Plus, Galac, Saint, Valery, SAP, Odoo, etc.) vs integraciones limitadas
 - Autogestión total vs dependencia de proveedor
 
 REGLAS:
@@ -89,15 +89,35 @@ interface ChatMessage {
   content: string;
 }
 
+// Fallback responses when no API key is configured (local dev / demo mode)
+function getOfflineReply(userMessage: string): string {
+  const msg = userMessage.toLowerCase();
+
+  if (msg.includes("precio") || msg.includes("plan") || msg.includes("costo") || msg.includes("cuánto")) {
+    return "**Nuestros planes:**\n\n1. **Básico** — $29/mes: 100 docs/mes, 1 usuario, soporte email\n2. **Profesional** — $79/mes: 500 docs/mes, 5 usuarios, integración ERP, IA asistente\n3. **Empresarial** — $149/mes: Documentos ilimitados, 99 usuarios, API batch, SLA 99.9%\n4. **Corporativo** — $299/mes: Volumen personalizado, usuarios ilimitados, gerente dedicado\n\nTodos incluyen cumplimiento SENIAT automático. ¿Te interesa alguno en particular?";
+  }
+
+  if (msg.includes("erp") || msg.includes("integr") || msg.includes("sap") || msg.includes("odoo") || msg.includes("profit") || msg.includes("galac") || msg.includes("saint") || msg.includes("valery")) {
+    return "AIDA se integra con **más de 100 ERPs**, incluyendo los más usados en Venezuela:\n\n- **Profit Plus**, **Galac**, **Saint**, **Valery** (los top venezolanos)\n- **SAP Business One**, **Odoo**, **Softland** (ERPs internacionales)\n- **WooCommerce**, **Shopify**, **PrestaShop** (e-commerce)\n- **QuickBooks**, **CONTPAQi**, **World Office** (contabilidad)\n\nNuestro wizard de **6 pasos** te permite conectar tu sistema sin escribir código. Si tu ERP no está en la lista, nos adaptamos. También tenemos **API REST documentada** para equipos técnicos.\n\n¿Quieres saber más sobre la integración con algún sistema en específico?";
+  }
+
+  if (msg.includes("seniat") || msg.includes("providencia") || msg.includes("cumpli") || msg.includes("fiscal") || msg.includes("homolog")) {
+    return "AIDA garantiza **100% cumplimiento SENIAT**:\n\n- **Providencia 102** (SNAT/2024/000102): Facturación digital obligatoria\n- **Providencia 121** (SNAT/2024/000121): Homologación de sistemas\n- Asignación **atómica** de números de control\n- Firma digital **SHA-256**\n- Código **QR** de verificación pública\n- Retención de datos por **10 años**\n- Trazabilidad completa (IP, timestamp, usuario)\n\nCada documento emitido cumple con todas las exigencias del SENIAT. ¿Tienes alguna duda específica sobre normativa?";
+  }
+
+  if (msg.includes("retención") || msg.includes("retencion") || msg.includes("iva") || msg.includes("islr")) {
+    return "AIDA maneja **retenciones automáticas**:\n\n**Retención IVA:**\n- 75% para contribuyentes ordinarios\n- 100% para contribuyentes especiales\n- Comprobante generado automáticamente\n\n**Retención ISLR:**\n- Tablas actualizadas por actividad económica\n- Cálculo automático según el tipo de servicio\n\n**Impuestos soportados:**\n- IVA 16% (general), 8% (reducido), 0% (exento)\n- IGTF 3% en transacciones en divisas\n\nTodo se calcula y se genera automáticamente. ¿Necesitas más detalle?";
+  }
+
+  if (msg.includes("hola") || msg.includes("buenos") || msg.includes("saludos") || msg.includes("hey")) {
+    return "¡Hola! Bienvenido a **AIDA**. Soy tu asistente de facturación electrónica. ¿En qué puedo ayudarte?\n\nPuedo orientarte sobre:\n- **Planes y precios**\n- **Integración** con tu ERP\n- **Cumplimiento SENIAT**\n- **Retenciones** IVA e ISLR\n- Cualquier duda sobre nuestros servicios";
+  }
+
+  return "¡Gracias por tu pregunta! AIDA es la **primera imprenta digital de Venezuela con IA**. Emitimos facturas, notas de crédito, guías de despacho y retenciones en **menos de 3 segundos** con cumplimiento SENIAT automático.\n\nPara darte una respuesta más completa, te invito a:\n- Escribir a **contacto@aida.com.ve**\n- Solicitar una **demo gratuita** en el formulario de abajo\n\n¿Hay algo específico sobre planes, integraciones o normativa SENIAT en lo que pueda orientarte?";
+}
+
 export async function POST(req: NextRequest) {
   try {
-    if (!GROQ_API_KEY) {
-      return NextResponse.json(
-        { error: "El servicio de IA no está configurado. Contacta al administrador." },
-        { status: 503 }
-      );
-    }
-
     const { messages } = (await req.json()) as { messages: ChatMessage[] };
 
     if (!messages || !Array.isArray(messages)) {
@@ -105,6 +125,13 @@ export async function POST(req: NextRequest) {
         { error: "Messages array is required" },
         { status: 400 }
       );
+    }
+
+    // Offline / demo mode — respond with built-in knowledge when no API key
+    if (!GROQ_API_KEY) {
+      const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
+      const reply = getOfflineReply(lastUserMsg?.content || "");
+      return NextResponse.json({ reply });
     }
 
     const groqMessages: ChatMessage[] = [

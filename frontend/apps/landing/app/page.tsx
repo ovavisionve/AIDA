@@ -1,5 +1,6 @@
 import Hero from "@/components/Hero";
 import Features from "@/components/Features";
+import Integrations from "@/components/Integrations";
 import ExploraAida from "@/components/ExploraAida";
 import ProcessTimeline from "@/components/ProcessTimeline";
 import Blog from "@/components/Blog";
@@ -16,6 +17,7 @@ export default function Home() {
     <>
       <Hero />
       <Features />
+      <Integrations />
 
       {/* Quick links to sub-pages */}
       <ExploraAida />

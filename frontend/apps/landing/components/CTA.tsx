@@ -48,14 +48,35 @@ export default function CTA() {
               className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-slate-400 focus:outline-none focus:border-aida-accent/50 transition-all text-sm appearance-none"
             >
               <option value="">¿Qué sistema usas actualmente?</option>
-              <option value="sap">SAP Business One</option>
-              <option value="odoo">Odoo</option>
-              <option value="woocommerce">WooCommerce</option>
-              <option value="prestashop">PrestaShop</option>
-              <option value="contpaqi">CONTPAQi</option>
-              <option value="excel">Excel / Manual</option>
-              <option value="otro">Otro</option>
-              <option value="ninguno">No tengo sistema</option>
+              <optgroup label="Sistemas venezolanos">
+                <option value="profit">Profit Plus</option>
+                <option value="galac">Galac</option>
+                <option value="saint">Saint</option>
+                <option value="valery">Valery</option>
+                <option value="omninexo">Omninexo</option>
+                <option value="microtech">MicroTech</option>
+                <option value="novacaja">NovaCaja</option>
+                <option value="fina">Fina</option>
+                <option value="hybrid">Hybrid LiteOS</option>
+              </optgroup>
+              <optgroup label="ERPs internacionales">
+                <option value="sap">SAP Business One</option>
+                <option value="odoo">Odoo</option>
+                <option value="softland">Softland</option>
+                <option value="quickbooks">QuickBooks</option>
+                <option value="contpaqi">CONTPAQi</option>
+                <option value="worldoffice">World Office</option>
+              </optgroup>
+              <optgroup label="E-Commerce">
+                <option value="woocommerce">WooCommerce</option>
+                <option value="prestashop">PrestaShop</option>
+                <option value="shopify">Shopify</option>
+              </optgroup>
+              <optgroup label="Otros">
+                <option value="excel">Excel / Manual</option>
+                <option value="otro">Otro sistema</option>
+                <option value="ninguno">No tengo sistema</option>
+              </optgroup>
             </select>
             <button
               type="submit"
