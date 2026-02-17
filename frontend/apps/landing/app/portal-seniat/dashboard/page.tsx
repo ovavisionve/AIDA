@@ -3,13 +3,17 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-/* ── Mock data: empresas registradas en AIDA ── */
+/* ── Mock data: clientes con FACTURACIÓN DIGITAL (Imprenta Digital) ──
+   IMPORTANTE: Solo aparecen aquí los clientes que adquirieron el servicio
+   de Imprenta Digital (números de control SENIAT). Los clientes que solo
+   tienen el Facturador sin Imprenta Digital NO se muestran en este portal.
+   ──────────────────────────────────────────────────────────────────────── */
 const mockEmpresas = [
   {
     rif: "J-12345678-9",
     nombre: "Distribuidora Oriental C.A.",
     estado: "Carabobo",
-    plan: "Empresarial",
+    plan: "Completo Empresarial",
     status: "cumple",
     docsEmitidos: 4823,
     ultimaEmision: "2026-02-17",
@@ -21,7 +25,7 @@ const mockEmpresas = [
     rif: "J-40987654-3",
     nombre: "Inversiones Maracay 2020 C.A.",
     estado: "Aragua",
-    plan: "Profesional",
+    plan: "Completo Profesional",
     status: "cumple",
     docsEmitidos: 1247,
     ultimaEmision: "2026-02-16",
@@ -33,7 +37,7 @@ const mockEmpresas = [
     rif: "J-30112233-0",
     nombre: "Tecnología y Redes del Centro C.A.",
     estado: "Distrito Capital",
-    plan: "Profesional",
+    plan: "Completo Profesional",
     status: "revision",
     docsEmitidos: 892,
     ultimaEmision: "2026-02-15",
@@ -45,7 +49,7 @@ const mockEmpresas = [
     rif: "J-50234567-1",
     nombre: "Agropecuaria Los Llanos S.A.",
     estado: "Barinas",
-    plan: "Básico",
+    plan: "Completo Básico",
     status: "cumple",
     docsEmitidos: 341,
     ultimaEmision: "2026-02-17",
@@ -57,7 +61,7 @@ const mockEmpresas = [
     rif: "V-18765432-5",
     nombre: "Carlos Mendoza (Persona Natural)",
     estado: "Zulia",
-    plan: "Básico",
+    plan: "Completo Básico",
     status: "alerta",
     docsEmitidos: 56,
     ultimaEmision: "2026-01-28",
@@ -69,7 +73,7 @@ const mockEmpresas = [
     rif: "J-29876543-7",
     nombre: "Importadora del Caribe C.A.",
     estado: "Nueva Esparta",
-    plan: "Empresarial",
+    plan: "Completo Empresarial",
     status: "cumple",
     docsEmitidos: 7891,
     ultimaEmision: "2026-02-17",
@@ -81,7 +85,7 @@ const mockEmpresas = [
     rif: "J-41567890-2",
     nombre: "Servicios Industriales del Sur C.A.",
     estado: "Bolívar",
-    plan: "Profesional",
+    plan: "Completo Profesional",
     status: "cumple",
     docsEmitidos: 2134,
     ultimaEmision: "2026-02-16",
@@ -93,7 +97,7 @@ const mockEmpresas = [
     rif: "G-20000001-0",
     nombre: "Alcaldía del Municipio Libertador",
     estado: "Distrito Capital",
-    plan: "Empresarial",
+    plan: "Completo Empresarial",
     status: "cumple",
     docsEmitidos: 12340,
     ultimaEmision: "2026-02-17",
@@ -196,9 +200,10 @@ export default function DashboardPage() {
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold">Panel de Auditoría</h1>
+        <h1 className="text-2xl font-bold">Panel de Auditoría — Facturación Digital</h1>
         <p className="text-sm text-gray-400 mt-1">
-          Supervisión en tiempo real de contribuyentes y documentos fiscales emitidos a través de AIDA
+          Supervisión en tiempo real de contribuyentes con <span className="text-aida-cyan font-medium">Facturación Digital</span> (Imprenta Digital AIDA).
+          Solo se muestran los clientes que adquirieron el servicio de números de control fiscal.
         </p>
       </div>
 
@@ -253,9 +258,9 @@ export default function DashboardPage() {
       {/* Empresas table */}
       <div className="glass-card overflow-hidden">
         <div className="p-5 border-b border-white/5">
-          <h2 className="text-sm font-bold text-white">Contribuyentes Registrados</h2>
+          <h2 className="text-sm font-bold text-white">Contribuyentes con Facturación Digital</h2>
           <p className="text-xs text-gray-500 mt-0.5">
-            Empresas que emiten documentos fiscales a través de AIDA Imprenta Digital
+            Solo empresas con servicio de Imprenta Digital (números de control SENIAT). Los clientes con solo Facturador no aparecen aquí.
           </p>
         </div>
 

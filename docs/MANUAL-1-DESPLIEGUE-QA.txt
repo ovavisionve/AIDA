@@ -409,7 +409,7 @@ PASO 6.1.4: Desplegar
   4. Si sale check verde y "Congratulations!":
      - Click "Continue to Dashboard"
      - En el dashboard veras la URL del portal, algo como:
-       https://aida-admin-qa.vercel.app
+       https://aida-admin-7pf4e95dn-ova1.vercel.app
      - Click en esa URL para abrirla
      - Debes ver la pantalla de LOGIN del Portal Admin
        (fondo oscuro con formulario de email y password)
@@ -488,7 +488,7 @@ ANOTA LA URL.
 ────────────────────────────────────────────────────────────────────────
 
 A este punto debes tener 6 URLs anotadas, una por portal. Ejemplo:
-  https://aida-admin-qa.vercel.app
+  https://aida-admin-7pf4e95dn-ova1.vercel.app
   https://aida-facturador-qa.vercel.app
   https://aida-cliente-qa.vercel.app
   https://aida-validacion-qa.vercel.app
@@ -509,7 +509,7 @@ PASO 7.1: Actualizar ALLOWED_ORIGINS en Railway
   3. Click en el valor para editarlo
   4. Borra el valor actual y pega esto (TODO EN UNA SOLA LINEA):
 
-["https://aida-admin-qa.vercel.app","https://aida-facturador-qa.vercel.app","https://aida-cliente-qa.vercel.app","https://aida-validacion-qa.vercel.app","https://aida-developers-qa.vercel.app","https://aida-gestion-qa.vercel.app"]
+["https://aida-admin-7pf4e95dn-ova1.vercel.app","https://aida-cliente-qa.vercel.app","https://aida-facturador-qa.vercel.app","https://aida-validacion-qa.vercel.app","https://aida-developers-qa.vercel.app","https://aida-gestion-qa.vercel.app"]
 
   5. IMPORTANTE: Reemplaza cada URL con TUS URLs reales de Vercel
      (las que anotaste en el paso 6)
@@ -523,7 +523,7 @@ PASO 7.1: Actualizar ALLOWED_ORIGINS en Railway
   8. Railway redespliegará automaticamente (espera 2-3 minutos)
 
 PASO 7.2: Verificar que CORS funciona
-  1. Abre la URL de tu Portal Admin (ej: https://aida-admin-qa.vercel.app)
+  1. Abre la URL de tu Portal Admin (ej: https://aida-admin-7pf4e95dn-ova1.vercel.app)
   2. Presiona F12 para abrir DevTools del navegador
   3. Click en la pestana "Console"
   4. Intenta hacer login (email: cualquiera, password: cualquiera)
@@ -615,7 +615,7 @@ PASO 8.5: Ejecutar el seed (crear roles, permisos y datos iniciales)
 
 Ahora que tienes usuario admin, verifica cada portal:
 
-PORTAL ADMIN (https://aida-admin-qa.vercel.app):
+PORTAL ADMIN (https://aida-admin-7pf4e95dn-ova1.vercel.app):
   [ ] Abre la URL
   [ ] Escribe email: admin@aida.com.ve
   [ ] Escribe password: Admin2024!Secure

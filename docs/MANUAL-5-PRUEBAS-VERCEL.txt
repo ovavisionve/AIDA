@@ -129,21 +129,25 @@ PASO 2.6: Detener el backend local
 
 Reemplaza TU_URL_BACKEND con tu URL real de Railway.
 
-  Servicio                    URL
+  Servicio                    URL REAL (VERCEL QA)
   ────────────────────────    ─────────────────────────────────────────
   Backend API                 https://TU_URL_BACKEND
   Swagger / Docs API          https://TU_URL_BACKEND/api/docs
   Health Check                https://TU_URL_BACKEND/health
 
-  Portal Admin                https://aida-admin-qa.vercel.app
+  Portal Admin                https://aida-admin-7pf4e95dn-ova1.vercel.app
   Portal Cliente              https://aida-cliente-qa.vercel.app
   Portal Facturador           https://aida-facturador-qa.vercel.app
   Portal Validacion           https://aida-validacion-qa.vercel.app
   Portal Developers           https://aida-developers-qa.vercel.app
   Portal Gestion              https://aida-gestion-qa.vercel.app
 
-  NOTA: Tus URLs de Vercel pueden variar. Usa las que obtuviste
-  al desplegar cada portal en el Manual 1 (paso 6).
+  Landing Page                http://localhost:3100 (local)
+                              (Desplegar en Vercel como aida-landing-qa)
+  Portal SENIAT (auditoria)   http://localhost:3100/portal-seniat (local)
+                              (Parte de la landing page)
+
+  NOTA: Estas son las URLs reales desplegadas en QA.
 
 
 ================================================================================
@@ -158,13 +162,13 @@ No necesitas ninguna terminal abierta.
 4A. PRUEBAS COMO SUPER ADMIN (Portal Admin)
 ────────────────────────────────────────────────────────────────────────────────
 
-URL: https://aida-admin-qa.vercel.app
+URL: https://aida-admin-7pf4e95dn-ova1.vercel.app
 Credenciales:
   Email:    admin@aida.com.ve
   Password: Admin2024!
 
 PRUEBA 4A.1 — Login del Admin
-  1. Abrir https://aida-admin-qa.vercel.app
+  1. Abrir https://aida-admin-7pf4e95dn-ova1.vercel.app
   2. Escribir email: admin@aida.com.ve
   3. Escribir password: Admin2024!
   4. Click "Ingresar"
@@ -645,18 +649,22 @@ Guardatelo abierto mientras pruebas:
   └──────────────────────────────────────────────────────────────────────────┘
 
   ┌──────────────────────────────────────────────────────────────────────────┐
-  │ URLs DESPLEGADAS (QA / VERCEL)                                          │
+  │ URLs REALES DESPLEGADAS (QA / VERCEL)                                   │
   ├──────────────────────────────────────────────────────────────────────────┤
   │ Backend API:      https://TU_URL_BACKEND                                │
   │ Swagger Docs:     https://TU_URL_BACKEND/api/docs                       │
   │ Health Check:     https://TU_URL_BACKEND/health                         │
   │                                                                         │
-  │ Portal Admin:     https://aida-admin-qa.vercel.app                      │
+  │ Portal Admin:     https://aida-admin-7pf4e95dn-ova1.vercel.app         │
   │ Portal Cliente:   https://aida-cliente-qa.vercel.app                    │
   │ Portal Facturador:https://aida-facturador-qa.vercel.app                 │
   │ Portal Validacion:https://aida-validacion-qa.vercel.app (publico)       │
   │ Portal Developers:https://aida-developers-qa.vercel.app                 │
   │ Portal Gestion:   https://aida-gestion-qa.vercel.app                    │
+  │                                                                         │
+  │ Landing Page:     (desplegar como aida-landing-qa en Vercel)            │
+  │ Portal SENIAT:    /portal-seniat (dentro de la landing page)            │
+  │   Login demo:     seniat.auditor / auditor2025                          │
   └──────────────────────────────────────────────────────────────────────────┘
 
 

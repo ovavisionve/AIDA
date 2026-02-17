@@ -12,12 +12,13 @@ export default function SavingsCalculator() {
     const currentMonthlyCost = docsPerMonth * costPerDoc;
     const currentAnnualCost = currentMonthlyCost * 12;
 
-    // AIDA cost based on volume tiers
+    // AIDA cost based on volume tiers (plan Completo: Facturador + Imprenta Digital)
     let aidaCostPerDoc: number;
-    if (docsPerMonth <= 500) aidaCostPerDoc = 0.058; // Plan Básico: $29/500
-    else if (docsPerMonth <= 2000) aidaCostPerDoc = 0.04; // Plan Profesional: ~$79/2000
-    else if (docsPerMonth <= 10000) aidaCostPerDoc = 0.015; // Plan Empresarial
-    else aidaCostPerDoc = 0.008; // Plan Corporativo (volumen)
+    if (docsPerMonth <= 100) aidaCostPerDoc = 0.29; // Completo Básico: $29/100
+    else if (docsPerMonth <= 500) aidaCostPerDoc = 0.158; // Completo Profesional: $79/500
+    else if (docsPerMonth <= 2000) aidaCostPerDoc = 0.075; // Completo Empresarial: $149/2000
+    else if (docsPerMonth <= 10000) aidaCostPerDoc = 0.015; // Empresarial alto volumen
+    else aidaCostPerDoc = 0.008; // Corporativo (volumen)
 
     const aidaMonthlyCost = docsPerMonth * aidaCostPerDoc;
     const aidaAnnualCost = aidaMonthlyCost * 12;
@@ -209,9 +210,10 @@ export default function SavingsCalculator() {
                 <div>
                   <div className="text-sm font-semibold text-white">Ejemplo con 20,000 documentos/mes</div>
                   <p className="mt-1 text-xs text-slate-400 leading-relaxed">
-                    Una empresa que emite 20,000 números de control al mes y paga $0.35 por documento
+                    Una empresa que emite 20,000 documentos al mes y paga $0.35 por número de control
                     con una imprenta tradicional gasta <span className="text-red-400 font-semibold">$7,000/mes</span>.
-                    Con AIDA pagaría apenas <span className="text-green-400 font-semibold">$300/mes</span>,
+                    Con el plan <span className="text-white font-semibold">Completo Empresarial</span> de AIDA ($149/mes + volumen)
+                    pagaría apenas <span className="text-green-400 font-semibold">$300/mes</span>,
                     ahorrando <span className="text-aida-cyan font-bold">$6,700 mensuales</span> y <span className="text-aida-cyan font-bold">$80,400 al año</span>.
                   </p>
                 </div>
