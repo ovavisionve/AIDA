@@ -1192,9 +1192,8 @@ function procesarComando(chatId, userId, username, texto) {
 // Continúa en PARTE 2...
 // ============================================
 // ============================================
-// 
-
-BOT CRM SMART - VERSIÓN 3.1 COMPLETA
+//
+// BOT CRM SMART - VERSIÓN 3.1 COMPLETA
 // PARTE 2 DE 2
 // ============================================
 // 
