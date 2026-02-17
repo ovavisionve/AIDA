@@ -30,7 +30,7 @@ class User(Base, UUIDMixin, TimestampMixin):
     theme: Mapped[str] = mapped_column(String(10), default="light", nullable=False)
 
     # Relationships
-    user_roles: Mapped[list["UserRole"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    user_roles: Mapped[list["UserRole"]] = relationship(back_populates="user", cascade="all, delete-orphan", foreign_keys="[UserRole.user_id]")
     sessions: Mapped[list["Session"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     audit_logs: Mapped[list["AuditLog"]] = relationship(back_populates="user")
 
