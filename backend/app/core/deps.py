@@ -38,6 +38,17 @@ async def get_current_user(
         if user.locked_until > datetime.now(timezone.utc):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cuenta bloqueada temporalmente")
 
+    # Resolve client_id from ClientUser association
+    from app.models.clients import ClientUser
+    cu_result = await db.execute(
+        select(ClientUser.client_id)
+        .where(ClientUser.user_id == user.id, ClientUser.is_active == True)
+        .order_by(ClientUser.is_primary.desc())
+        .limit(1)
+    )
+    client_id = cu_result.scalar_one_or_none()
+    user.client_id = client_id  # dynamic attribute for downstream use
+
     return user
 
 
