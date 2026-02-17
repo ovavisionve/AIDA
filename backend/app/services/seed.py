@@ -7,11 +7,25 @@ from sqlalchemy import select
 from app.database import engine, async_session, Base
 from app.core.security import hash_password
 from app.core.permissions import ALL_PERMISSIONS, DEFAULT_ROLES
-from app.models.security import User, Role, Permission, RolePermission, UserRole
+from app.models.security import User, Role, Permission, RolePermission, UserRole, AuditLog
 from app.models.config import SystemSetting
 from app.models.templates import DocumentTemplate
 from app.models.clients import Client, ClientUser, ClientSetting
 from app.models.control_numbers import ControlNumberRange
+
+
+def _audit(session, user_id, action, resource_type, resource_id=None, details=None, client_id=None):
+    """Helper síncrono para registrar auditoría durante el seed."""
+    session.add(AuditLog(
+        user_id=user_id,
+        client_id=client_id,
+        action=action,
+        resource_type=resource_type,
+        resource_id=str(resource_id) if resource_id else None,
+        details=details,
+        ip_address="127.0.0.1",
+        user_agent="AIDA-Seed/1.0",
+    ))
 
 
 async def seed_database():
@@ -56,6 +70,7 @@ async def seed_database():
                         session.add(RolePermission(role_id=role.id, permission_id=perm_map[perm_code].id))
             role_map[role_name] = role
         print(f"  {len(role_map)} roles configurados")
+        await session.flush()
 
         # 3. Create super admin user
         print("Verificando super admin...")
@@ -78,6 +93,7 @@ async def seed_database():
             if "super_admin" in role_map:
                 session.add(UserRole(user_id=admin.id, role_id=role_map["super_admin"].id))
 
+            await session.flush()
             print("  Super admin creado: admin@aida.com.ve / Admin2024!")
         else:
             print("  Super admin ya existe")
@@ -138,6 +154,10 @@ async def seed_database():
         # ── 7. Seed clientes de prueba ────────────────────────────────────────
         print("Creando clientes de prueba...")
         await _seed_test_clients(session, admin, role_map)
+
+        # ── 8. Seed audit logs ──────────────────────────────────────────────
+        print("Verificando logs de auditoría...")
+        await _seed_audit_logs(session, admin)
 
         await session.commit()
         print("Seed completado exitosamente.")
@@ -377,6 +397,63 @@ async def _seed_test_clients(session, admin_user, role_map):
         print(f"    Vendedora: ana.garcia@electrocaribe.com.ve / Electro2025!")
         print(f"    API Key: {api_key_2}")
         print(f"    API Secret: {api_secret_2}")
+
+
+async def _seed_audit_logs(session, admin_user):
+    """Crea registros de auditoría para las acciones del seed (idempotente)."""
+    # Check if seed audit logs already exist
+    result = await session.execute(
+        select(AuditLog).where(AuditLog.user_agent == "AIDA-Seed/1.0").limit(1)
+    )
+    if result.scalar_one_or_none():
+        print("  Logs de auditoría del seed ya existen")
+        return
+
+    count = 0
+
+    # Audit: super admin creation
+    _audit(session, admin_user.id, "create", "user", admin_user.id,
+           details="Super Admin admin@aida.com.ve (seed)")
+    _audit(session, admin_user.id, "assign_role", "user_role", admin_user.id,
+           details="role=super_admin (seed)")
+    count += 2
+
+    # Audit: client & user creation for each test client
+    clients_config = [
+        ("J-31245678-3", "Alimentos Santoni C.A.", [
+            ("carlos.santoni@arrozsantoni.com.ve", "client_admin"),
+            ("maria.rodriguez@arrozsantoni.com.ve", "client_user"),
+        ]),
+        ("J-40987654-1", "Distribuidora Electro Caribe C.A.", [
+            ("luis.perez@electrocaribe.com.ve", "client_admin"),
+            ("ana.garcia@electrocaribe.com.ve", "client_user"),
+        ]),
+    ]
+
+    for rif, razon_social, users in clients_config:
+        result = await session.execute(select(Client).where(Client.rif == rif))
+        client = result.scalar_one_or_none()
+        if not client:
+            continue
+
+        _audit(session, admin_user.id, "create", "client", client.id,
+               details=f"{razon_social} RIF={rif} (seed)")
+        count += 1
+
+        for email, role_name in users:
+            result = await session.execute(select(User).where(User.email == email))
+            user = result.scalar_one_or_none()
+            if not user:
+                continue
+
+            _audit(session, admin_user.id, "create", "user", user.id,
+                   details=f"{email} (seed)", client_id=client.id)
+            _audit(session, admin_user.id, "assign_role", "user_role", user.id,
+                   details=f"role={role_name} (seed)", client_id=client.id)
+            count += 2
+
+    await session.flush()
+    print(f"  {count} registros de auditoría creados")
 
 
 if __name__ == "__main__":
