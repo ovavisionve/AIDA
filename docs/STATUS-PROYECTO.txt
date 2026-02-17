@@ -28,7 +28,7 @@ Estadisticas del codebase:
   - Total:    ~33,000 lineas de codigo
 
 
-2. FASES COMPLETADAS (7 de 10)
+2. FASES COMPLETADAS (8 de 10)
 ================================================================================
 
 FASE 1 — Arquitectura Base y Seguridad               [COMPLETADA] commit a6d53e8
@@ -106,6 +106,17 @@ FASE 10 — SFTP + API Keys + Pagos + Tests            [COMPLETADA]
   OK  API keys persistidas en BD (SHA-256, rate limiting, request tracking)
   OK  Tests automatizados: 44+ tests (fiscal, batch, API keys, pagos)
   OK  Pasarela de pagos (transferencia, pago movil, zelle, stripe, paypal)
+
+FASE 7 — IGTF + Formato SENIAT Real + Plantillas       [COMPLETADA]
+─────────────────────────────────────────────────────────────────────────────────
+  OK  IGTF (3%) integrado en calculadora, schemas, emitter, PDF, XML
+  OK  QR code funcional en PDF (imagen, no texto)
+  OK  Codigo de barras Code128 en pie de pagina del PDF
+  OK  Logo del cliente renderizado en documentos
+  OK  Banner publicitario por tipo de documento
+  OK  UI de seleccion/preview de plantillas (Portal 1 y Portal 2)
+  OK  Endpoint /templates/{id}/preview-pdf para previsualizacion
+  OK  2 tests IGTF nuevos + fix de test existente (20/20 passed)
 
 DOCUMENTACION + LANDING + DESPLIEGUE                  [COMPLETADA]
 ─────────────────────────────────────────────────────────────────────────────────
@@ -193,35 +204,16 @@ Plantillas (1):
 Comparando con los formatos reales SENIAT y requisitos de negocio:
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-5.1 BRECHAS CRITICAS EN PDF/PLANTILLAS (Prioridad ALTA)
+5.1 BRECHAS CRITICAS EN PDF/PLANTILLAS (Prioridad ALTA) — RESUELTAS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-[FALTA] IGTF (Impuesto a las Grandes Transacciones Financieras) 3%
-  - Los formatos reales muestran "Base Imponible IGTF" y "Total IGTF 3%"
-  - Aplica a transacciones en divisas
-  - Falta en: modelo Invoice, calculadora fiscal, PDF, XML
-
-[FALTA] Logo del cliente en documentos PDF
-  - El modelo tiene logo_url pero el PDF no lo renderiza
-  - Necesita: endpoint de upload + renderizado en PDF
-
-[FALTA] Codigo QR funcional en PDF
-  - El QR debe apuntar a la URL de validacion publica
-
-[FALTA] Codigo de barras en pie de pagina
-
-[FALTA] Sistema de multiples plantillas (seleccion visual)
-  - DocumentTemplate ya existe en BD con 4 plantillas
-  - Falta la UI para que el cliente ELIJA y previsualice
-
-[FALTA] Banner publicitario por tipo de documento
-
-[FALTA] Campos adicionales en PDF SENIAT
-  - Datos del Supervisor
-  - Datos de Entrega
-  - Cargo Administrativo
-  - Referencia a Providencia Administrativa
-  - Rango de Numeros de Control en pie
+[OK] IGTF (3%) — Calculadora, schemas, emitter, PDF, XML, tests
+[OK] Logo del cliente — Endpoint upload + renderizado en PDF
+[OK] Codigo QR funcional — Genera imagen QR con URL de validacion publica
+[OK] Codigo de barras Code128 — Numero de control en pie de pagina
+[OK] Sistema de plantillas — 4 plantillas, UI seleccion + preview PDF
+[OK] Banner publicitario — Upload/lista/eliminar por tipo de documento
+[OK] Campos SENIAT — Supervisor, entrega, cargo admin, providencia, rango NC
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 5.2 BRECHAS EN ESTETICA/UI (Prioridad MEDIA)
@@ -267,16 +259,20 @@ OK  4 manuales de documentacion completos
 7. PLAN DE TRABAJO RESTANTE
 ================================================================================
 
-FASE 7 — Plantillas IGTF + Formato SENIAT Real       [PENDIENTE]
+FASE 7 — Plantillas IGTF + Formato SENIAT Real       [COMPLETADA]
 ─────────────────────────────────────────────────────────────────
 Prioridad: CRITICA
-  7.1  Agregar campos IGTF al modelo Invoice y calculadora
-  7.2  Agregar campos faltantes: supervisor, entrega, cargo admin
-  7.3  Reescribir generador PDF con formato SENIAT real completo
-  7.4  QR code + codigo de barras en PDF
-  7.5  Logo del cliente en PDF
-  7.6  Banner publicitario por documento
-  7.7  UI de seleccion/preview de plantillas
+  OK  IGTF (3%) en calculadora fiscal, schemas, y emision de documentos
+  OK  IGTF en XML UBL 2.1 (TaxTotal con esquema IGTF)
+  OK  Campos SENIAT: supervisor, entrega, cargo admin, providencia, rango control
+  OK  QR code funcional en PDF (apunta a URL de validacion publica)
+  OK  Codigo de barras Code128 en pie de PDF (numero de control)
+  OK  Logo del cliente renderizado en PDF (endpoint de upload existente)
+  OK  Banner publicitario por tipo de documento (upload, lista, eliminar)
+  OK  UI de seleccion/preview de plantillas en Portal 2 (Facturador)
+  OK  UI de gestion de plantillas y banners en Portal 1 (Cliente)
+  OK  Endpoint de preview PDF por plantilla (/templates/{id}/preview-pdf)
+  OK  2 tests nuevos de IGTF + fix de test existente (20/20 passed)
 
 FASE 8 — Estetica UI de los 6 Portales               [PENDIENTE]
 ─────────────────────────────────────────────────────────────────
@@ -288,8 +284,7 @@ FASE 9 — Funcionalidades Pendientes de Portales      [PENDIENTE]
 ─────────────────────────────────────────────────────────────────
 Prioridad: MEDIA
   9.1  Portal 2: Seccion "Reportes" (libro ventas, IVA, ISLR)
-  9.2  Portal 1: Gestion de plantillas y banners en dashboard
-  9.3  Portal 4: Sandbox interactivo para API
+  9.2  Portal 4: Sandbox interactivo para API
 
 
 8. ARQUITECTURA DE DATOS

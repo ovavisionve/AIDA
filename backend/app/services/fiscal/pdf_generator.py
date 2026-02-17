@@ -14,6 +14,7 @@ Soporta múltiples plantillas via layout_config (JSON) del modelo DocumentTempla
 import io
 import json
 import os
+import base64
 from datetime import datetime
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
@@ -23,6 +24,56 @@ from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Table, TableStyle, Spacer, HRFlowable, Image,
 )
 from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
+
+# QR code generation
+import qrcode
+from qrcode.image.pil import PilImage
+
+# Barcode generation
+import barcode
+from barcode.writer import ImageWriter
+
+
+# ── QR code y barcode helpers ──────────────────────────────────────────────
+
+def _generate_qr_image(data: str, size_mm: float = 25) -> Image | None:
+    """Genera una imagen QR como objeto Image de ReportLab."""
+    try:
+        qr = qrcode.QRCode(version=1, box_size=8, border=1, error_correction=qrcode.constants.ERROR_CORRECT_M)
+        qr.add_data(data)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        buf.seek(0)
+        return Image(buf, width=size_mm * mm, height=size_mm * mm)
+    except Exception:
+        return None
+
+
+def _generate_barcode_image(data: str, width_mm: float = 80, height_mm: float = 12) -> Image | None:
+    """Genera un código de barras Code128 como objeto Image de ReportLab."""
+    try:
+        code128 = barcode.get_barcode_class("code128")
+        writer = ImageWriter()
+        bar = code128(data, writer=writer)
+        buf = io.BytesIO()
+        bar.write(buf, options={"module_width": 0.3, "module_height": 8, "font_size": 6, "text_distance": 2, "quiet_zone": 2})
+        buf.seek(0)
+        return Image(buf, width=width_mm * mm, height=height_mm * mm)
+    except Exception:
+        return None
+
+
+def _build_qr_url(doc) -> str:
+    """Construye la URL de validación pública para el QR code."""
+    control = _safe(doc, "control_number", "")
+    uuid_doc = _safe(doc, "uuid_seniat", "")
+    # URL de validación pública
+    base_url = "https://validacion.aida.com.ve"
+    if control:
+        return f"{base_url}/verificar?nc={control}&uuid={uuid_doc}"
+    return f"{base_url}/verificar?uuid={uuid_doc}"
 
 
 # ── Defaults para plantilla (si no se provee layout_config) ───────────────
@@ -276,16 +327,8 @@ def generate_invoice_pdf(
         elements.append(Paragraph(f"<b>Observaciones:</b> {obs}", styles["SmallText"]))
         elements.append(Spacer(1, 2 * mm))
 
-    # ── Firma digital / QR ────────────────────────────────────────────
-    firma = _safe(doc, "firma_digital")
-    if firma:
-        elements.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#cccccc")))
-        elements.append(Spacer(1, 2 * mm))
-        elements.append(Paragraph(
-            f"<b>Firma digital:</b> {firma[:60]}...",
-            styles["SmallText"],
-        ))
-        elements.append(Spacer(1, 2 * mm))
+    # ── QR code + Firma digital + Barcode ──────────────────────────────
+    _build_qr_firma_barcode(elements, doc, layout, styles)
 
     # ── Imprenta Digital (Art. 7, numeral 14) ─────────────────────────
     _build_imprenta_footer(elements, doc, layout, styles)
@@ -774,6 +817,54 @@ def _build_igtf_legend(elements, doc, doc_type, styles):
         styles["LegalText"],
     ))
     elements.append(Spacer(1, 2 * mm))
+
+
+def _build_qr_firma_barcode(elements, doc, layout, styles):
+    """QR code de validación, firma digital y código de barras."""
+    hc = colors.HexColor(layout["header_color"])
+    elements.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#cccccc")))
+    elements.append(Spacer(1, 2 * mm))
+
+    # QR code image (apunta a URL de validación pública)
+    qr_url = _build_qr_url(doc)
+    qr_img = _generate_qr_image(qr_url, size_mm=22)
+
+    # Firma digital text
+    firma = _safe(doc, "firma_digital")
+    uuid_doc = _safe(doc, "uuid_seniat")
+
+    firma_lines = []
+    if uuid_doc:
+        firma_lines.append(f"<b>UUID:</b> {uuid_doc}")
+    if firma:
+        firma_lines.append(f"<b>Firma SHA-256:</b> {firma}")
+    firma_lines.append(f"<b>Verificar en:</b> {qr_url}")
+    firma_text = Paragraph("<br/>".join(firma_lines), styles["SmallText"])
+
+    if qr_img:
+        # QR a la izquierda, firma a la derecha
+        qr_firma_table = Table(
+            [[qr_img, firma_text]],
+            colWidths=[28 * mm, None],
+        )
+        qr_firma_table.setStyle(TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("PADDING", (0, 0), (-1, -1), 2),
+        ]))
+        elements.append(qr_firma_table)
+    elif firma:
+        elements.append(firma_text)
+
+    elements.append(Spacer(1, 2 * mm))
+
+    # Barcode (Code128 con número de control)
+    control = _safe(doc, "control_number", "")
+    if control:
+        barcode_img = _generate_barcode_image(control, width_mm=75, height_mm=10)
+        if barcode_img:
+            barcode_img.hAlign = "CENTER"
+            elements.append(barcode_img)
+            elements.append(Spacer(1, 2 * mm))
 
 
 def _build_imprenta_footer(elements, doc, layout, styles):

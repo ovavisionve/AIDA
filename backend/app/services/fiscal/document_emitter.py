@@ -70,8 +70,10 @@ async def emitir_documento(
     # 3. Calcular items
     items_calculados = [calcular_item(item) for item in request.items]
 
-    # 4. Calcular totales
-    totales = calcular_totales(items_calculados)
+    # 4. Calcular totales (con IGTF si pago en divisas)
+    pago_en_divisas = getattr(request, "pago_en_divisas", False) or request.moneda != "VES"
+    porcentaje_igtf = getattr(request, "porcentaje_igtf", 3.00)
+    totales = calcular_totales(items_calculados, pago_en_divisas, porcentaje_igtf)
 
     # 5. Crear el documento en BD para obtener ID
     fecha_emision = request.fecha_emision or datetime.now(timezone.utc)
@@ -315,7 +317,12 @@ async def _crear_factura(
         base_exenta=totales.base_exenta,
         monto_iva_16=totales.monto_iva_16,
         monto_iva_8=totales.monto_iva_8,
+        # IGTF
+        base_imponible_igtf=totales.base_imponible_igtf,
+        porcentaje_igtf=totales.porcentaje_igtf,
+        monto_igtf=totales.monto_igtf,
         total=totales.total,
+        total_con_igtf=totales.total_con_igtf,
         moneda=request.moneda,
         tasa_cambio=request.tasa_cambio,
         forma_pago=request.pagos[0].forma if request.pagos else "efectivo",
@@ -389,6 +396,8 @@ async def _crear_nota_credito(
         subtotal=totales.subtotal - totales.descuento_total,
         monto_iva=totales.total_impuestos,
         total=totales.total,
+        base_imponible_igtf=totales.base_imponible_igtf,
+        monto_igtf=totales.monto_igtf,
         moneda=request.moneda,
         status="emitido",
         created_by_user_id=user_id,
@@ -453,6 +462,8 @@ async def _crear_nota_debito(
         subtotal=totales.subtotal - totales.descuento_total,
         monto_iva=totales.total_impuestos,
         total=totales.total,
+        base_imponible_igtf=totales.base_imponible_igtf,
+        monto_igtf=totales.monto_igtf,
         moneda=request.moneda,
         status="emitido",
         created_by_user_id=user_id,

@@ -8,8 +8,9 @@ import ProductList from "@/components/ProductList";
 import CustomerList from "@/components/CustomerList";
 import DocumentsSection from "@/components/DocumentsSection";
 import ReportsSection from "@/components/ReportsSection";
+import TemplateSelector from "@/components/TemplateSelector";
 
-type Section = "dashboard" | "nueva-factura" | "productos" | "clientes" | "documentos" | "reportes";
+type Section = "dashboard" | "nueva-factura" | "productos" | "clientes" | "documentos" | "reportes" | "plantillas";
 
 export default function Home() {
   const [isAuth, setIsAuth] = useState(false);
@@ -67,6 +68,7 @@ export default function Home() {
   const sectionLabels: Record<Section, string> = {
     dashboard: "Dashboard", "nueva-factura": "Nueva Factura", productos: "Productos",
     clientes: "Clientes", documentos: "Documentos", reportes: "Reportes",
+    plantillas: "Plantillas",
   };
 
   return (
@@ -84,6 +86,7 @@ export default function Home() {
           {section === "clientes" && <CustomerList token={token} />}
           {section === "documentos" && <DocumentsSection token={token} />}
           {section === "reportes" && <ReportsSection token={token} />}
+          {section === "plantillas" && <TemplateSelector token={token} />}
         </div>
       </main>
     </div>

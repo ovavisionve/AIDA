@@ -134,7 +134,30 @@ def generate_document_xml(doc, items, doc_type: str = "factura") -> bytes:
         _add_text(scheme, "cbc:ID", "IVA")
         _add_text(scheme, "cbc:Name", "Impuesto al Valor Agregado")
 
+    # IGTF (Impuesto Grandes Transacciones Financieras)
+    monto_igtf = float(getattr(doc, "monto_igtf", 0) or 0)
+    if monto_igtf > 0:
+        igtf_total = SubElement(root, "cac:TaxTotal")
+        igtf_amt = _add_text(igtf_total, "cbc:TaxAmount", f"{monto_igtf:.2f}")
+        igtf_amt.set("currencyID", moneda)
+
+        igtf_subtax = SubElement(igtf_total, "cac:TaxSubtotal")
+        base_igtf = float(getattr(doc, "base_imponible_igtf", 0) or 0)
+        igtf_base = _add_text(igtf_subtax, "cbc:TaxableAmount", f"{base_igtf:.2f}")
+        igtf_base.set("currencyID", moneda)
+        igtf_tax_amt = _add_text(igtf_subtax, "cbc:TaxAmount", f"{monto_igtf:.2f}")
+        igtf_tax_amt.set("currencyID", moneda)
+        igtf_cat = SubElement(igtf_subtax, "cac:TaxCategory")
+        pct_igtf = float(getattr(doc, "porcentaje_igtf", 3) or 3)
+        _add_text(igtf_cat, "cbc:Percent", f"{pct_igtf:.2f}")
+        igtf_scheme = SubElement(igtf_cat, "cac:TaxScheme")
+        _add_text(igtf_scheme, "cbc:ID", "IGTF")
+        _add_text(igtf_scheme, "cbc:Name", "Impuesto a las Grandes Transacciones Financieras")
+
     # Legal monetary total
+    total_con_igtf = float(getattr(doc, "total_con_igtf", 0) or 0)
+    payable_amount = total_con_igtf if total_con_igtf > 0 else float(getattr(doc, "total", 0) or 0)
+
     monetary = SubElement(root, "cac:LegalMonetaryTotal")
     line_ext = _add_text(monetary, "cbc:LineExtensionAmount", f"{float(getattr(doc, 'subtotal', 0) or 0):.2f}")
     line_ext.set("currencyID", moneda)
@@ -142,7 +165,7 @@ def generate_document_xml(doc, items, doc_type: str = "factura") -> bytes:
     tax_exc.set("currencyID", moneda)
     tax_inc = _add_text(monetary, "cbc:TaxInclusiveAmount", f"{float(getattr(doc, 'total', 0) or 0):.2f}")
     tax_inc.set("currencyID", moneda)
-    payable = _add_text(monetary, "cbc:PayableAmount", f"{float(getattr(doc, 'total', 0) or 0):.2f}")
+    payable = _add_text(monetary, "cbc:PayableAmount", f"{payable_amount:.2f}")
     payable.set("currencyID", moneda)
 
     # Invoice lines

@@ -108,6 +108,10 @@ class EmitirDocumentoRequest(BaseModel):
     ruta_destino: str | None = None
     motivo_traslado: str | None = None
 
+    # IGTF (3% sobre pagos en divisas/cripto)
+    pago_en_divisas: bool = Field(False, description="True si el pago es total o parcial en divisas o criptoactivos (aplica IGTF 3%)")
+    porcentaje_igtf: float = Field(3.00, description="Alícuota IGTF (por defecto 3%)")
+
     # Extras
     observaciones: str | None = None
     vendedor_codigo: str | None = None
@@ -164,6 +168,11 @@ class FiscalTotales(BaseModel):
     monto_iva_8: float
     total_impuestos: float
     total: float
+    # IGTF
+    base_imponible_igtf: float = 0
+    porcentaje_igtf: float = 3.00
+    monto_igtf: float = 0
+    total_con_igtf: float = 0
 
 
 class EmitirDocumentoResponse(BaseModel):

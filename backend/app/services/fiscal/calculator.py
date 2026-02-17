@@ -1,8 +1,8 @@
 """
 Motor de cálculo fiscal venezolano.
 
-Calcula subtotales, IVA (16%, 8%, exento), descuentos y totales
-según las reglas del SENIAT (Providencia 0071).
+Calcula subtotales, IVA (16%, 8%, exento), IGTF (3%), descuentos y totales
+según las reglas del SENIAT (Providencia 0071) y Decreto IGTF.
 """
 from app.schemas.fiscal import FiscalItem, FiscalItemResponse, FiscalTotales
 
@@ -10,6 +10,7 @@ from app.schemas.fiscal import FiscalItem, FiscalItemResponse, FiscalTotales
 ALICUOTA_GENERAL = 16.00
 ALICUOTA_REDUCIDA = 8.00
 ALICUOTA_EXENTO = 0.00
+ALICUOTA_IGTF = 3.00  # Impuesto Grandes Transacciones Financieras
 
 TAX_TYPE_MAP = {
     "G": ALICUOTA_GENERAL,
@@ -55,8 +56,18 @@ def calcular_item(item: FiscalItem) -> FiscalItemResponse:
     )
 
 
-def calcular_totales(items_calculados: list[FiscalItemResponse]) -> FiscalTotales:
-    """Calcula los totales del documento a partir de los items ya calculados."""
+def calcular_totales(
+    items_calculados: list[FiscalItemResponse],
+    pago_en_divisas: bool = False,
+    porcentaje_igtf: float = ALICUOTA_IGTF,
+) -> FiscalTotales:
+    """Calcula los totales del documento a partir de los items ya calculados.
+
+    Args:
+        items_calculados: items con impuestos ya calculados
+        pago_en_divisas: si True, aplica IGTF (3%) sobre el total
+        porcentaje_igtf: alícuota IGTF (por defecto 3%)
+    """
     subtotal = sum(i.subtotal + i.descuento for i in items_calculados)
     descuento_total = sum(i.descuento for i in items_calculados)
     base_imponible = sum(i.subtotal for i in items_calculados if i.tipo_impuesto == "G")
@@ -68,6 +79,15 @@ def calcular_totales(items_calculados: list[FiscalItemResponse]) -> FiscalTotale
     total_impuestos = monto_iva_16 + monto_iva_8
     total = sum(i.total for i in items_calculados)
 
+    # IGTF: aplica sobre el total cuando el pago es en divisas o criptoactivos
+    base_imponible_igtf = 0.0
+    monto_igtf = 0.0
+    total_con_igtf = total
+    if pago_en_divisas:
+        base_imponible_igtf = total
+        monto_igtf = total * (porcentaje_igtf / 100)
+        total_con_igtf = total + monto_igtf
+
     return FiscalTotales(
         subtotal=round(subtotal, 2),
         descuento_total=round(descuento_total, 2),
@@ -78,4 +98,8 @@ def calcular_totales(items_calculados: list[FiscalItemResponse]) -> FiscalTotale
         monto_iva_8=round(monto_iva_8, 2),
         total_impuestos=round(total_impuestos, 2),
         total=round(total, 2),
+        base_imponible_igtf=round(base_imponible_igtf, 2),
+        porcentaje_igtf=porcentaje_igtf,
+        monto_igtf=round(monto_igtf, 2),
+        total_con_igtf=round(total_con_igtf, 2),
     )

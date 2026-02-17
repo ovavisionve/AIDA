@@ -317,13 +317,13 @@ class TestEndToEndCalculation:
         # Totals
         totales = calcular_totales(calculated)
 
-        assert totales.subtotal == 2820.00  # 2000 + 200 + 600
+        assert totales.subtotal == 2800.00  # (2000+0) + (180+20) + (600+0)
         assert totales.descuento_total == 20.00
         assert totales.base_imponible == 2180.00  # 2000 + 180 (G items)
         assert totales.base_exenta == 600.00
         assert totales.monto_iva_16 == 348.80  # 320 + 28.80
         assert totales.total_impuestos == 348.80
-        assert totales.total == 3148.80  # 2320 + 208.80 + 600
+        assert totales.total == 3128.80  # (2000+320) + (180+28.80) + 600
 
     def test_all_exempt_invoice(self):
         """Invoice with only exempt items."""
@@ -371,3 +371,43 @@ class TestEndToEndCalculation:
         assert totales.monto_iva_8 == 20.00  # 250 * 0.08
         assert totales.monto_iva_16 == 0.00
         assert totales.total == 270.00
+
+    def test_igtf_applied_when_divisas(self):
+        """IGTF 3% should be calculated when payment is in foreign currency."""
+        items = [
+            FiscalItem(
+                numero_linea=1,
+                descripcion="Servicio profesional",
+                cantidad=1,
+                precio_unitario=1000.00,
+                tipo_impuesto="G",
+            ),
+        ]
+
+        calculated = [calcular_item(item) for item in items]
+        totales = calcular_totales(calculated, pago_en_divisas=True, porcentaje_igtf=3.00)
+
+        assert totales.total == 1160.00  # 1000 + 16% IVA
+        assert totales.base_imponible_igtf == 1160.00
+        assert totales.monto_igtf == 34.80  # 1160 * 0.03
+        assert totales.total_con_igtf == 1194.80  # 1160 + 34.80
+        assert totales.porcentaje_igtf == 3.00
+
+    def test_igtf_not_applied_when_ves(self):
+        """IGTF should NOT be applied when payment is in VES."""
+        items = [
+            FiscalItem(
+                numero_linea=1,
+                descripcion="Producto local",
+                cantidad=1,
+                precio_unitario=500.00,
+                tipo_impuesto="G",
+            ),
+        ]
+
+        calculated = [calcular_item(item) for item in items]
+        totales = calcular_totales(calculated, pago_en_divisas=False)
+
+        assert totales.base_imponible_igtf == 0.00
+        assert totales.monto_igtf == 0.00
+        assert totales.total_con_igtf == totales.total

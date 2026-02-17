@@ -4,11 +4,14 @@ Endpoints de gestión de plantillas de documentos.
 Permite:
   - Listar plantillas disponibles
   - Ver detalles/preview de una plantilla
+  - Generar PDF de ejemplo con una plantilla específica
   - Configurar preferencia de plantilla por cliente y tipo de documento
 """
 import uuid
 import json
+from datetime import datetime, timezone, date
 from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 from app.database import get_db
@@ -244,6 +247,112 @@ async def get_my_preferences(
         }
 
     return output
+
+
+@router.get("/{template_id}/preview-pdf")
+async def preview_template_pdf(
+    template_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """Genera un PDF de ejemplo usando esta plantilla para previsualización."""
+    result = await db.execute(select(DocumentTemplate).where(DocumentTemplate.id == template_id))
+    t = result.scalar_one_or_none()
+    if not t:
+        raise HTTPException(404, "Plantilla no encontrada.")
+
+    from app.services.fiscal.pdf_generator import generate_invoice_pdf
+
+    # Crear un documento de ejemplo
+    class _SampleDoc:
+        pass
+
+    doc = _SampleDoc()
+    doc.document_number = "FAC-DEMO-001"
+    doc.control_number = "00-00000001"
+    doc.uuid_seniat = "demo-uuid-1234-5678-9012"
+    doc.emisor_rif = "J-12345678-9"
+    doc.emisor_razon_social = "Empresa Demo, C.A."
+    doc.emisor_direccion = "Av. Principal, Torre AIDA, Piso 5, Caracas 1010"
+    doc.emisor_telefono = "0212-555-0123"
+    doc.emisor_ciudad = "Caracas"
+    doc.emisor_zona_postal = "1010"
+    doc.receptor_rif = "V-98765432-1"
+    doc.receptor_razon_social = "Cliente Ejemplo, S.A."
+    doc.receptor_direccion = "Calle Comercio, Local 42, Valencia"
+    doc.receptor_telefono = "0241-555-9876"
+    doc.receptor_email = "cliente@ejemplo.com"
+    doc.fecha_emision = datetime.now(timezone.utc)
+    doc.fecha_vencimiento = None
+    doc.subtotal = 1000.00
+    doc.descuento = 50.00
+    doc.cargo_administrativo = 0
+    doc.base_imponible = 950.00
+    doc.base_exenta = 0
+    doc.base_no_sujeta = 0
+    doc.monto_iva_16 = 152.00
+    doc.monto_iva_8 = 0
+    doc.alicuota_iva_16 = 16.00
+    doc.alicuota_iva_8 = 8.00
+    doc.base_imponible_igtf = 1102.00
+    doc.porcentaje_igtf = 3.00
+    doc.monto_igtf = 33.06
+    doc.total = 1102.00
+    doc.total_con_igtf = 1135.06
+    doc.moneda = "USD"
+    doc.tasa_cambio = 36.50
+    doc.forma_pago = "transferencia"
+    doc.condicion_pago = "contado"
+    doc.status = "emitido"
+    doc.observaciones = "Documento de ejemplo generado para previsualización de plantilla."
+    doc.firma_digital = "a1b2c3d4e5f6789012345678901234567890abcd1234567890abcdef12345678"
+    doc.imprenta_rif = "J-50000000-0"
+    doc.imprenta_razon_social = "AIDA Imprenta Digital, C.A."
+    doc.imprenta_autorizacion = "SNAT/2024/000102"
+    doc.imprenta_fecha_autorizacion = date(2024, 1, 15)
+    doc.control_rango_desde = "00-00000001"
+    doc.control_rango_hasta = "00-00005000"
+    doc.control_fecha_asignacion = date(2024, 1, 15)
+    doc.providencia_referencia = "Providencia SNAT/2024/000102"
+    doc.supervisor_nombre = "María García"
+    doc.supervisor_cedula = "V-12345678"
+    doc.entrega_direccion = "Calle Comercio, Local 42, Valencia"
+    doc.entrega_fecha = date.today()
+    doc.entrega_responsable = "José Pérez"
+    doc.qr_code = ""
+
+    # Items de ejemplo
+    class _SampleItem:
+        pass
+
+    items = []
+    for i, (desc, qty, price, tax) in enumerate([
+        ("Servicio de Facturación Electrónica - Plan Profesional", 1, 500.00, 16),
+        ("Licencia de Integración API REST (mensual)", 2, 150.00, 16),
+        ("Soporte Técnico Premium 24/7", 1, 200.00, 16),
+    ], 1):
+        item = _SampleItem()
+        item.line_number = i
+        item.product_code = f"SRV-{i:03d}"
+        item.description = desc
+        item.unit_of_measure = "UND"
+        item.quantity = qty
+        item.unit_price = price
+        item.discount_amount = 50 / 3 if i == 1 else 0
+        item.subtotal = qty * price - (50 / 3 if i == 1 else 0)
+        item.tax_type = "G"
+        item.tax_rate = tax
+        item.tax_amount = item.subtotal * tax / 100
+        item.total = item.subtotal + item.tax_amount
+        items.append(item)
+
+    layout_config = t.layout_config
+    pdf_bytes = generate_invoice_pdf(doc, items, doc_type="factura", layout_config=layout_config)
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="preview_{t.code}.pdf"'},
+    )
 
 
 @router.post("/seed")

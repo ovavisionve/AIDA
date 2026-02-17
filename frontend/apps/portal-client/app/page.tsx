@@ -235,18 +235,23 @@ function DocumentsSection({ token, apiUrl }: { token: string; apiUrl: string }) 
 function TemplateSection({ token, apiUrl }: { token: string; apiUrl: string }) {
   const [templates, setTemplates] = useState<any[]>([]);
   const [preferences, setPreferences] = useState<any>({});
+  const [banners, setBanners] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [tRes, pRes] = await Promise.all([
-          fetch(`${apiUrl}/templates/`, { headers: { Authorization: `Bearer ${token}` } }),
-          fetch(`${apiUrl}/templates/preferences/me`, { headers: { Authorization: `Bearer ${token}` } }),
+        const headers = { Authorization: `Bearer ${token}` };
+        const [tRes, pRes, bRes] = await Promise.all([
+          fetch(`${apiUrl}/templates/`, { headers }),
+          fetch(`${apiUrl}/templates/preferences/me`, { headers }),
+          fetch(`${apiUrl}/uploads/banners`, { headers }),
         ]);
         if (tRes.ok) setTemplates(await tRes.json());
         if (pRes.ok) setPreferences(await pRes.json());
+        if (bRes.ok) setBanners(await bRes.json());
       } catch { /* silently */ }
       setLoading(false);
     };
@@ -266,6 +271,57 @@ function TemplateSection({ token, apiUrl }: { token: string; apiUrl: string }) {
     setTimeout(() => setMsg(""), 3000);
   };
 
+  const uploadLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`${apiUrl}/uploads/logo`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      if (res.ok) setMsg("Logo actualizado correctamente");
+      else setMsg("Error al subir logo");
+    } catch { setMsg("Error al subir logo"); }
+    setUploading(false);
+    setTimeout(() => setMsg(""), 3000);
+  };
+
+  const uploadBanner = async (docType: string, position: string, file: File) => {
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`${apiUrl}/uploads/banner?document_type=${docType}&position=${position}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      if (res.ok) {
+        setMsg("Banner subido correctamente");
+        const bRes = await fetch(`${apiUrl}/uploads/banners`, { headers: { Authorization: `Bearer ${token}` } });
+        if (bRes.ok) setBanners(await bRes.json());
+      } else setMsg("Error al subir banner");
+    } catch { setMsg("Error al subir banner"); }
+    setUploading(false);
+    setTimeout(() => setMsg(""), 3000);
+  };
+
+  const deleteBanner = async (bannerId: string) => {
+    try {
+      await fetch(`${apiUrl}/uploads/banners/${bannerId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setBanners(banners.filter(b => b.id !== bannerId));
+      setMsg("Banner eliminado");
+    } catch { setMsg("Error al eliminar banner"); }
+    setTimeout(() => setMsg(""), 3000);
+  };
+
   const DOC_TYPES = [
     { key: "factura", label: "Facturas" },
     { key: "nota_credito", label: "Notas de Credito" },
@@ -277,9 +333,25 @@ function TemplateSection({ token, apiUrl }: { token: string; apiUrl: string }) {
   if (loading) return <div className="text-center py-12 text-slate-400">Cargando plantillas...</div>;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {msg && <div className="rounded-lg bg-aida-accent/10 border border-aida-accent/20 px-4 py-2 text-sm text-aida-accent">{msg}</div>}
 
+      {/* Logo Upload */}
+      <div>
+        <h3 className="text-lg font-semibold text-slate-800 mb-3">Logo de Empresa</h3>
+        <div className="rounded-xl bg-white p-5 shadow-sm border border-slate-100">
+          <p className="text-sm text-slate-500 mb-3">Tu logo aparecera en todos los documentos fiscales generados.</p>
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition">
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            {uploading ? "Subiendo..." : "Subir logo (PNG, JPG, max 2MB)"}
+            <input type="file" accept="image/*" onChange={uploadLogo} className="hidden" />
+          </label>
+        </div>
+      </div>
+
+      {/* Templates */}
       <div>
         <h3 className="text-lg font-semibold text-slate-800 mb-4">Plantillas Disponibles</h3>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -292,12 +364,19 @@ function TemplateSection({ token, apiUrl }: { token: string; apiUrl: string }) {
               </div>
               <h4 className="text-sm font-semibold text-slate-800">{t.name}</h4>
               <p className="mt-1 text-xs text-slate-500 line-clamp-2">{t.description}</p>
-              {t.is_default && <span className="mt-2 inline-block rounded-full bg-aida-accent/10 px-2 py-0.5 text-[10px] font-medium text-aida-accent">Por defecto</span>}
+              <div className="mt-3 flex items-center gap-2">
+                {t.is_default && <span className="rounded-full bg-aida-accent/10 px-2 py-0.5 text-[10px] font-medium text-aida-accent">Por defecto</span>}
+                <button onClick={() => window.open(`${apiUrl}/templates/${t.id}/preview-pdf`, "_blank")}
+                  className="rounded-lg border border-slate-200 px-2.5 py-1 text-[10px] font-medium text-slate-500 hover:bg-slate-50 transition">
+                  Vista previa PDF
+                </button>
+              </div>
             </div>
           ))}
         </div>
       </div>
 
+      {/* Preferences */}
       <div>
         <h3 className="text-lg font-semibold text-slate-800 mb-4">Preferencia por Tipo de Documento</h3>
         <div className="rounded-xl bg-white shadow-sm border border-slate-100 overflow-hidden">
@@ -326,6 +405,46 @@ function TemplateSection({ token, apiUrl }: { token: string; apiUrl: string }) {
               ))}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Banners */}
+      <div>
+        <h3 className="text-lg font-semibold text-slate-800 mb-3">Banners Publicitarios</h3>
+        <p className="text-sm text-slate-500 mb-4">Sube banners que apareceran en tus documentos fiscales.</p>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {DOC_TYPES.map(dt => {
+            const banner = banners.find(b => b.document_type === dt.key);
+            return (
+              <div key={dt.key} className="rounded-xl bg-white p-4 shadow-sm border border-slate-100">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-sm font-medium text-slate-700">{dt.label}</h4>
+                  {banner && (
+                    <button onClick={() => deleteBanner(banner.id)}
+                      className="text-xs text-red-400 hover:text-red-600 transition">Eliminar</button>
+                  )}
+                </div>
+                {banner ? (
+                  <div className="rounded-lg bg-slate-50 p-2 text-center text-xs text-slate-400">
+                    Banner activo: {banner.position}
+                  </div>
+                ) : (
+                  <label className="flex cursor-pointer flex-col items-center gap-1 rounded-lg border-2 border-dashed border-slate-200 p-4 text-center hover:border-aida-accent/50 transition">
+                    <svg className="h-6 w-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
+                    </svg>
+                    <span className="text-xs text-slate-400">Subir banner</span>
+                    <input type="file" accept="image/*" className="hidden"
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        const f = e.target.files?.[0];
+                        if (f) uploadBanner(dt.key, "footer", f);
+                      }} />
+                  </label>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
