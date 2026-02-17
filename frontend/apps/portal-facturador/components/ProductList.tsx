@@ -35,50 +35,50 @@ export default function ProductList({ token }: Props) {
       <div className="flex items-center justify-between">
         <input placeholder="Buscar por código, nombre o código de barras..."
           value={search} onChange={e => setSearch(e.target.value)}
-          className="w-80 rounded-lg border px-3 py-2 text-sm focus:border-blue-500 focus:outline-none" />
+          className="w-80 rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none" />
         <button onClick={() => setShowForm(!showForm)}
-          className="rounded-lg bg-aida-primary px-4 py-2 text-sm text-white hover:bg-aida-accent">
+          className="rounded-lg bg-aida-accent px-4 py-2 text-sm text-white hover:bg-aida-accent/80">
           + Nuevo Producto
         </button>
       </div>
 
       {showForm && (
-        <form onSubmit={handleCreate} className="rounded-xl bg-white p-5 shadow-sm">
-          <h3 className="mb-3 text-sm font-semibold">Nuevo Producto</h3>
+        <form onSubmit={handleCreate} className="rounded-xl border border-white/10 bg-white/5 p-5">
+          <h3 className="mb-3 text-sm font-semibold text-white">Nuevo Producto</h3>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <input placeholder="Código *" value={form.code} onChange={e => setForm({...form, code: e.target.value})} required
-              className="rounded border px-3 py-2 text-sm" />
+              className="rounded bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500" />
             <input placeholder="Nombre *" value={form.name} onChange={e => setForm({...form, name: e.target.value})} required
-              className="col-span-2 rounded border px-3 py-2 text-sm" />
+              className="col-span-2 rounded bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500" />
             <select value={form.unit_of_measure} onChange={e => setForm({...form, unit_of_measure: e.target.value})}
-              className="rounded border px-3 py-2 text-sm">
+              className="rounded bg-[#0a0f1a] border border-white/10 px-3 py-2 text-sm text-white">
               <option value="UND">UND</option><option value="KG">KG</option><option value="LT">LT</option>
               <option value="MT">MT</option><option value="HRS">HRS</option><option value="SRV">SRV</option>
             </select>
             <input type="number" step="0.01" placeholder="Precio venta *" value={form.sale_price_1 || ""}
               onChange={e => setForm({...form, sale_price_1: parseFloat(e.target.value) || 0})} required
-              className="rounded border px-3 py-2 text-sm" />
+              className="rounded bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500" />
             <input type="number" step="0.01" placeholder="Precio costo" value={form.cost_price || ""}
               onChange={e => setForm({...form, cost_price: parseFloat(e.target.value) || 0})}
-              className="rounded border px-3 py-2 text-sm" />
+              className="rounded bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500" />
             <select value={form.tax_type} onChange={e => setForm({...form, tax_type: e.target.value})}
-              className="rounded border px-3 py-2 text-sm">
+              className="rounded bg-[#0a0f1a] border border-white/10 px-3 py-2 text-sm text-white">
               <option value="gravado">IVA 16%</option><option value="reducido">IVA 8%</option><option value="exento">Exento</option>
             </select>
             <input type="number" placeholder="Stock inicial" value={form.stock_actual || ""}
               onChange={e => setForm({...form, stock_actual: parseFloat(e.target.value) || 0})}
-              className="rounded border px-3 py-2 text-sm" />
+              className="rounded bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500" />
           </div>
           <div className="mt-3 flex gap-2">
-            <button type="submit" className="rounded bg-green-600 px-4 py-1.5 text-sm text-white hover:bg-green-700">Guardar</button>
-            <button type="button" onClick={() => setShowForm(false)} className="rounded border px-4 py-1.5 text-sm hover:bg-gray-50">Cancelar</button>
+            <button type="submit" className="rounded bg-emerald-500/20 border border-emerald-500/30 px-4 py-1.5 text-sm text-emerald-400 hover:bg-emerald-500/30">Guardar</button>
+            <button type="button" onClick={() => setShowForm(false)} className="rounded border border-white/10 px-4 py-1.5 text-sm text-gray-300 hover:bg-white/5">Cancelar</button>
           </div>
         </form>
       )}
 
-      <div className="rounded-xl bg-white shadow-sm">
+      <div className="rounded-xl border border-white/10 bg-white/5 overflow-hidden">
         <table className="w-full text-left text-sm">
-          <thead className="border-b bg-gray-50 text-xs uppercase text-gray-500">
+          <thead className="border-b border-white/5 bg-white/[0.03] text-xs uppercase text-gray-500">
             <tr>
               <th className="px-4 py-3">Código</th>
               <th className="px-4 py-3">Nombre</th>
@@ -88,20 +88,20 @@ export default function ProductList({ token }: Props) {
               <th className="px-4 py-3">Estado</th>
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody>
             {products.length === 0 ? (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">No hay productos. Cree el primero.</td></tr>
+              <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-500">No hay productos. Cree el primero.</td></tr>
             ) : products.map((p) => (
-              <tr key={p.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3 font-mono text-xs">{p.code}</td>
-                <td className="px-4 py-3">{p.name}</td>
-                <td className="px-4 py-3 font-medium">{p.sale_price_1?.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</td>
-                <td className="px-4 py-3">{p.tax_rate}%</td>
-                <td className={`px-4 py-3 ${p.stock_actual <= p.stock_minimo ? "font-medium text-red-600" : ""}`}>
+              <tr key={p.id} className="border-b border-white/5 hover:bg-white/5">
+                <td className="px-4 py-3 font-mono text-xs text-gray-300">{p.code}</td>
+                <td className="px-4 py-3 text-gray-300">{p.name}</td>
+                <td className="px-4 py-3 font-medium text-white">{p.sale_price_1?.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</td>
+                <td className="px-4 py-3 text-gray-300">{p.tax_rate}%</td>
+                <td className={`px-4 py-3 ${p.stock_actual <= p.stock_minimo ? "font-medium text-red-400" : "text-gray-300"}`}>
                   {p.is_service ? "—" : p.stock_actual}
                 </td>
                 <td className="px-4 py-3">
-                  <span className={`rounded px-2 py-0.5 text-[10px] font-medium ${p.is_active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                  <span className={`rounded px-2 py-0.5 text-[10px] font-medium ${p.is_active ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>
                     {p.is_active ? "Activo" : "Inactivo"}
                   </span>
                 </td>

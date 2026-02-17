@@ -95,10 +95,10 @@ export default function PortalValidacion() {
   return (
     <div className="flex min-h-screen flex-col">
       {/* Header */}
-      <header className="border-b border-white/10 px-6 py-4">
+      <header className="border-b border-white/5 px-6 py-4">
         <div className="mx-auto flex max-w-5xl items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-aida-highlight font-bold">A</div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-aida-accent font-bold">A</div>
             <div>
               <h1 className="text-lg font-bold">AIDA Imprenta Digital</h1>
               <p className="text-xs text-gray-400">Validacion de Documentos Fiscales</p>
@@ -128,7 +128,7 @@ export default function PortalValidacion() {
               { id: "rif" as const, label: "RIF Emisor" },
             ]).map((m) => (
               <button key={m.id} onClick={() => { setMode(m.id); setResult(null); setRifDocs([]); setError(""); }}
-                className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition ${mode === m.id ? "bg-aida-highlight text-white" : "text-gray-400 hover:text-white"}`}>
+                className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition ${mode === m.id ? "bg-aida-accent text-white" : "text-gray-400 hover:text-white"}`}>
                 {m.label}
               </button>
             ))}
@@ -139,10 +139,10 @@ export default function PortalValidacion() {
               value={query} onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && search()}
               placeholder={mode === "nc" ? "Ej: 00-00000001" : mode === "uuid" ? "Ej: 550e8400-e29b-41d4-..." : "Ej: J-12345678-9"}
-              className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-gray-500 focus:border-aida-highlight focus:outline-none"
+              className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none"
             />
             <button onClick={search} disabled={loading || !query.trim()}
-              className="rounded-lg bg-aida-highlight px-6 py-3 font-medium text-white transition hover:bg-red-500 disabled:opacity-50">
+              className="rounded-lg bg-aida-accent px-6 py-3 font-medium text-white transition hover:bg-aida-accent/80 disabled:opacity-50">
               {loading ? (
                 <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
               ) : "Verificar"}
@@ -190,7 +190,7 @@ export default function PortalValidacion() {
               <div><p className="text-xs text-gray-500">IVA</p><p>{result.moneda} {result.iva?.toFixed(2)}</p></div>
               <div className="col-span-2 rounded-lg bg-white/5 p-3 text-center">
                 <p className="text-xs text-gray-500">Total</p>
-                <p className="text-2xl font-bold text-aida-highlight">{result.moneda} {result.total?.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-aida-accent">{result.moneda} {result.total?.toFixed(2)}</p>
               </div>
             </div>
 
@@ -263,7 +263,7 @@ export default function PortalValidacion() {
               <div className="mt-4 flex justify-end gap-6 border-t border-white/10 pt-4 text-sm">
                 <div><span className="text-gray-500">Subtotal:</span> <span className="font-medium">{result.moneda} {result.subtotal?.toFixed(2)}</span></div>
                 <div><span className="text-gray-500">IVA:</span> <span className="font-medium">{result.moneda} {result.iva?.toFixed(2)}</span></div>
-                <div><span className="text-gray-500">Total:</span> <span className="text-lg font-bold text-aida-highlight">{result.moneda} {result.total?.toFixed(2)}</span></div>
+                <div><span className="text-gray-500">Total:</span> <span className="text-lg font-bold text-aida-accent">{result.moneda} {result.total?.toFixed(2)}</span></div>
               </div>
             </div>
           </div>
@@ -295,7 +295,7 @@ export default function PortalValidacion() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-white/10 px-6 py-4 text-center text-xs text-gray-500">
+      <footer className="border-t border-white/5 px-6 py-4 text-center text-xs text-gray-500">
         AIDA Imprenta Digital - Sistema de facturacion electronica conforme a la normativa SENIAT
       </footer>
     </div>

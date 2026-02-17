@@ -75,7 +75,7 @@ export default function AnalyticsDashboard({ token }: { token: string }) {
   }
 
   if (!analytics) {
-    return <div className="text-center py-20 text-gray-400">No se pudieron cargar los analytics</div>;
+    return <div className="text-center py-20 text-gray-500">No se pudieron cargar los analytics</div>;
   }
 
   const k = analytics.kpis;
@@ -84,10 +84,10 @@ export default function AnalyticsDashboard({ token }: { token: string }) {
   const topCustomerMax = Math.max(...analytics.top_customers.map(c => c.total), 1);
 
   const trendInfo: Record<string, { label: string; color: string }> = {
-    growing: { label: "Creciendo", color: "text-green-600" },
-    declining: { label: "Decreciendo", color: "text-red-600" },
-    stable: { label: "Estable", color: "text-blue-600" },
-    insufficient_data: { label: "Sin datos suficientes", color: "text-gray-400" },
+    growing: { label: "Creciendo", color: "text-green-400" },
+    declining: { label: "Decreciendo", color: "text-red-400" },
+    stable: { label: "Estable", color: "text-blue-400" },
+    insufficient_data: { label: "Sin datos suficientes", color: "text-gray-500" },
   };
 
   return (
@@ -95,14 +95,14 @@ export default function AnalyticsDashboard({ token }: { token: string }) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Analytics Avanzado</h1>
+          <h1 className="text-2xl font-bold text-white">Analytics Avanzado</h1>
           <p className="text-sm text-gray-500">KPIs, tendencias y predicciones con IA</p>
         </div>
         <div className="flex items-center gap-3">
           <select
             value={periodDays}
             onChange={e => setPeriodDays(Number(e.target.value))}
-            className="border rounded-lg px-3 py-2 text-sm"
+            className="bg-[#0a0f1a] border border-white/10 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-aida-accent"
           >
             <option value={30}>30 dias</option>
             <option value={90}>90 dias</option>
@@ -112,7 +112,7 @@ export default function AnalyticsDashboard({ token }: { token: string }) {
           <button
             onClick={loadInsights}
             disabled={loadingInsights}
-            className="bg-aida-accent text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-aida-primary transition disabled:opacity-50"
+            className="bg-aida-accent text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-aida-accent/80 transition disabled:opacity-50"
           >
             {loadingInsights ? "Analizando..." : "Generar Insights IA"}
           </button>
@@ -139,53 +139,53 @@ export default function AnalyticsDashboard({ token }: { token: string }) {
 
       {/* IVA summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl shadow-sm p-5">
+        <div className="rounded-xl border border-white/10 bg-white/5 p-5">
           <h3 className="text-sm font-semibold text-gray-500 mb-3">IVA Generado</h3>
           <div className="space-y-2">
             <div className="flex justify-between">
-              <span className="text-sm text-gray-600">IVA 16%</span>
-              <span className="font-semibold">Bs. {fmt(k.month_iva_16)}</span>
+              <span className="text-sm text-gray-400">IVA 16%</span>
+              <span className="font-semibold text-white">Bs. {fmt(k.month_iva_16)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm text-gray-600">IVA 8%</span>
-              <span className="font-semibold">Bs. {fmt(k.month_iva_8)}</span>
+              <span className="text-sm text-gray-400">IVA 8%</span>
+              <span className="font-semibold text-white">Bs. {fmt(k.month_iva_8)}</span>
             </div>
-            <div className="flex justify-between border-t pt-2">
-              <span className="text-sm font-medium text-gray-700">Total IVA</span>
+            <div className="flex justify-between border-t border-white/10 pt-2">
+              <span className="text-sm font-medium text-gray-300">Total IVA</span>
               <span className="font-bold text-aida-accent">Bs. {fmt(k.month_iva_16 + k.month_iva_8)}</span>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm p-5">
-          <h3 className="text-sm font-semibold text-gray-500 mb-3">Distribución Fiscal</h3>
+        <div className="rounded-xl border border-white/10 bg-white/5 p-5">
+          <h3 className="text-sm font-semibold text-gray-500 mb-3">Distribucion Fiscal</h3>
           <div className="space-y-2">
             <BarItem label="Gravado" pct={analytics.tax_distribution.pct_gravado} color="bg-blue-500" />
-            <BarItem label="Exento" pct={analytics.tax_distribution.pct_exento} color="bg-gray-400" />
+            <BarItem label="Exento" pct={analytics.tax_distribution.pct_exento} color="bg-gray-500" />
           </div>
-          <div className="mt-3 text-xs text-gray-400">
+          <div className="mt-3 text-xs text-gray-500">
             Base gravada: Bs. {fmt(analytics.tax_distribution.base_gravada)} |
             Exenta: Bs. {fmt(analytics.tax_distribution.base_exenta)}
           </div>
         </div>
 
         {/* Control Numbers */}
-        <div className="bg-white rounded-xl shadow-sm p-5">
+        <div className="rounded-xl border border-white/10 bg-white/5 p-5">
           <h3 className="text-sm font-semibold text-gray-500 mb-3">Numeros de Control</h3>
-          <div className="text-3xl font-bold text-gray-900">{analytics.control_numbers.available}</div>
+          <div className="text-3xl font-bold text-white">{analytics.control_numbers.available}</div>
           <p className="text-sm text-gray-500">disponibles</p>
           <div className="mt-3 space-y-1 text-xs text-gray-500">
-            <div>Usados este mes: <strong>{analytics.control_numbers.used_this_month}</strong></div>
-            <div>Ritmo diario: <strong>{analytics.control_numbers.daily_rate}</strong>/dia</div>
+            <div>Usados este mes: <strong className="text-gray-300">{analytics.control_numbers.used_this_month}</strong></div>
+            <div>Ritmo diario: <strong className="text-gray-300">{analytics.control_numbers.daily_rate}</strong>/dia</div>
             <div>
               Estimado:{" "}
-              <strong className={analytics.control_numbers.needs_refill ? "text-red-600" : "text-green-600"}>
+              <strong className={analytics.control_numbers.needs_refill ? "text-red-400" : "text-green-400"}>
                 {analytics.control_numbers.estimated_days_remaining} dias restantes
               </strong>
             </div>
           </div>
           {analytics.control_numbers.needs_refill && (
-            <div className="mt-2 bg-red-50 text-red-700 rounded-lg px-3 py-1.5 text-xs font-medium">
+            <div className="mt-2 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg px-3 py-1.5 text-xs font-medium">
               Solicitar mas NC pronto
             </div>
           )}
@@ -193,16 +193,16 @@ export default function AnalyticsDashboard({ token }: { token: string }) {
       </div>
 
       {/* Prediction */}
-      <div className="bg-white rounded-xl shadow-sm p-5">
+      <div className="rounded-xl border border-white/10 bg-white/5 p-5">
         <h3 className="text-sm font-semibold text-gray-500 mb-3">Prediccion Proximo Mes</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div>
             <p className="text-sm text-gray-500">Facturas estimadas</p>
-            <p className="text-2xl font-bold">{analytics.prediction.predicted_invoices}</p>
+            <p className="text-2xl font-bold text-white">{analytics.prediction.predicted_invoices}</p>
           </div>
           <div>
             <p className="text-sm text-gray-500">Monto estimado</p>
-            <p className="text-2xl font-bold">Bs. {fmt(analytics.prediction.predicted_total)}</p>
+            <p className="text-2xl font-bold text-white">Bs. {fmt(analytics.prediction.predicted_total)}</p>
           </div>
           <div>
             <p className="text-sm text-gray-500">Tendencia</p>
@@ -212,16 +212,16 @@ export default function AnalyticsDashboard({ token }: { token: string }) {
           </div>
           <div>
             <p className="text-sm text-gray-500">Confianza</p>
-            <p className="text-lg font-semibold capitalize">{analytics.prediction.confidence}</p>
+            <p className="text-lg font-semibold capitalize text-white">{analytics.prediction.confidence}</p>
           </div>
         </div>
       </div>
 
       {/* Daily trend chart */}
-      <div className="bg-white rounded-xl shadow-sm p-5">
+      <div className="rounded-xl border border-white/10 bg-white/5 p-5">
         <h3 className="text-sm font-semibold text-gray-500 mb-4">Tendencia Diaria</h3>
         {analytics.daily_trend.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-8">Sin datos para el periodo seleccionado</p>
+          <p className="text-sm text-gray-500 text-center py-8">Sin datos para el periodo seleccionado</p>
         ) : (
           <div className="flex items-end gap-px h-40">
             {analytics.daily_trend.map((d, i) => (
@@ -237,7 +237,7 @@ export default function AnalyticsDashboard({ token }: { token: string }) {
             ))}
           </div>
         )}
-        <div className="flex justify-between mt-2 text-xs text-gray-400">
+        <div className="flex justify-between mt-2 text-xs text-gray-500">
           <span>{analytics.daily_trend[0]?.date || ""}</span>
           <span>{analytics.daily_trend[analytics.daily_trend.length - 1]?.date || ""}</span>
         </div>
@@ -245,28 +245,28 @@ export default function AnalyticsDashboard({ token }: { token: string }) {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top customers */}
-        <div className="bg-white rounded-xl shadow-sm p-5">
+        <div className="rounded-xl border border-white/10 bg-white/5 p-5">
           <h3 className="text-sm font-semibold text-gray-500 mb-4">Top Clientes</h3>
           {analytics.top_customers.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-4">Sin datos</p>
+            <p className="text-sm text-gray-500 text-center py-4">Sin datos</p>
           ) : (
             <div className="space-y-3">
               {analytics.top_customers.slice(0, 7).map((c, i) => (
                 <div key={i}>
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="truncate max-w-[60%]" title={c.name}>
-                      <strong className="text-gray-400 mr-1">#{i + 1}</strong>
+                    <span className="truncate max-w-[60%] text-gray-300" title={c.name}>
+                      <strong className="text-gray-500 mr-1">#{i + 1}</strong>
                       {c.name}
                     </span>
-                    <span className="font-medium">Bs. {fmt(c.total)}</span>
+                    <span className="font-medium text-white">Bs. {fmt(c.total)}</span>
                   </div>
-                  <div className="w-full bg-gray-100 rounded-full h-1.5">
+                  <div className="w-full bg-white/10 rounded-full h-1.5">
                     <div
                       className="bg-aida-accent rounded-full h-1.5 transition-all"
                       style={{ width: `${(c.total / topCustomerMax) * 100}%` }}
                     />
                   </div>
-                  <div className="text-xs text-gray-400 mt-0.5">{c.rif} | {c.invoices} facturas</div>
+                  <div className="text-xs text-gray-500 mt-0.5">{c.rif} | {c.invoices} facturas</div>
                 </div>
               ))}
             </div>
@@ -275,7 +275,7 @@ export default function AnalyticsDashboard({ token }: { token: string }) {
 
         {/* Hourly pattern + Payment */}
         <div className="space-y-6">
-          <div className="bg-white rounded-xl shadow-sm p-5">
+          <div className="rounded-xl border border-white/10 bg-white/5 p-5">
             <h3 className="text-sm font-semibold text-gray-500 mb-3">Patron Horario</h3>
             <div className="flex items-end gap-0.5 h-24">
               {Array.from({ length: 24 }, (_, hour) => {
@@ -294,15 +294,15 @@ export default function AnalyticsDashboard({ token }: { token: string }) {
                 );
               })}
             </div>
-            <div className="flex justify-between mt-1 text-xs text-gray-400">
+            <div className="flex justify-between mt-1 text-xs text-gray-500">
               <span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>23:00</span>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm p-5">
+          <div className="rounded-xl border border-white/10 bg-white/5 p-5">
             <h3 className="text-sm font-semibold text-gray-500 mb-3">Formas de Pago</h3>
             {analytics.payment_distribution.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-4">Sin datos</p>
+              <p className="text-sm text-gray-500 text-center py-4">Sin datos</p>
             ) : (
               <div className="space-y-2">
                 {analytics.payment_distribution.map((p, i) => {
@@ -311,8 +311,8 @@ export default function AnalyticsDashboard({ token }: { token: string }) {
                   const colors = ["bg-blue-500", "bg-green-500", "bg-purple-500", "bg-orange-500", "bg-pink-500"];
                   return (
                     <div key={i} className="flex items-center gap-3">
-                      <span className="text-sm w-32 truncate capitalize">{p.method}</span>
-                      <div className="flex-1 bg-gray-100 rounded-full h-2">
+                      <span className="text-sm w-32 truncate capitalize text-gray-300">{p.method}</span>
+                      <div className="flex-1 bg-white/10 rounded-full h-2">
                         <div className={`${colors[i % colors.length]} rounded-full h-2`} style={{ width: `${pct}%` }} />
                       </div>
                       <span className="text-xs text-gray-500 w-16 text-right">{p.count} ({Math.round(pct)}%)</span>
@@ -327,15 +327,15 @@ export default function AnalyticsDashboard({ token }: { token: string }) {
 
       {/* AI Insights */}
       {insights && (
-        <div className="bg-gradient-to-br from-aida-accent/5 to-purple-50 rounded-xl shadow-sm p-6 border border-aida-accent/20">
+        <div className="bg-gradient-to-br from-aida-accent/10 to-purple-900/20 rounded-xl border border-aida-accent/20 p-6">
           <div className="flex items-center gap-2 mb-4">
             <svg className="w-5 h-5 text-aida-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                 d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
             </svg>
-            <h3 className="font-semibold text-gray-800">Insights IA</h3>
+            <h3 className="font-semibold text-white">Insights IA</h3>
           </div>
-          <div className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+          <div className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">
             {insights}
           </div>
         </div>
@@ -346,13 +346,13 @@ export default function AnalyticsDashboard({ token }: { token: string }) {
 
 function KPICard({ label, value, sub, color }: { label: string; value: string; sub: string; color: string }) {
   return (
-    <div className="bg-white rounded-xl shadow-sm p-5">
+    <div className="rounded-xl border border-white/10 bg-white/5 p-5">
       <div className="flex items-center gap-2 mb-2">
         <div className={`w-2 h-2 rounded-full ${color}`} />
         <span className="text-xs font-medium text-gray-500">{label}</span>
       </div>
-      <p className="text-xl font-bold text-gray-900">{value}</p>
-      <p className="text-xs text-gray-400 mt-1">{sub}</p>
+      <p className="text-xl font-bold text-white">{value}</p>
+      <p className="text-xs text-gray-500 mt-1">{sub}</p>
     </div>
   );
 }
@@ -361,10 +361,10 @@ function BarItem({ label, pct, color }: { label: string; pct: number; color: str
   return (
     <div>
       <div className="flex justify-between text-xs mb-1">
-        <span className="text-gray-600">{label}</span>
-        <span className="font-medium">{pct}%</span>
+        <span className="text-gray-400">{label}</span>
+        <span className="font-medium text-gray-300">{pct}%</span>
       </div>
-      <div className="w-full bg-gray-100 rounded-full h-2">
+      <div className="w-full bg-white/10 rounded-full h-2">
         <div className={`${color} rounded-full h-2 transition-all`} style={{ width: `${pct}%` }} />
       </div>
     </div>

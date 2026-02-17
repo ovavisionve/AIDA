@@ -20,7 +20,7 @@ const navItems: { id: Section; label: string; icon: string }[] = [
 export default function Sidebar({ active, onNavigate }: SidebarProps) {
   return (
     <aside className="flex w-56 flex-col aida-sidebar text-white">
-      <div className="flex h-14 items-center gap-2 px-4 border-b border-white/10">
+      <div className="flex h-14 items-center gap-2 px-4 border-b border-white/5">
         <span className="text-lg font-bold tracking-tight">AIDA</span>
         <span className="rounded-full bg-aida-cyan/20 px-2 py-0.5 text-[10px] font-medium text-aida-cyan">Facturador</span>
       </div>
@@ -31,8 +31,8 @@ export default function Sidebar({ active, onNavigate }: SidebarProps) {
             onClick={() => onNavigate(item.id)}
             className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] transition-all duration-200 ${
               active === item.id
-                ? "bg-aida-accent text-white shadow-lg shadow-aida-accent/25"
-                : "text-slate-400 hover:bg-white/10 hover:text-white"
+                ? "bg-aida-accent/10 text-aida-cyan border border-aida-accent/20"
+                : "text-gray-500 hover:bg-white/5 hover:text-gray-300"
             }`}
           >
             <svg className="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -42,10 +42,10 @@ export default function Sidebar({ active, onNavigate }: SidebarProps) {
           </button>
         ))}
       </nav>
-      <div className="p-3 border-t border-white/10">
+      <div className="p-3 border-t border-white/5">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-[11px] text-slate-500">Conectado</span>
+          <span className="text-[11px] text-gray-500">Conectado</span>
         </div>
       </div>
     </aside>

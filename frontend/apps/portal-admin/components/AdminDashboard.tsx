@@ -44,10 +44,10 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
   };
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      <aside className={`${sidebarOpen ? "w-64" : "w-20"} flex flex-col bg-aida-dark text-white transition-all duration-300`}>
+    <div className="flex h-screen bg-[#0a0f1a]">
+      <aside className={`${sidebarOpen ? "w-64" : "w-20"} flex flex-col bg-[#0a0f1a] border-r border-white/5 text-white transition-all duration-300`}>
         <div className="flex h-16 items-center justify-between px-4">
-          {sidebarOpen && <h1 className="text-xl font-bold">AIDA Admin</h1>}
+          {sidebarOpen && <h1 className="text-xl font-bold text-white">AIDA Admin</h1>}
           <button onClick={() => setSidebarOpen(!sidebarOpen)} className="rounded-lg p-2 hover:bg-white/10">
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -61,7 +61,7 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
               key={item.id}
               onClick={() => setActiveSection(item.id)}
               className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition ${
-                activeSection === item.id ? "bg-aida-highlight text-white" : "text-gray-300 hover:bg-white/10 hover:text-white"
+                activeSection === item.id ? "bg-aida-accent/10 text-aida-cyan border border-aida-accent/20" : "text-gray-300 hover:bg-white/10 hover:text-white"
               }`}
             >
               <svg className="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -74,25 +74,25 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
 
         <div className="border-t border-white/10 p-4">
           <div className={`${sidebarOpen ? "flex items-center gap-3" : "text-center"}`}>
-            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-aida-highlight text-sm font-bold">
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-aida-accent/20 text-sm font-bold text-aida-cyan">
               {user.first_name[0]}{user.last_name[0]}
             </div>
             {sidebarOpen && (
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{user.first_name} {user.last_name}</p>
+                <p className="truncate text-sm font-medium text-white">{user.first_name} {user.last_name}</p>
                 <p className="truncate text-xs text-gray-400">{user.email}</p>
               </div>
             )}
           </div>
-          <button onClick={handleLogout} className="mt-3 w-full rounded-lg border border-white/20 px-3 py-1.5 text-xs text-gray-300 transition hover:bg-white/10">
+          <button onClick={handleLogout} className="mt-3 w-full rounded-lg border border-white/10 px-3 py-1.5 text-xs text-gray-400 transition hover:bg-white/5 hover:text-white">
             {sidebarOpen ? "Cerrar sesion" : "Salir"}
           </button>
         </div>
       </aside>
 
       <main className="flex-1 overflow-auto">
-        <header className="flex h-16 items-center justify-between border-b bg-white px-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-800">
+        <header className="flex h-16 items-center justify-between bg-[#0a0f1a]/80 backdrop-blur-lg border-b border-white/5 px-6">
+          <h2 className="text-lg font-semibold text-white">
             {navItems.find((i) => i.id === activeSection)?.label}
           </h2>
           <div className="text-sm text-gray-500">Portal 6 - Backoffice Administrativo</div>

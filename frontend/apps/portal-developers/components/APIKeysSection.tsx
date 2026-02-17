@@ -54,7 +54,7 @@ export default function APIKeysSection() {
           <h2 className="text-2xl font-bold">API Keys</h2>
           <p className="mt-1 text-gray-400">Gestione sus llaves de acceso a la API fiscal</p>
         </div>
-        <button onClick={() => setShowCreate(true)} className="rounded-lg bg-aida-highlight px-4 py-2.5 text-sm font-medium text-white hover:bg-red-500">
+        <button onClick={() => setShowCreate(true)} className="rounded-lg bg-aida-accent px-4 py-2.5 text-sm font-medium text-white hover:bg-aida-accent/80">
           + Nueva API Key
         </button>
       </div>
@@ -77,9 +77,9 @@ export default function APIKeysSection() {
           <h3 className="mb-4 font-semibold">Crear API Key</h3>
           <div className="space-y-3">
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre (ej: Produccion, Testing)"
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-white placeholder-gray-500 focus:border-aida-highlight focus:outline-none" />
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none" />
             <input value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Descripcion (opcional)"
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-white placeholder-gray-500 focus:border-aida-highlight focus:outline-none" />
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none" />
             <div className="flex gap-2">
               <button onClick={create} disabled={!name.trim()} className="rounded-lg bg-green-600 px-4 py-2 text-sm text-white hover:bg-green-700 disabled:opacity-50">Crear</button>
               <button onClick={() => setShowCreate(false)} className="rounded-lg border border-white/10 px-4 py-2 text-sm text-gray-400 hover:text-white">Cancelar</button>
@@ -90,7 +90,7 @@ export default function APIKeysSection() {
 
       <div className="rounded-xl border border-white/10 bg-white/5">
         {loading ? (
-          <div className="flex justify-center py-12"><div className="h-6 w-6 animate-spin rounded-full border-2 border-aida-highlight border-t-transparent" /></div>
+          <div className="flex justify-center py-12"><div className="h-6 w-6 animate-spin rounded-full border-2 border-aida-accent border-t-transparent" /></div>
         ) : keys.length === 0 ? (
           <div className="py-12 text-center text-sm text-gray-500">No tiene API keys. Cree una para comenzar a integrar.</div>
         ) : (

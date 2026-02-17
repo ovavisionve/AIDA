@@ -40,7 +40,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-transparent">
       <Sidebar active={section} onNavigate={(s) => setSection(s as Section)} />
       <main className="flex-1 p-6 overflow-auto">
         {renderSection()}

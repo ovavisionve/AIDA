@@ -60,11 +60,11 @@ export default function IntegrationWizard({ token }: { token: string }) {
   }, []);
 
   const categoryColors: Record<string, string> = {
-    erp: "bg-blue-100 text-blue-700",
-    ecommerce: "bg-green-100 text-green-700",
-    contabilidad: "bg-purple-100 text-purple-700",
-    custom: "bg-gray-100 text-gray-700",
-    pos: "bg-orange-100 text-orange-700",
+    erp: "bg-blue-500/20 text-blue-400",
+    ecommerce: "bg-green-500/20 text-green-400",
+    contabilidad: "bg-purple-500/20 text-purple-400",
+    custom: "bg-gray-500/20 text-gray-400",
+    pos: "bg-orange-500/20 text-orange-400",
   };
 
   const handleStep1 = async () => {
@@ -203,7 +203,7 @@ export default function IntegrationWizard({ token }: { token: string }) {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Wizard de Integración</h1>
+      <h1 className="text-2xl font-bold text-white mb-6">Wizard de Integracion</h1>
 
       {/* Progress steps */}
       <div className="flex items-center mb-8">
@@ -212,72 +212,72 @@ export default function IntegrationWizard({ token }: { token: string }) {
             <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${
               i < step ? "bg-green-500 text-white"
                 : i === step ? "bg-aida-accent text-white"
-                : "bg-gray-200 text-gray-500"
+                : "bg-white/10 text-gray-500"
             }`}>{i < step ? "✓" : i + 1}</div>
-            <span className={`ml-2 text-xs hidden lg:block ${i === step ? "text-aida-accent font-semibold" : "text-gray-400"}`}>
+            <span className={`ml-2 text-xs hidden lg:block ${i === step ? "text-aida-accent font-semibold" : "text-gray-500"}`}>
               {name}
             </span>
-            {i < STEP_NAMES.length - 1 && <div className={`flex-1 h-0.5 mx-2 ${i < step ? "bg-green-500" : "bg-gray-200"}`} />}
+            {i < STEP_NAMES.length - 1 && <div className={`flex-1 h-0.5 mx-2 ${i < step ? "bg-green-500" : "bg-white/10"}`} />}
           </div>
         ))}
       </div>
 
-      {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">{error}</div>}
+      {error && <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-lg mb-4 text-sm">{error}</div>}
 
       {/* Step 0: Select template */}
       {step === 0 && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">ID del Proyecto *</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">ID del Proyecto *</label>
               <input value={projectId} onChange={e => setProjectId(e.target.value)}
-                className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="UUID del proyecto" />
+                className="w-full bg-white/5 border border-white/10 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-aida-accent" placeholder="UUID del proyecto" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de la Conexión *</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Nombre de la Conexion *</label>
               <input value={connName} onChange={e => setConnName(e.target.value)}
-                className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Ej: Odoo Empresa XYZ" />
+                className="w-full bg-white/5 border border-white/10 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-aida-accent" placeholder="Ej: Odoo Empresa XYZ" />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Entorno</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Entorno</label>
             <select value={environment} onChange={e => setEnvironment(e.target.value)}
-              className="border rounded-lg px-3 py-2 text-sm">
+              className="bg-[#0a0f1a] border border-white/10 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-aida-accent">
               <option value="sandbox">Sandbox</option>
               <option value="staging">Staging</option>
-              <option value="production">Producción</option>
+              <option value="production">Produccion</option>
             </select>
           </div>
 
-          <h3 className="font-semibold text-gray-700">Seleccione el sistema a integrar:</h3>
+          <h3 className="font-semibold text-gray-300">Seleccione el sistema a integrar:</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {templates.map(t => (
               <button key={t.id} onClick={() => setSelectedTemplate(t)}
                 className={`text-left p-4 rounded-xl border-2 transition ${
                   selectedTemplate?.id === t.id
-                    ? "border-aida-accent bg-blue-50"
-                    : "border-gray-200 hover:border-gray-300"
+                    ? "border-aida-accent bg-aida-accent/10"
+                    : "border-white/10 hover:border-white/20 bg-white/5"
                 }`}>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold text-sm">{t.name}</span>
-                  {t.is_official && <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">Oficial</span>}
+                  <span className="font-semibold text-sm text-white">{t.name}</span>
+                  {t.is_official && <span className="text-xs bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded">Oficial</span>}
                 </div>
                 <p className="text-xs text-gray-500 line-clamp-2 mb-2">{t.description}</p>
                 <div className="flex items-center gap-2">
-                  <span className={`text-xs px-1.5 py-0.5 rounded ${categoryColors[t.category] || "bg-gray-100 text-gray-700"}`}>
+                  <span className={`text-xs px-1.5 py-0.5 rounded ${categoryColors[t.category] || "bg-white/10 text-gray-400"}`}>
                     {t.category}
                   </span>
                   <div className="flex gap-1">
-                    {t.supports_sync && <span className="text-xs text-gray-400">sync</span>}
-                    {t.supports_webhook && <span className="text-xs text-gray-400">webhook</span>}
-                    {t.supports_realtime && <span className="text-xs text-gray-400">realtime</span>}
+                    {t.supports_sync && <span className="text-xs text-gray-500">sync</span>}
+                    {t.supports_webhook && <span className="text-xs text-gray-500">webhook</span>}
+                    {t.supports_realtime && <span className="text-xs text-gray-500">realtime</span>}
                   </div>
                 </div>
               </button>
             ))}
           </div>
           <button onClick={handleStep1} disabled={loading || !selectedTemplate}
-            className="bg-aida-accent text-white px-6 py-2.5 rounded-lg font-medium hover:bg-aida-primary transition disabled:opacity-50">
+            className="bg-aida-accent text-white px-6 py-2.5 rounded-lg font-medium hover:bg-aida-accent/80 transition disabled:opacity-50">
             {loading ? "Creando..." : "Siguiente →"}
           </button>
         </div>
@@ -286,28 +286,28 @@ export default function IntegrationWizard({ token }: { token: string }) {
       {/* Step 1: Credentials */}
       {step === 1 && authConfig && (
         <div className="space-y-6">
-          <div className="bg-blue-50 p-4 rounded-lg text-sm text-blue-800">
-            {authConfig.description || "Configure las credenciales de conexión al sistema externo."}
+          <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-lg text-sm text-blue-400">
+            {authConfig.description || "Configure las credenciales de conexion al sistema externo."}
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">URL del Sistema *</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">URL del Sistema *</label>
             <input value={systemUrl} onChange={e => setSystemUrl(e.target.value)}
-              className="w-full border rounded-lg px-3 py-2 text-sm" placeholder={authConfig.fields?.[0]?.placeholder || "https://..."} />
+              className="w-full bg-white/5 border border-white/10 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-aida-accent" placeholder={authConfig.fields?.[0]?.placeholder || "https://..."} />
           </div>
           {authConfig.fields?.map((field: any) => (
             <div key={field.name}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{field.label} {field.required && "*"}</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">{field.label} {field.required && "*"}</label>
               <input type={field.type === "password" ? "password" : "text"}
                 value={credentials[field.name] || ""}
                 onChange={e => setCredentials({ ...credentials, [field.name]: e.target.value })}
-                className="w-full border rounded-lg px-3 py-2 text-sm"
+                className="w-full bg-white/5 border border-white/10 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-aida-accent"
                 placeholder={field.placeholder || ""} />
             </div>
           ))}
           <div className="flex gap-3">
-            <button onClick={() => setStep(0)} className="border px-4 py-2 rounded-lg text-sm">← Atrás</button>
+            <button onClick={() => setStep(0)} className="border border-white/10 text-gray-300 px-4 py-2 rounded-lg text-sm hover:bg-white/5">← Atras</button>
             <button onClick={handleStep2} disabled={loading}
-              className="bg-aida-accent text-white px-6 py-2.5 rounded-lg font-medium hover:bg-aida-primary transition disabled:opacity-50">
+              className="bg-aida-accent text-white px-6 py-2.5 rounded-lg font-medium hover:bg-aida-accent/80 transition disabled:opacity-50">
               {loading ? "Guardando..." : "Siguiente →"}
             </button>
           </div>
@@ -317,17 +317,17 @@ export default function IntegrationWizard({ token }: { token: string }) {
       {/* Step 2: Field mapping */}
       {step === 2 && (
         <div className="space-y-6">
-          <div className="bg-green-50 p-4 rounded-lg text-sm text-green-800">
-            El mapeo de campos viene pre-configurado según el template. Puede personalizarlo si es necesario.
+          <div className="bg-green-500/10 border border-green-500/20 p-4 rounded-lg text-sm text-green-400">
+            El mapeo de campos viene pre-configurado segun el template. Puede personalizarlo si es necesario.
           </div>
-          <div className="bg-gray-50 rounded-lg p-4">
-            <pre className="text-xs overflow-auto max-h-64">{JSON.stringify(currentMapping, null, 2)}</pre>
+          <div className="bg-white/[0.03] rounded-lg p-4">
+            <pre className="text-xs overflow-auto max-h-64 text-gray-300">{JSON.stringify(currentMapping, null, 2)}</pre>
           </div>
-          <p className="text-sm text-gray-500">El mapeo por defecto es adecuado para la mayoría de instalaciones. Modifique solo si su sistema tiene campos personalizados.</p>
+          <p className="text-sm text-gray-500">El mapeo por defecto es adecuado para la mayoria de instalaciones. Modifique solo si su sistema tiene campos personalizados.</p>
           <div className="flex gap-3">
-            <button onClick={() => setStep(1)} className="border px-4 py-2 rounded-lg text-sm">← Atrás</button>
+            <button onClick={() => setStep(1)} className="border border-white/10 text-gray-300 px-4 py-2 rounded-lg text-sm hover:bg-white/5">← Atras</button>
             <button onClick={handleStep3} disabled={loading}
-              className="bg-aida-accent text-white px-6 py-2.5 rounded-lg font-medium hover:bg-aida-primary transition disabled:opacity-50">
+              className="bg-aida-accent text-white px-6 py-2.5 rounded-lg font-medium hover:bg-aida-accent/80 transition disabled:opacity-50">
               {loading ? "Guardando..." : "Siguiente →"}
             </button>
           </div>
@@ -337,21 +337,21 @@ export default function IntegrationWizard({ token }: { token: string }) {
       {/* Step 3: Webhooks */}
       {step === 3 && (
         <div className="space-y-6">
-          <div className="bg-purple-50 p-4 rounded-lg text-sm text-purple-800">
+          <div className="bg-purple-500/10 border border-purple-500/20 p-4 rounded-lg text-sm text-purple-400">
             Configure webhooks para recibir notificaciones cuando se emitan o anulen documentos fiscales.
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">URL del Webhook (opcional)</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">URL del Webhook (opcional)</label>
             <input value={webhookUrl} onChange={e => setWebhookUrl(e.target.value)}
-              className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="https://su-sistema.com/webhook/aida" />
+              className="w-full bg-white/5 border border-white/10 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-aida-accent" placeholder="https://su-sistema.com/webhook/aida" />
           </div>
           {webhookUrl && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Eventos a escuchar:</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Eventos a escuchar:</label>
               <div className="grid grid-cols-2 gap-2">
                 {["document.emitted", "document.voided", "document.updated", "control_number.assigned", "control_number.low",
                   "sync.completed", "sync.failed", "integration.error"].map(evt => (
-                  <label key={evt} className="flex items-center gap-2 text-sm">
+                  <label key={evt} className="flex items-center gap-2 text-sm text-gray-300">
                     <input type="checkbox" checked={webhookEvents.includes(evt)}
                       onChange={e => {
                         if (e.target.checked) setWebhookEvents([...webhookEvents, evt]);
@@ -364,9 +364,9 @@ export default function IntegrationWizard({ token }: { token: string }) {
             </div>
           )}
           <div className="flex gap-3">
-            <button onClick={() => setStep(2)} className="border px-4 py-2 rounded-lg text-sm">← Atrás</button>
+            <button onClick={() => setStep(2)} className="border border-white/10 text-gray-300 px-4 py-2 rounded-lg text-sm hover:bg-white/5">← Atras</button>
             <button onClick={handleStep4} disabled={loading}
-              className="bg-aida-accent text-white px-6 py-2.5 rounded-lg font-medium hover:bg-aida-primary transition disabled:opacity-50">
+              className="bg-aida-accent text-white px-6 py-2.5 rounded-lg font-medium hover:bg-aida-accent/80 transition disabled:opacity-50">
               {loading ? "Guardando..." : "Siguiente →"}
             </button>
           </div>
@@ -376,19 +376,19 @@ export default function IntegrationWizard({ token }: { token: string }) {
       {/* Step 4: Sync config */}
       {step === 4 && (
         <div className="space-y-6">
-          <div className="bg-orange-50 p-4 rounded-lg text-sm text-orange-800">
-            Configure la sincronización automática para importar documentos del sistema externo.
+          <div className="bg-orange-500/10 border border-orange-500/20 p-4 rounded-lg text-sm text-orange-400">
+            Configure la sincronizacion automatica para importar documentos del sistema externo.
           </div>
           <label className="flex items-center gap-3 cursor-pointer">
             <input type="checkbox" checked={syncEnabled} onChange={e => setSyncEnabled(e.target.checked)}
               className="w-5 h-5 rounded" />
-            <span className="font-medium">Habilitar sincronización automática</span>
+            <span className="font-medium text-white">Habilitar sincronizacion automatica</span>
           </label>
           {syncEnabled && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Intervalo (segundos)</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Intervalo (segundos)</label>
               <select value={syncInterval} onChange={e => setSyncInterval(Number(e.target.value))}
-                className="border rounded-lg px-3 py-2 text-sm">
+                className="bg-[#0a0f1a] border border-white/10 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-aida-accent">
                 <option value={60}>Cada minuto</option>
                 <option value={120}>Cada 2 minutos</option>
                 <option value={300}>Cada 5 minutos</option>
@@ -399,9 +399,9 @@ export default function IntegrationWizard({ token }: { token: string }) {
             </div>
           )}
           <div className="flex gap-3">
-            <button onClick={() => setStep(3)} className="border px-4 py-2 rounded-lg text-sm">← Atrás</button>
+            <button onClick={() => setStep(3)} className="border border-white/10 text-gray-300 px-4 py-2 rounded-lg text-sm hover:bg-white/5">← Atras</button>
             <button onClick={handleStep5} disabled={loading}
-              className="bg-aida-accent text-white px-6 py-2.5 rounded-lg font-medium hover:bg-aida-primary transition disabled:opacity-50">
+              className="bg-aida-accent text-white px-6 py-2.5 rounded-lg font-medium hover:bg-aida-accent/80 transition disabled:opacity-50">
               {loading ? "Guardando..." : "Siguiente →"}
             </button>
           </div>
@@ -413,20 +413,20 @@ export default function IntegrationWizard({ token }: { token: string }) {
         <div className="space-y-6">
           {!testResult ? (
             <>
-              <div className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-8 text-center">
+              <div className="rounded-xl border-2 border-dashed border-white/10 bg-white/5 p-8 text-center">
                 <div className="text-4xl mb-3">🔌</div>
-                <h3 className="text-lg font-semibold mb-2">Listo para probar la conexión</h3>
+                <h3 className="text-lg font-semibold mb-2 text-white">Listo para probar la conexion</h3>
                 <p className="text-sm text-gray-500 mb-4">
-                  Se verificará la conectividad con el sistema externo usando las credenciales configuradas.
+                  Se verificara la conectividad con el sistema externo usando las credenciales configuradas.
                 </p>
                 <label className="flex items-center justify-center gap-2 mb-4 cursor-pointer">
                   <input type="checkbox" checked={activate} onChange={e => setActivate(e.target.checked)}
                     className="w-4 h-4 rounded" />
-                  <span className="text-sm font-medium">Activar en producción si el test es exitoso</span>
+                  <span className="text-sm font-medium text-gray-300">Activar en produccion si el test es exitoso</span>
                 </label>
               </div>
               <div className="flex gap-3">
-                <button onClick={() => setStep(4)} className="border px-4 py-2 rounded-lg text-sm">← Atrás</button>
+                <button onClick={() => setStep(4)} className="border border-white/10 text-gray-300 px-4 py-2 rounded-lg text-sm hover:bg-white/5">← Atras</button>
                 <button onClick={handleStep6} disabled={loading}
                   className="bg-green-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-green-700 transition disabled:opacity-50">
                   {loading ? "Probando..." : "Ejecutar Test"}
@@ -435,21 +435,21 @@ export default function IntegrationWizard({ token }: { token: string }) {
             </>
           ) : (
             <div className={`border-2 rounded-xl p-8 text-center ${
-              testResult.test_result?.success ? "border-green-500 bg-green-50" : "border-red-500 bg-red-50"
+              testResult.test_result?.success ? "border-green-500/50 bg-green-500/10" : "border-red-500/50 bg-red-500/10"
             }`}>
               <div className="text-5xl mb-3">{testResult.test_result?.success ? "✅" : "❌"}</div>
-              <h3 className="text-xl font-bold mb-2">
-                {testResult.test_result?.success ? "Conexión Exitosa" : "Error de Conexión"}
+              <h3 className="text-xl font-bold mb-2 text-white">
+                {testResult.test_result?.success ? "Conexion Exitosa" : "Error de Conexion"}
               </h3>
-              <p className="text-sm text-gray-600 mb-2">{testResult.message}</p>
-              <p className="text-sm">
+              <p className="text-sm text-gray-400 mb-2">{testResult.message}</p>
+              <p className="text-sm text-gray-300">
                 Latencia: <strong>{testResult.test_result?.latency_ms}ms</strong> |
                 Estado: <strong>{testResult.status}</strong>
               </p>
               {testResult.wizard_completed && (
-                <div className="mt-4 p-3 bg-white rounded-lg text-sm">
-                  Wizard completado. La conexión está{" "}
-                  <span className="font-bold">{testResult.status === "activa" ? "ACTIVA en producción" : "en modo testing"}</span>.
+                <div className="mt-4 p-3 rounded-lg border border-white/10 bg-white/5 text-sm text-gray-300">
+                  Wizard completado. La conexion esta{" "}
+                  <span className="font-bold text-white">{testResult.status === "activa" ? "ACTIVA en produccion" : "en modo testing"}</span>.
                 </div>
               )}
             </div>

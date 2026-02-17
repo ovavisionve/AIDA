@@ -62,11 +62,11 @@ export default function ReportsSection({ token }: Props) {
   if (!selected) {
     return (
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-slate-800">Reportes Fiscales</h3>
+        <h3 className="text-lg font-semibold text-white">Reportes Fiscales</h3>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {REPORTS.map(report => (
             <button key={report.id} onClick={() => setSelected(report.id)}
-              className="group rounded-xl bg-white p-5 shadow-sm text-left hover:shadow-md hover:border-aida-accent/30 border border-transparent transition-all">
+              className="group rounded-xl border border-white/10 bg-white/5 p-5 text-left hover:bg-white/10 hover:border-aida-accent/30 transition-all">
               <div className="flex items-start gap-3">
                 <div className="rounded-lg bg-aida-accent/10 p-2 group-hover:bg-aida-accent/20 transition">
                   <svg className="h-5 w-5 text-aida-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -74,8 +74,8 @@ export default function ReportsSection({ token }: Props) {
                   </svg>
                 </div>
                 <div>
-                  <h4 className="text-sm font-semibold text-slate-800">{report.name}</h4>
-                  <p className="mt-1 text-xs text-slate-500">{report.description}</p>
+                  <h4 className="text-sm font-semibold text-white">{report.name}</h4>
+                  <p className="mt-1 text-xs text-gray-500">{report.description}</p>
                 </div>
               </div>
             </button>
@@ -91,38 +91,38 @@ export default function ReportsSection({ token }: Props) {
     <div className="space-y-4">
       <div className="flex items-center gap-3">
         <button onClick={() => { setSelected(null); setReportData(null); }}
-          className="rounded-lg p-1 hover:bg-slate-100 transition">
-          <svg className="h-5 w-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          className="rounded-lg p-1 hover:bg-white/5 transition">
+          <svg className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
         </button>
-        <h3 className="text-lg font-semibold text-slate-800">{reportInfo.name}</h3>
+        <h3 className="text-lg font-semibold text-white">{reportInfo.name}</h3>
       </div>
 
       {/* Parameters */}
-      <div className="rounded-xl bg-white p-5 shadow-sm">
+      <div className="rounded-xl border border-white/10 bg-white/5 p-5">
         <div className="flex flex-wrap items-end gap-4">
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-500">Fecha Desde</label>
+            <label className="mb-1 block text-xs font-medium text-gray-500">Fecha Desde</label>
             <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-aida-accent focus:outline-none focus:ring-2 focus:ring-aida-accent/20" />
+              className="rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:border-aida-accent focus:outline-none focus:ring-2 focus:ring-aida-accent/20" />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-500">Fecha Hasta</label>
+            <label className="mb-1 block text-xs font-medium text-gray-500">Fecha Hasta</label>
             <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-aida-accent focus:outline-none focus:ring-2 focus:ring-aida-accent/20" />
+              className="rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:border-aida-accent focus:outline-none focus:ring-2 focus:ring-aida-accent/20" />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-500">Formato</label>
+            <label className="mb-1 block text-xs font-medium text-gray-500">Formato</label>
             <select value={format} onChange={e => setFormat(e.target.value as "pdf" | "excel" | "csv")}
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-aida-accent focus:outline-none">
+              className="rounded-lg bg-[#0a0f1a] border border-white/10 px-3 py-2 text-sm text-white focus:border-aida-accent focus:outline-none">
               <option value="excel">Excel (.xlsx)</option>
               <option value="csv">CSV</option>
               <option value="pdf">PDF</option>
             </select>
           </div>
           <button onClick={generateReport} disabled={loading || !dateFrom || !dateTo}
-            className="rounded-lg bg-aida-accent px-5 py-2 text-sm font-medium text-white hover:bg-aida-primary transition disabled:opacity-50">
+            className="rounded-lg bg-aida-accent px-5 py-2 text-sm font-medium text-white hover:bg-aida-accent/80 transition disabled:opacity-50">
             {loading ? "Generando..." : "Generar Reporte"}
           </button>
         </div>
@@ -130,24 +130,24 @@ export default function ReportsSection({ token }: Props) {
 
       {/* Results */}
       {reportData && (
-        <div className="rounded-xl bg-white p-5 shadow-sm">
+        <div className="rounded-xl border border-white/10 bg-white/5 p-5">
           {reportData.downloaded ? (
             <div className="text-center py-6">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100">
-                <svg className="h-6 w-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10">
+                <svg className="h-6 w-6 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <p className="text-sm text-slate-600">Reporte descargado exitosamente</p>
+              <p className="text-sm text-gray-300">Reporte descargado exitosamente</p>
             </div>
           ) : reportData.resumen ? (
             <div className="space-y-4">
-              <h4 className="text-sm font-semibold text-slate-700">Resumen del Periodo</h4>
+              <h4 className="text-sm font-semibold text-gray-300">Resumen del Periodo</h4>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {Object.entries(reportData.resumen).map(([key, val]) => (
-                  <div key={key} className="rounded-lg bg-slate-50 p-3">
-                    <p className="text-[11px] text-slate-500 capitalize">{key.replace(/_/g, " ")}</p>
-                    <p className="mt-1 text-lg font-bold text-slate-800">
+                  <div key={key} className="rounded-lg bg-white/[0.03] border border-white/5 p-3">
+                    <p className="text-[11px] text-gray-500 capitalize">{key.replace(/_/g, " ")}</p>
+                    <p className="mt-1 text-lg font-bold text-white">
                       {typeof val === "number" ? val.toLocaleString("es-VE", { minimumFractionDigits: 2 }) : String(val)}
                     </p>
                   </div>
@@ -157,7 +157,7 @@ export default function ReportsSection({ token }: Props) {
               {reportData.items && (
                 <div className="mt-4 overflow-auto max-h-96">
                   <table className="w-full text-sm">
-                    <thead className="border-b bg-slate-50 text-xs uppercase text-slate-500 sticky top-0">
+                    <thead className="border-b border-white/5 bg-white/[0.03] text-xs uppercase text-gray-500 sticky top-0">
                       <tr>
                         <th className="px-3 py-2 text-left">Fecha</th>
                         <th className="px-3 py-2 text-left">N. Control</th>
@@ -167,15 +167,15 @@ export default function ReportsSection({ token }: Props) {
                         <th className="px-3 py-2 text-right">Total</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y">
+                    <tbody>
                       {reportData.items.map((item: any, i: number) => (
-                        <tr key={i} className="hover:bg-slate-50/50">
-                          <td className="px-3 py-2 text-slate-600">{item.fecha}</td>
-                          <td className="px-3 py-2 font-mono text-xs">{item.control_number}</td>
-                          <td className="px-3 py-2">{item.receptor}</td>
-                          <td className="px-3 py-2 text-right">{item.base_imponible?.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</td>
-                          <td className="px-3 py-2 text-right">{item.iva?.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</td>
-                          <td className="px-3 py-2 text-right font-medium">{item.total?.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</td>
+                        <tr key={i} className="border-b border-white/5 hover:bg-white/5">
+                          <td className="px-3 py-2 text-gray-300">{item.fecha}</td>
+                          <td className="px-3 py-2 font-mono text-xs text-gray-300">{item.control_number}</td>
+                          <td className="px-3 py-2 text-gray-300">{item.receptor}</td>
+                          <td className="px-3 py-2 text-right text-gray-300">{item.base_imponible?.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</td>
+                          <td className="px-3 py-2 text-right text-gray-300">{item.iva?.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</td>
+                          <td className="px-3 py-2 text-right font-medium text-white">{item.total?.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -184,7 +184,7 @@ export default function ReportsSection({ token }: Props) {
               )}
             </div>
           ) : (
-            <p className="text-sm text-slate-500 text-center py-4">No hay datos para el periodo seleccionado.</p>
+            <p className="text-sm text-gray-500 text-center py-4">No hay datos para el periodo seleccionado.</p>
           )}
         </div>
       )}

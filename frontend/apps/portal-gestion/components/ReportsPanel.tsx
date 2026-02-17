@@ -89,21 +89,21 @@ export default function ReportsPanel({ token }: { token: string }) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Reportes Inteligentes</h1>
+        <h1 className="text-2xl font-bold text-white">Reportes Inteligentes</h1>
         <p className="text-sm text-gray-500 mt-0.5">Generacion automatica con analisis de IA</p>
       </div>
 
       {/* Period selector */}
-      <div className="bg-white rounded-xl shadow-sm p-4 flex flex-wrap items-center gap-4">
+      <div className="rounded-xl border border-white/10 bg-white/5 p-4 flex flex-wrap items-center gap-4">
         <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-700">Año:</label>
-          <select value={year} onChange={e => setYear(Number(e.target.value))} className="border rounded-lg px-3 py-1.5 text-sm">
+          <label className="text-sm font-medium text-gray-300">Ano:</label>
+          <select value={year} onChange={e => setYear(Number(e.target.value))} className="bg-[#0a0f1a] border border-white/10 text-white rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-aida-accent">
             {[2024, 2025, 2026].map(y => <option key={y} value={y}>{y}</option>)}
           </select>
         </div>
         <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-700">Mes:</label>
-          <select value={month} onChange={e => setMonth(Number(e.target.value))} className="border rounded-lg px-3 py-1.5 text-sm">
+          <label className="text-sm font-medium text-gray-300">Mes:</label>
+          <select value={month} onChange={e => setMonth(Number(e.target.value))} className="bg-[#0a0f1a] border border-white/10 text-white rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-aida-accent">
             {Array.from({ length: 12 }, (_, i) => (
               <option key={i + 1} value={i + 1}>
                 {new Date(2024, i).toLocaleString("es", { month: "long" })}
@@ -112,11 +112,11 @@ export default function ReportsPanel({ token }: { token: string }) {
           </select>
         </div>
         <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-700">Periodo IA:</label>
-          <select value={period} onChange={e => setPeriod(e.target.value as any)} className="border rounded-lg px-3 py-1.5 text-sm">
+          <label className="text-sm font-medium text-gray-300">Periodo IA:</label>
+          <select value={period} onChange={e => setPeriod(e.target.value as any)} className="bg-[#0a0f1a] border border-white/10 text-white rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-aida-accent">
             <option value="week">Semana</option>
             <option value="month">Mes</option>
-            <option value="year">Año</option>
+            <option value="year">Ano</option>
           </select>
         </div>
       </div>
@@ -128,8 +128,8 @@ export default function ReportsPanel({ token }: { token: string }) {
             key={r.key}
             onClick={() => generateReport(r.key)}
             disabled={loading && activeReport === r.key}
-            className={`text-left bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition border-2 ${
-              activeReport === r.key ? "border-aida-accent" : "border-transparent"
+            className={`text-left rounded-xl border border-white/10 bg-white/5 p-5 hover:bg-white/[0.08] transition border-2 ${
+              activeReport === r.key ? "!border-aida-accent" : "border-transparent"
             }`}
           >
             <div className="flex items-start gap-3">
@@ -139,7 +139,7 @@ export default function ReportsPanel({ token }: { token: string }) {
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">{r.title}</h3>
+                <h3 className="font-semibold text-white">{r.title}</h3>
                 <p className="text-xs text-gray-500 mt-0.5">{r.description}</p>
               </div>
             </div>
@@ -155,10 +155,10 @@ export default function ReportsPanel({ token }: { token: string }) {
 
       {/* Report result */}
       {reportData && !loading && (
-        <div className="bg-white rounded-xl shadow-sm p-6">
+        <div className="rounded-xl border border-white/10 bg-white/5 p-6">
           {reportData.error ? (
             <div className="text-center py-8">
-              <p className="text-red-500">{reportData.error}</p>
+              <p className="text-red-400">{reportData.error}</p>
             </div>
           ) : activeReport === "sales-book" ? (
             <SalesBookView data={reportData} />
@@ -180,8 +180,8 @@ function SalesBookView({ data }: { data: any }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold">Libro de Ventas - {data.period}</h2>
-        <span className="text-xs text-gray-400">Generado: {new Date(data.generated_at).toLocaleString()}</span>
+        <h2 className="text-lg font-bold text-white">Libro de Ventas - {data.period}</h2>
+        <span className="text-xs text-gray-500">Generado: {new Date(data.generated_at).toLocaleString()}</span>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
@@ -199,10 +199,10 @@ function SalesBookView({ data }: { data: any }) {
       </div>
 
       {data.entries?.length > 0 && (
-        <div className="overflow-auto max-h-60 border rounded-lg">
+        <div className="overflow-auto max-h-60 border border-white/10 rounded-lg">
           <table className="w-full text-xs">
-            <thead className="bg-gray-50 sticky top-0">
-              <tr>
+            <thead className="bg-white/[0.03] sticky top-0">
+              <tr className="text-gray-500">
                 <th className="px-3 py-2 text-left">N. Control</th>
                 <th className="px-3 py-2 text-left">Fecha</th>
                 <th className="px-3 py-2 text-left">RIF</th>
@@ -213,14 +213,14 @@ function SalesBookView({ data }: { data: any }) {
             </thead>
             <tbody>
               {data.entries.map((e: any, i: number) => (
-                <tr key={i} className={`border-t ${e.status === "anulado" ? "bg-red-50 line-through text-gray-400" : ""}`}>
+                <tr key={i} className={`border-t border-white/5 ${e.status === "anulado" ? "bg-red-500/5 line-through text-gray-600" : "text-gray-300"}`}>
                   <td className="px-3 py-1.5 font-mono">{e.numero_control}</td>
                   <td className="px-3 py-1.5">{e.fecha}</td>
                   <td className="px-3 py-1.5">{e.rif_cliente}</td>
                   <td className="px-3 py-1.5 truncate max-w-[200px]">{e.razon_social}</td>
                   <td className="px-3 py-1.5 text-right">Bs. {fmt(e.total)}</td>
                   <td className="px-3 py-1.5 text-center">
-                    <span className={`px-1.5 py-0.5 rounded text-xs ${e.status === "anulado" ? "bg-red-100 text-red-600" : "bg-green-100 text-green-600"}`}>
+                    <span className={`px-1.5 py-0.5 rounded text-xs ${e.status === "anulado" ? "bg-red-500/20 text-red-400" : "bg-green-500/20 text-green-400"}`}>
                       {e.status}
                     </span>
                   </td>
@@ -242,13 +242,13 @@ function TaxSummaryView({ data }: { data: any }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold">Resumen IVA - {data.period}</h2>
-        <span className="text-xs text-gray-400">Generado: {new Date(data.generated_at).toLocaleString()}</span>
+        <h2 className="text-lg font-bold text-white">Resumen IVA - {data.period}</h2>
+        <span className="text-xs text-gray-500">Generado: {new Date(data.generated_at).toLocaleString()}</span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="border rounded-lg p-4">
-          <h4 className="text-sm font-semibold text-blue-600 mb-2">Ventas</h4>
+        <div className="border border-white/10 rounded-lg p-4">
+          <h4 className="text-sm font-semibold text-blue-400 mb-2">Ventas</h4>
           <Stat label="Cantidad" value={data.ventas.cantidad} />
           <Stat label="Base imponible" value={`Bs. ${fmt(data.ventas.base_imponible)}`} />
           <Stat label="IVA 16%" value={`Bs. ${fmt(data.ventas.iva_16_pct)}`} />
@@ -256,37 +256,37 @@ function TaxSummaryView({ data }: { data: any }) {
           <Stat label="Total" value={`Bs. ${fmt(data.ventas.total)}`} highlight />
         </div>
 
-        <div className="border rounded-lg p-4">
-          <h4 className="text-sm font-semibold text-red-600 mb-2">Notas de Credito</h4>
+        <div className="border border-white/10 rounded-lg p-4">
+          <h4 className="text-sm font-semibold text-red-400 mb-2">Notas de Credito</h4>
           <Stat label="Cantidad" value={data.notas_credito.cantidad} />
           <Stat label="Total" value={`Bs. ${fmt(data.notas_credito.total)}`} />
         </div>
 
-        <div className="border rounded-lg p-4">
-          <h4 className="text-sm font-semibold text-orange-600 mb-2">Notas de Debito</h4>
+        <div className="border border-white/10 rounded-lg p-4">
+          <h4 className="text-sm font-semibold text-orange-400 mb-2">Notas de Debito</h4>
           <Stat label="Cantidad" value={data.notas_debito.cantidad} />
           <Stat label="Total" value={`Bs. ${fmt(data.notas_debito.total)}`} />
         </div>
       </div>
 
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-        <h4 className="text-sm font-semibold text-yellow-800 mb-2">Resumen IVA para Declaracion</h4>
+      <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
+        <h4 className="text-sm font-semibold text-yellow-400 mb-2">Resumen IVA para Declaracion</h4>
         <div className="grid grid-cols-3 gap-4 text-sm">
           <div>
-            <span className="text-gray-600">Debito fiscal:</span>
-            <p className="font-bold text-lg">Bs. {fmt(data.resumen_iva.debito_fiscal)}</p>
+            <span className="text-gray-400">Debito fiscal:</span>
+            <p className="font-bold text-lg text-white">Bs. {fmt(data.resumen_iva.debito_fiscal)}</p>
           </div>
           <div>
-            <span className="text-gray-600">Credito fiscal:</span>
-            <p className="font-bold text-lg">Bs. {fmt(data.resumen_iva.credito_fiscal)}</p>
+            <span className="text-gray-400">Credito fiscal:</span>
+            <p className="font-bold text-lg text-white">Bs. {fmt(data.resumen_iva.credito_fiscal)}</p>
           </div>
           <div>
-            <span className="text-gray-600">IVA a pagar:</span>
-            <p className="font-bold text-lg text-red-600">Bs. {fmt(data.resumen_iva.iva_a_pagar)}</p>
+            <span className="text-gray-400">IVA a pagar:</span>
+            <p className="font-bold text-lg text-red-400">Bs. {fmt(data.resumen_iva.iva_a_pagar)}</p>
           </div>
         </div>
         {data.resumen_iva.nota && (
-          <p className="text-xs text-yellow-700 mt-2">{data.resumen_iva.nota}</p>
+          <p className="text-xs text-yellow-400/80 mt-2">{data.resumen_iva.nota}</p>
         )}
       </div>
 
@@ -300,7 +300,7 @@ function TaxSummaryView({ data }: { data: any }) {
 function FiscalSummaryView({ data }: { data: any }) {
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-bold">Resumen Fiscal - {data.period}</h2>
+      <h2 className="text-lg font-bold text-white">Resumen Fiscal - {data.period}</h2>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
         <Stat label="Facturas" value={data.raw_data.total_invoices} />
@@ -317,13 +317,13 @@ function FiscalSummaryView({ data }: { data: any }) {
 function TaxOptimizationView({ data }: { data: any }) {
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-bold">Optimizacion Fiscal</h2>
+      <h2 className="text-lg font-bold text-white">Optimizacion Fiscal</h2>
 
       {data.monthly_data?.length > 0 && (
-        <div className="overflow-auto border rounded-lg">
+        <div className="overflow-auto border border-white/10 rounded-lg">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50">
-              <tr>
+            <thead className="bg-white/[0.03]">
+              <tr className="text-gray-500">
                 <th className="px-4 py-2 text-left">Mes</th>
                 <th className="px-4 py-2 text-right">Facturas</th>
                 <th className="px-4 py-2 text-right">Total</th>
@@ -333,7 +333,7 @@ function TaxOptimizationView({ data }: { data: any }) {
             </thead>
             <tbody>
               {data.monthly_data.map((m: any, i: number) => (
-                <tr key={i} className="border-t">
+                <tr key={i} className="border-t border-white/5 text-gray-300">
                   <td className="px-4 py-2">{m.mes}</td>
                   <td className="px-4 py-2 text-right">{m.facturas}</td>
                   <td className="px-4 py-2 text-right">Bs. {fmt(m.total)}</td>
@@ -355,22 +355,22 @@ function Stat({ label, value, highlight }: { label: string; value: any; highligh
   return (
     <div className="py-1">
       <span className="text-xs text-gray-500">{label}</span>
-      <p className={`font-semibold ${highlight ? "text-aida-accent text-lg" : "text-gray-900"}`}>{value}</p>
+      <p className={`font-semibold ${highlight ? "text-aida-accent text-lg" : "text-white"}`}>{value}</p>
     </div>
   );
 }
 
 function AIAnalysisBlock({ title, content }: { title: string; content: string }) {
   return (
-    <div className="bg-gradient-to-br from-aida-accent/5 to-purple-50 rounded-xl p-5 border border-aida-accent/20">
+    <div className="bg-gradient-to-br from-aida-accent/10 to-purple-900/20 rounded-xl p-5 border border-aida-accent/20">
       <div className="flex items-center gap-2 mb-3">
         <svg className="w-5 h-5 text-aida-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
           <path strokeLinecap="round" strokeLinejoin="round"
             d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
         </svg>
-        <h4 className="font-semibold text-gray-800">{title}</h4>
+        <h4 className="font-semibold text-white">{title}</h4>
       </div>
-      <div className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+      <div className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">
         {content}
       </div>
     </div>

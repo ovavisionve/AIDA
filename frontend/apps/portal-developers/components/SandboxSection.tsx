@@ -155,7 +155,7 @@ export default function SandboxSection() {
       <div className="rounded-xl border border-white/10 bg-white/5 p-4">
         <label className="mb-2 block text-xs font-medium text-gray-400">API Key (opcional si usa sesion JWT)</label>
         <input value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="aida_sk_..." type="password"
-          className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 font-mono text-sm text-white placeholder-gray-600 focus:border-aida-highlight focus:outline-none" />
+          className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 font-mono text-sm text-white placeholder-gray-600 focus:border-aida-accent focus:outline-none" />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
@@ -165,7 +165,7 @@ export default function SandboxSection() {
             <button key={ep.id} onClick={() => selectEndpoint(ep)}
               className={`flex w-full items-center gap-2 rounded-lg p-3 text-left text-sm transition ${
                 selected.id === ep.id
-                  ? "bg-aida-highlight/10 border border-aida-highlight/30 text-white"
+                  ? "bg-aida-accent/10 border border-aida-accent/20 text-white"
                   : "border border-white/5 bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white"
               }`}>
               <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${methodColors[ep.method]}`}>{ep.method}</span>
@@ -180,7 +180,7 @@ export default function SandboxSection() {
             <code className="flex-1 text-sm text-gray-300">{selected.path}{queryParams ? `?${queryParams}` : ""}</code>
             <span className="rounded bg-white/5 px-2 py-1 text-[10px] text-gray-500">{selected.auth}</span>
             <button onClick={execute} disabled={loading}
-              className="rounded-lg bg-aida-highlight px-4 py-2 text-sm font-medium text-white hover:bg-cyan-600 transition disabled:opacity-50">
+              className="rounded-lg bg-aida-accent px-4 py-2 text-sm font-medium text-white hover:bg-aida-accent/80 transition disabled:opacity-50">
               {loading ? "Enviando..." : "Enviar"}
             </button>
           </div>
@@ -189,7 +189,7 @@ export default function SandboxSection() {
             <div>
               <label className="mb-1 block text-xs font-medium text-gray-500">Query Parameters</label>
               <input value={queryParams} onChange={(e) => setQueryParams(e.target.value)} placeholder="key=value&key2=value2"
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 font-mono text-sm text-white placeholder-gray-600 focus:border-aida-highlight focus:outline-none" />
+                className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 font-mono text-sm text-white placeholder-gray-600 focus:border-aida-accent focus:outline-none" />
             </div>
           )}
 
@@ -197,7 +197,7 @@ export default function SandboxSection() {
             <div>
               <label className="mb-1 block text-xs font-medium text-gray-500">Request Body (JSON)</label>
               <textarea value={requestBody} onChange={(e) => setRequestBody(e.target.value)} rows={12}
-                className="w-full rounded-lg border border-white/10 bg-black/30 px-4 py-3 font-mono text-sm text-amber-400 placeholder-gray-600 focus:border-aida-highlight focus:outline-none resize-y" />
+                className="w-full rounded-lg border border-white/10 bg-black/30 px-4 py-3 font-mono text-sm text-amber-400 placeholder-gray-600 focus:border-aida-accent focus:outline-none resize-y" />
             </div>
           )}
 

@@ -57,7 +57,7 @@ export default function AIChatWidget({ token }: { token: string }) {
       {/* Floating button */}
       <button
         onClick={() => setOpen(!open)}
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-aida-accent text-white shadow-lg hover:bg-aida-primary transition-all flex items-center justify-center z-50"
+        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-aida-accent text-white shadow-lg shadow-aida-accent/25 hover:bg-aida-accent/80 transition-all flex items-center justify-center z-50"
       >
         {open ? (
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -73,11 +73,11 @@ export default function AIChatWidget({ token }: { token: string }) {
 
       {/* Chat panel */}
       {open && (
-        <div className="fixed bottom-24 right-6 w-96 h-[500px] bg-white rounded-2xl shadow-2xl flex flex-col z-50 border">
+        <div className="fixed bottom-24 right-6 w-96 h-[500px] bg-[#0a0f1a] rounded-2xl shadow-2xl flex flex-col z-50 border border-white/10">
           {/* Header */}
-          <div className="bg-gradient-to-r from-aida-accent to-aida-primary text-white px-4 py-3 rounded-t-2xl">
-            <h3 className="font-semibold text-sm">Asistente Fiscal AIDA</h3>
-            <p className="text-xs text-white/70">Consultas fiscales con IA</p>
+          <div className="bg-gradient-to-r from-aida-accent/20 to-aida-cyan/10 border-b border-white/10 text-white px-4 py-3 rounded-t-2xl">
+            <h3 className="font-semibold text-sm text-white">Asistente Fiscal AIDA</h3>
+            <p className="text-xs text-gray-500">Consultas fiscales con IA</p>
           </div>
 
           {/* Messages */}
@@ -88,7 +88,7 @@ export default function AIChatWidget({ token }: { token: string }) {
                 <div className="space-y-2">
                   {SUGGESTIONS.map(s => (
                     <button key={s} onClick={() => send(s)}
-                      className="block w-full text-left text-xs border rounded-lg px-3 py-2 hover:bg-gray-50 text-gray-600 transition">
+                      className="block w-full text-left text-xs border border-white/10 rounded-lg px-3 py-2 hover:bg-white/5 text-gray-300 transition">
                       {s}
                     </button>
                   ))}
@@ -100,7 +100,7 @@ export default function AIChatWidget({ token }: { token: string }) {
                   <div className={`max-w-[85%] rounded-xl px-3 py-2 text-sm ${
                     m.role === "user"
                       ? "bg-aida-accent text-white rounded-br-sm"
-                      : "bg-gray-100 text-gray-800 rounded-bl-sm"
+                      : "bg-white/5 text-gray-300 rounded-bl-sm"
                   }`}>
                     <div className="whitespace-pre-wrap break-words leading-relaxed">{m.content}</div>
                   </div>
@@ -110,11 +110,11 @@ export default function AIChatWidget({ token }: { token: string }) {
 
             {loading && (
               <div className="flex justify-start">
-                <div className="bg-gray-100 rounded-xl px-3 py-2">
+                <div className="bg-white/5 rounded-xl px-3 py-2">
                   <div className="flex gap-1">
-                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" />
-                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                    <div className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce" />
+                    <div className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                    <div className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
                   </div>
                 </div>
               </div>
@@ -123,19 +123,19 @@ export default function AIChatWidget({ token }: { token: string }) {
           </div>
 
           {/* Input */}
-          <div className="p-3 border-t">
+          <div className="p-3 border-t border-white/10">
             <div className="flex gap-2">
               <input
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && send()}
                 placeholder="Escribe tu consulta..."
-                className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-aida-accent"
+                className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-aida-accent"
               />
               <button
                 onClick={() => send()}
                 disabled={!input.trim() || loading}
-                className="bg-aida-accent text-white rounded-lg px-3 py-2 hover:bg-aida-primary transition disabled:opacity-40"
+                className="bg-aida-accent text-white rounded-lg px-3 py-2 hover:bg-aida-accent/80 transition disabled:opacity-40"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />

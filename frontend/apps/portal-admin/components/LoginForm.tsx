@@ -55,22 +55,22 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-aida-dark to-aida-primary">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl">
+    <div className="flex min-h-screen items-center justify-center bg-[#0a0f1a]">
+      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-aida-primary">AIDA</h1>
+          <h1 className="text-3xl font-bold text-white">AIDA</h1>
           <p className="mt-2 text-sm text-gray-500">Portal de Administración</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {error && (
-            <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">
+            <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-400">
               {error}
             </div>
           )}
 
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-300">
               Correo electrónico
             </label>
             <input
@@ -79,13 +79,13 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="mt-1 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+              className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none focus:ring-1 focus:ring-aida-accent/30"
               placeholder="admin@aida.com.ve"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="password" className="block text-sm font-medium text-gray-300">
               Contraseña
             </label>
             <input
@@ -94,13 +94,13 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="mt-1 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+              className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none focus:ring-1 focus:ring-aida-accent/30"
             />
           </div>
 
           {requires2FA && (
             <div>
-              <label htmlFor="totp" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="totp" className="block text-sm font-medium text-gray-300">
                 Código 2FA
               </label>
               <input
@@ -110,7 +110,7 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
                 onChange={(e) => setTotpCode(e.target.value)}
                 required
                 maxLength={6}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-center text-lg tracking-widest focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-center text-lg tracking-widest text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none focus:ring-1 focus:ring-aida-accent/30"
                 placeholder="000000"
               />
             </div>
@@ -119,7 +119,7 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-aida-primary px-4 py-2.5 text-sm font-medium text-white transition hover:bg-aida-accent focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50"
+            className="w-full rounded-lg bg-aida-accent px-4 py-2.5 text-sm font-medium text-white transition hover:bg-aida-accent/80 focus:outline-none focus:ring-2 focus:ring-aida-accent/50 disabled:opacity-50"
           >
             {loading ? "Iniciando sesión..." : "Iniciar Sesión"}
           </button>

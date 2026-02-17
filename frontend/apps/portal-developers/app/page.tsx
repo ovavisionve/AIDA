@@ -49,18 +49,18 @@ export default function PortalDevelopers() {
       <div className="flex min-h-screen items-center justify-center">
         <div className="w-full max-w-md space-y-6 rounded-xl border border-white/10 bg-white/5 p-8">
           <div className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-aida-highlight font-bold text-xl">A</div>
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-aida-accent font-bold text-xl">A</div>
             <h1 className="text-2xl font-bold">AIDA Developers</h1>
             <p className="mt-1 text-sm text-gray-400">Inicie sesion para gestionar sus API keys</p>
           </div>
           <div className="space-y-4">
             <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email"
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-gray-500 focus:border-aida-highlight focus:outline-none" />
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none" />
             <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="Password"
               onKeyDown={(e) => e.key === "Enter" && login()}
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-gray-500 focus:border-aida-highlight focus:outline-none" />
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none" />
             {loginError && <p className="text-sm text-red-400">{loginError}</p>}
-            <button onClick={login} className="w-full rounded-lg bg-aida-highlight py-3 font-medium text-white hover:bg-red-500">
+            <button onClick={login} className="w-full rounded-lg bg-aida-accent py-3 font-medium text-white hover:bg-aida-accent/80">
               Iniciar Sesion
             </button>
           </div>
@@ -87,17 +87,17 @@ export default function PortalDevelopers() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="border-b border-white/10 px-6 py-3">
+      <header className="border-b border-white/5 px-6 py-3">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded bg-aida-highlight text-sm font-bold">A</div>
+            <div className="flex h-8 w-8 items-center justify-center rounded bg-aida-accent text-sm font-bold">A</div>
             <span className="font-bold">AIDA Developers</span>
           </div>
           <div className="flex items-center gap-4">
             <nav className="flex gap-1">
               {tabs.map((t) => (
                 <button key={t.id} onClick={() => setSection(t.id)}
-                  className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition ${section === t.id ? "bg-aida-highlight text-white" : "text-gray-400 hover:text-white"}`}>
+                  className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition ${section === t.id ? "bg-aida-accent/10 text-aida-cyan border border-aida-accent/20" : "text-gray-400 hover:text-white"}`}>
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={t.icon} />
                   </svg>

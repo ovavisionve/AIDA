@@ -19,7 +19,7 @@ export default function UsageSection() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-12"><div className="h-6 w-6 animate-spin rounded-full border-2 border-aida-highlight border-t-transparent" /></div>
+        <div className="flex justify-center py-12"><div className="h-6 w-6 animate-spin rounded-full border-2 border-aida-accent border-t-transparent" /></div>
       ) : usage ? (
         <>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -47,7 +47,7 @@ export default function UsageSection() {
                       <span className="text-sm text-gray-300">{action}</span>
                       <div className="flex items-center gap-2">
                         <div className="h-2 w-24 overflow-hidden rounded-full bg-white/10">
-                          <div className="h-full rounded-full bg-aida-highlight" style={{ width: `${Math.min(100, (count / usage.total_requests) * 100)}%` }} />
+                          <div className="h-full rounded-full bg-aida-accent" style={{ width: `${Math.min(100, (count / usage.total_requests) * 100)}%` }} />
                         </div>
                         <span className="w-10 text-right text-xs text-gray-400">{count}</span>
                       </div>

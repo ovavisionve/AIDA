@@ -22,7 +22,7 @@ export default function QuickStartSection() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
           {data.steps.map((s: any) => (
             <div key={s.step} className="rounded-xl border border-white/10 bg-white/5 p-5">
-              <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-full bg-aida-highlight text-sm font-bold">{s.step}</div>
+              <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-full bg-aida-accent text-sm font-bold">{s.step}</div>
               <h3 className="font-semibold">{s.title}</h3>
               <p className="mt-1 text-sm text-gray-400">{s.description}</p>
             </div>
@@ -37,7 +37,7 @@ export default function QuickStartSection() {
             <div className="flex gap-1 rounded-lg bg-white/5 p-1">
               {(["curl", "python", "javascript"] as const).map((l) => (
                 <button key={l} onClick={() => setLang(l)}
-                  className={`rounded px-3 py-1 text-xs font-medium transition ${lang === l ? "bg-aida-highlight text-white" : "text-gray-400 hover:text-white"}`}>
+                  className={`rounded px-3 py-1 text-xs font-medium transition ${lang === l ? "bg-aida-accent text-white" : "text-gray-400 hover:text-white"}`}>
                   {l}
                 </button>
               ))}

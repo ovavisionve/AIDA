@@ -105,15 +105,15 @@ export default function TemplateSelector({ token }: { token: string }) {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-xl font-bold text-slate-800">Plantillas de Documentos</h2>
-        <p className="mt-1 text-sm text-slate-500">
+        <h2 className="text-xl font-bold text-white">Plantillas de Documentos</h2>
+        <p className="mt-1 text-sm text-gray-500">
           Selecciona el diseno visual para cada tipo de documento fiscal. Puedes previsualizar antes de elegir.
         </p>
       </div>
 
       {/* Success message */}
       {message && (
-        <div className="rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-2.5 text-sm text-emerald-700">
+        <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-2.5 text-sm text-emerald-400">
           {message}
         </div>
       )}
@@ -126,8 +126,8 @@ export default function TemplateSelector({ token }: { token: string }) {
             onClick={() => setSelectedDocType(dt.key)}
             className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
               selectedDocType === dt.key
-                ? "bg-aida-accent text-white shadow-md shadow-aida-accent/25"
-                : "bg-white text-slate-600 border border-slate-200 hover:border-aida-accent/50"
+                ? "bg-aida-accent/10 text-aida-cyan border border-aida-accent/20"
+                : "bg-white/5 text-gray-500 border border-white/10 hover:border-aida-accent/30 hover:text-gray-300"
             }`}
           >
             {dt.label}
@@ -140,9 +140,9 @@ export default function TemplateSelector({ token }: { token: string }) {
 
       {/* Current selection */}
       {currentPref && (
-        <div className="rounded-lg bg-blue-50 border border-blue-200 px-4 py-3 text-sm">
-          <span className="text-blue-600 font-medium">Plantilla actual:</span>{" "}
-          <span className="text-blue-800">{currentPref.template_name}</span>
+        <div className="rounded-lg bg-aida-accent/10 border border-aida-accent/20 px-4 py-3 text-sm">
+          <span className="text-aida-accent font-medium">Plantilla actual:</span>{" "}
+          <span className="text-white">{currentPref.template_name}</span>
         </div>
       )}
 
@@ -160,10 +160,10 @@ export default function TemplateSelector({ token }: { token: string }) {
           return (
             <div
               key={tpl.id}
-              className={`group relative rounded-xl border-2 bg-white overflow-hidden transition-all duration-300 hover:shadow-lg ${
+              className={`group relative rounded-xl border-2 bg-white/5 overflow-hidden transition-all duration-300 hover:bg-white/10 ${
                 isSelected
                   ? "border-aida-accent shadow-md shadow-aida-accent/15"
-                  : "border-slate-200 hover:border-aida-accent/50"
+                  : "border-white/10 hover:border-aida-accent/50"
               }`}
             >
               {/* Color preview header */}
@@ -207,8 +207,8 @@ export default function TemplateSelector({ token }: { token: string }) {
 
               {/* Info */}
               <div className="p-3">
-                <h3 className="font-semibold text-sm text-slate-800">{tpl.name}</h3>
-                <p className="mt-1 text-[11px] text-slate-500 line-clamp-2">{tpl.description}</p>
+                <h3 className="font-semibold text-sm text-white">{tpl.name}</h3>
+                <p className="mt-1 text-[11px] text-gray-500 line-clamp-2">{tpl.description}</p>
 
                 {/* Style badge */}
                 <div className="mt-2 flex items-center gap-1.5">
@@ -216,14 +216,14 @@ export default function TemplateSelector({ token }: { token: string }) {
                     className="inline-block h-2.5 w-2.5 rounded-full"
                     style={{ backgroundColor: headerColor }}
                   />
-                  <span className="text-[10px] text-slate-400 capitalize">{style}</span>
+                  <span className="text-[10px] text-gray-500 capitalize">{style}</span>
                 </div>
 
                 {/* Actions */}
                 <div className="mt-3 flex gap-2">
                   <button
                     onClick={() => openPreview(tpl.id)}
-                    className="flex-1 rounded-lg border border-slate-200 px-2 py-1.5 text-[11px] font-medium text-slate-600 hover:bg-slate-50 transition"
+                    className="flex-1 rounded-lg border border-white/10 px-2 py-1.5 text-[11px] font-medium text-gray-300 hover:bg-white/5 transition"
                   >
                     Vista previa
                   </button>
@@ -232,8 +232,8 @@ export default function TemplateSelector({ token }: { token: string }) {
                     disabled={saving || isSelected}
                     className={`flex-1 rounded-lg px-2 py-1.5 text-[11px] font-medium transition ${
                       isSelected
-                        ? "bg-emerald-100 text-emerald-700 cursor-default"
-                        : "bg-aida-accent text-white hover:bg-aida-primary shadow-sm"
+                        ? "bg-emerald-500/10 text-emerald-400 cursor-default"
+                        : "bg-aida-accent text-white hover:bg-aida-accent/80 shadow-sm"
                     }`}
                   >
                     {isSelected ? "Seleccionada" : saving ? "..." : "Usar esta"}
@@ -246,7 +246,7 @@ export default function TemplateSelector({ token }: { token: string }) {
       </div>
 
       {templates.length === 0 && (
-        <div className="text-center py-12 text-slate-400">
+        <div className="text-center py-12 text-gray-500">
           <p className="text-lg">No hay plantillas disponibles</p>
           <p className="text-sm mt-1">Contacta al administrador para crear plantillas.</p>
         </div>

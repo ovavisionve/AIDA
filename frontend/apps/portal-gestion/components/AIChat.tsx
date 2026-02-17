@@ -151,11 +151,11 @@ export default function AIChat({ token }: { token: string }) {
   return (
     <div className="flex flex-col h-[calc(100vh-3rem)] max-h-[calc(100vh-3rem)]">
       {/* Header */}
-      <div className="flex items-center justify-between pb-4 border-b">
+      <div className="flex items-center justify-between pb-4 border-b border-white/10">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Asistente Fiscal IA</h1>
+          <h1 className="text-2xl font-bold text-white">Asistente Fiscal IA</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            Consultas fiscales, IVA, SENIAT, facturación y normativa venezolana
+            Consultas fiscales, IVA, SENIAT, facturacion y normativa venezolana
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -171,7 +171,7 @@ export default function AIChat({ token }: { token: string }) {
           {messages.length > 0 && (
             <button
               onClick={clearChat}
-              className="text-xs text-gray-400 hover:text-red-500 transition"
+              className="text-xs text-gray-500 hover:text-red-400 transition"
             >
               Limpiar chat
             </button>
@@ -189,9 +189,9 @@ export default function AIChat({ token }: { token: string }) {
                   d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
               </svg>
             </div>
-            <h2 className="text-lg font-semibold text-gray-700">Asistente Fiscal AIDA</h2>
-            <p className="text-sm text-gray-400 mt-1 max-w-md">
-              Pregunta sobre normativa SENIAT, facturación, IVA, números de control,
+            <h2 className="text-lg font-semibold text-gray-300">Asistente Fiscal AIDA</h2>
+            <p className="text-sm text-gray-500 mt-1 max-w-md">
+              Pregunta sobre normativa SENIAT, facturacion, IVA, numeros de control,
               o cualquier tema fiscal venezolano.
             </p>
 
@@ -200,9 +200,9 @@ export default function AIChat({ token }: { token: string }) {
                 <button
                   key={action.label}
                   onClick={() => sendMessage(action.prompt)}
-                  className="text-left p-3 rounded-xl border border-gray-200 hover:border-aida-accent hover:bg-aida-accent/5 transition text-sm"
+                  className="text-left p-3 rounded-xl border border-white/10 hover:border-aida-accent hover:bg-aida-accent/5 transition text-sm"
                 >
-                  <span className="font-medium text-gray-700">{action.label}</span>
+                  <span className="font-medium text-gray-300">{action.label}</span>
                 </button>
               ))}
             </div>
@@ -215,18 +215,18 @@ export default function AIChat({ token }: { token: string }) {
                   className={`max-w-[80%] rounded-2xl px-4 py-3 ${
                     msg.role === "user"
                       ? "bg-aida-accent text-white rounded-br-md"
-                      : "bg-gray-100 text-gray-800 rounded-bl-md"
+                      : "bg-white/5 border border-white/10 text-gray-300 rounded-bl-md"
                   }`}
                 >
                   <div className="text-sm whitespace-pre-wrap break-words leading-relaxed">
                     {msg.content}
                   </div>
                   {msg.context_used && msg.context_used.length > 0 && (
-                    <div className="mt-2 pt-2 border-t border-gray-200/50">
-                      <span className="text-xs text-gray-400">Contexto: {msg.context_used.join(", ")}</span>
+                    <div className="mt-2 pt-2 border-t border-white/10">
+                      <span className="text-xs text-gray-500">Contexto: {msg.context_used.join(", ")}</span>
                     </div>
                   )}
-                  <div className={`text-xs mt-1 ${msg.role === "user" ? "text-white/60" : "text-gray-400"}`}>
+                  <div className={`text-xs mt-1 ${msg.role === "user" ? "text-white/60" : "text-gray-500"}`}>
                     {msg.timestamp && new Date(msg.timestamp).toLocaleTimeString()}
                   </div>
                 </div>
@@ -236,8 +236,8 @@ export default function AIChat({ token }: { token: string }) {
             {/* Streaming indicator */}
             {streaming && streamText && (
               <div className="flex justify-start">
-                <div className="max-w-[80%] rounded-2xl rounded-bl-md bg-gray-100 px-4 py-3">
-                  <div className="text-sm whitespace-pre-wrap break-words leading-relaxed text-gray-800">
+                <div className="max-w-[80%] rounded-2xl rounded-bl-md bg-white/5 border border-white/10 px-4 py-3">
+                  <div className="text-sm whitespace-pre-wrap break-words leading-relaxed text-gray-300">
                     {streamText}
                     <span className="inline-block w-1.5 h-4 bg-aida-accent ml-0.5 animate-pulse" />
                   </div>
@@ -248,14 +248,14 @@ export default function AIChat({ token }: { token: string }) {
             {/* Loading indicator */}
             {(loading || (streaming && !streamText)) && (
               <div className="flex justify-start">
-                <div className="rounded-2xl rounded-bl-md bg-gray-100 px-4 py-3">
+                <div className="rounded-2xl rounded-bl-md bg-white/5 border border-white/10 px-4 py-3">
                   <div className="flex items-center gap-2">
                     <div className="flex gap-1">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                      <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                      <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                      <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
                     </div>
-                    <span className="text-xs text-gray-400">Pensando...</span>
+                    <span className="text-xs text-gray-500">Pensando...</span>
                   </div>
                 </div>
               </div>
@@ -266,7 +266,7 @@ export default function AIChat({ token }: { token: string }) {
       </div>
 
       {/* Input */}
-      <div className="border-t pt-4">
+      <div className="border-t border-white/10 pt-4">
         <div className="flex items-end gap-2">
           <div className="flex-1 relative">
             <textarea
@@ -276,7 +276,7 @@ export default function AIChat({ token }: { token: string }) {
               onKeyDown={handleKeyDown}
               placeholder="Escribe tu consulta fiscal..."
               rows={1}
-              className="w-full resize-none rounded-xl border border-gray-300 px-4 py-3 pr-12 text-sm focus:border-aida-accent focus:outline-none focus:ring-2 focus:ring-aida-accent/20"
+              className="w-full resize-none rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 px-4 py-3 pr-12 text-sm focus:border-aida-accent focus:outline-none focus:ring-2 focus:ring-aida-accent/20"
               style={{ maxHeight: "120px" }}
               onInput={e => {
                 const target = e.target as HTMLTextAreaElement;
@@ -288,7 +288,7 @@ export default function AIChat({ token }: { token: string }) {
           <button
             onClick={() => sendMessage()}
             disabled={!input.trim() || loading || streaming}
-            className="rounded-xl bg-aida-accent text-white p-3 hover:bg-aida-primary transition disabled:opacity-40 disabled:cursor-not-allowed"
+            className="rounded-xl bg-aida-accent text-white p-3 hover:bg-aida-accent/80 transition disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -296,7 +296,7 @@ export default function AIChat({ token }: { token: string }) {
             </svg>
           </button>
         </div>
-        <p className="text-xs text-gray-400 mt-2 text-center">
+        <p className="text-xs text-gray-500 mt-2 text-center">
           Asistente IA fiscal venezolano. Las respuestas son orientativas, consulte con su contador para decisiones formales.
         </p>
       </div>
