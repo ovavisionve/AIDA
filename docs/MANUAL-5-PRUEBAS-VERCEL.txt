@@ -53,7 +53,7 @@ Este paso solo se ejecuta UNA VEZ. Crea los datos iniciales en la base
 de datos en la nube (Neon) para que los portales tengan con que trabajar.
 
 PASO 2.1: Clonar el repo (si no lo tienes)
-  git clone https://github.com/TU_USUARIO/AIDA.git
+  git clone https://github.com/ovavisionve/AIDA.git
   cd AIDA/backend
 
 PASO 2.2: Crear entorno virtual e instalar dependencias
@@ -63,22 +63,28 @@ PASO 2.2: Crear entorno virtual e instalar dependencias
   pip install -r requirements.txt
 
 PASO 2.3: Configurar las variables de entorno para conectar a la nube
-  Crea un archivo .env en la carpeta backend con estos valores:
+  Crea un archivo .env en la carpeta backend/ con estos valores.
+  COPIA Y PEGA este bloque, luego reemplaza las 3 lineas marcadas con <<<:
 
-  DATABASE_URL=TU_DATABASE_URL_DE_NEON
-  REDIS_URL=TU_REDIS_URL_DE_UPSTASH
+  DATABASE_URL=<<<PEGA AQUI TU URL DE NEON (la copiaste en Manual 1, paso 3.2)
+  REDIS_URL=<<<PEGA AQUI TU URL DE UPSTASH (la copiaste en Manual 1, paso 4.2)
+  SECRET_KEY=<<<PEGA AQUI TU SECRET KEY (la que generaste en Manual 1, paso 5.3)
   ENVIRONMENT=qa
   DEBUG=true
-  SECRET_KEY=TU_SECRET_KEY
   ALLOWED_ORIGINS=["*"]
 
-  IMPORTANTE: Usa las MISMAS URLs de Neon y Upstash que configuraste en
-  Railway (ver Manual 1). Asi el seed escribe en la misma base de datos
-  que usa el backend desplegado.
+  DONDE ENCONTRAR ESTOS 3 VALORES:
+    - DATABASE_URL: Ve a https://console.neon.tech → tu proyecto "aida-qa"
+      → Connection Details → copia la URL. Recuerda cambiar el inicio a
+      postgresql+asyncpg:// y el final a ?ssl=require (ver Manual 1, paso 3.2)
+    - REDIS_URL: Ve a https://console.upstash.com → tu base "aida-qa"
+      → pestana "Redis" → copia la URL que empieza con rediss://
+    - SECRET_KEY: Son los MISMOS valores que pusiste en Railway (Manual 1, paso 5.3).
+      Si no los guardaste, genera uno nuevo: abre https://generate-secret.vercel.app/64
 
-  Ejemplo real:
-    DATABASE_URL=postgresql+asyncpg://neondb_owner:abc123@ep-cool-rain-456.us-east-2.aws.neon.tech/neondb?ssl=require
-    REDIS_URL=rediss://default:xyz789@us1-shiny-fish-12345.upstash.io:6379
+  IMPORTANTE: Usa las MISMAS URLs de Neon y Upstash que configuraste en
+  Railway. Asi el seed escribe en la misma base de datos que usa el backend
+  desplegado en la nube.
 
 PASO 2.4: Ejecutar el backend una vez para que corra el seed
   uvicorn app.main:app --host 0.0.0.0 --port 8000
@@ -101,14 +107,17 @@ PASO 2.4: Ejecutar el backend una vez para que corra el seed
   Ejemplo: "API Key: aida_J312456783_a1b2c3d4e5f6..."
 
 PASO 2.5: Verificar que los datos se crearon
-  Abre tu navegador y ve a:
-    https://TU_URL_BACKEND/health
-  (ejemplo: https://aida-production-a1b2.up.railway.app/health)
+  Abre tu navegador y ve a la URL de health de tu backend en Railway.
+  La URL es la que Railway te genero en Manual 1 paso 5.5, agregando /health
+  Ejemplo: si tu backend es https://aida-production-xxxx.up.railway.app
+  entonces abres: https://aida-production-xxxx.up.railway.app/health
 
   Debes ver: {"status":"ok","version":"1.0.0","database":"connected"}
 
-  Ahora intenta hacer login en el Portal Admin de Vercel con:
-    admin@aida.com.ve / Admin2024!
+  Ahora intenta hacer login en el Portal Admin de Vercel:
+    URL:      https://aida-admin-7pf4e95dn-ova1.vercel.app
+    Email:    admin@aida.com.ve
+    Password: Admin2024!
   Si funciona, los datos del seed estan en la nube correctamente.
 
 PASO 2.6: Detener el backend local
@@ -127,14 +136,10 @@ PASO 2.6: Detener el backend local
 3. URLs DE LOS SERVICIOS DESPLEGADOS
 ================================================================================
 
-Reemplaza TU_URL_BACKEND con tu URL real de Railway.
+REPOSITORIO:
+  https://github.com/ovavisionve/AIDA
 
-  Servicio                    URL REAL (VERCEL QA)
-  ────────────────────────    ─────────────────────────────────────────
-  Backend API                 https://TU_URL_BACKEND
-  Swagger / Docs API          https://TU_URL_BACKEND/api/docs
-  Health Check                https://TU_URL_BACKEND/health
-
+PORTALES EN VERCEL (URLs reales, ya desplegados):
   Portal Admin                https://aida-admin-7pf4e95dn-ova1.vercel.app
   Portal Cliente              https://aida-cliente-qa.vercel.app
   Portal Facturador           https://aida-facturador-qa.vercel.app
@@ -142,12 +147,23 @@ Reemplaza TU_URL_BACKEND con tu URL real de Railway.
   Portal Developers           https://aida-developers-qa.vercel.app
   Portal Gestion              https://aida-gestion-qa.vercel.app
 
-  Landing Page                http://localhost:3100 (local)
-                              (Desplegar en Vercel como aida-landing-qa)
-  Portal SENIAT (auditoria)   http://localhost:3100/portal-seniat (local)
-                              (Parte de la landing page)
+BACKEND EN RAILWAY (depende de tu despliegue):
+  La URL la genera Railway cuando despliegas (Manual 1, paso 5.5).
+  Tiene la forma: https://aida-production-XXXX.up.railway.app
+  Una vez que la tengas, estas son las rutas:
+    API Base:          https://TU-RAILWAY-URL.up.railway.app/api/v1
+    Swagger / Docs:    https://TU-RAILWAY-URL.up.railway.app/api/docs
+    Health Check:      https://TU-RAILWAY-URL.up.railway.app/health
 
-  NOTA: Estas son las URLs reales desplegadas en QA.
+SERVICIOS EN LA NUBE (dependen de tus cuentas):
+  Neon (PostgreSQL):   https://console.neon.tech → proyecto "aida-qa"
+  Upstash (Redis):     https://console.upstash.com → base "aida-qa"
+  Railway (backend):   https://railway.app/dashboard → proyecto AIDA
+
+LANDING PAGE (aun no desplegada en Vercel):
+  Local:               http://localhost:3100
+  Portal SENIAT:       http://localhost:3100/portal-seniat
+  Desplegar como:      aida-landing-qa en Vercel
 
 
 ================================================================================
@@ -651,9 +667,13 @@ Guardatelo abierto mientras pruebas:
   ┌──────────────────────────────────────────────────────────────────────────┐
   │ URLs REALES DESPLEGADAS (QA / VERCEL)                                   │
   ├──────────────────────────────────────────────────────────────────────────┤
-  │ Backend API:      https://TU_URL_BACKEND                                │
-  │ Swagger Docs:     https://TU_URL_BACKEND/api/docs                       │
-  │ Health Check:     https://TU_URL_BACKEND/health                         │
+  │ Repositorio:      https://github.com/ovavisionve/AIDA                  │
+  │                                                                         │
+  │ Backend API:      (tu URL de Railway)/api/v1                            │
+  │ Swagger Docs:     (tu URL de Railway)/api/docs                          │
+  │ Health Check:     (tu URL de Railway)/health                            │
+  │  → La URL de Railway la obtienes en: https://railway.app/dashboard     │
+  │    click tu proyecto → Settings → Networking → tu dominio publico       │
   │                                                                         │
   │ Portal Admin:     https://aida-admin-7pf4e95dn-ova1.vercel.app         │
   │ Portal Cliente:   https://aida-cliente-qa.vercel.app                    │
@@ -661,6 +681,10 @@ Guardatelo abierto mientras pruebas:
   │ Portal Validacion:https://aida-validacion-qa.vercel.app (publico)       │
   │ Portal Developers:https://aida-developers-qa.vercel.app                 │
   │ Portal Gestion:   https://aida-gestion-qa.vercel.app                    │
+  │                                                                         │
+  │ Neon (DB):        https://console.neon.tech                             │
+  │ Upstash (Redis):  https://console.upstash.com                           │
+  │ Railway (backend):https://railway.app/dashboard                         │
   │                                                                         │
   │ Landing Page:     (desplegar como aida-landing-qa en Vercel)            │
   │ Portal SENIAT:    /portal-seniat (dentro de la landing page)            │
@@ -678,7 +702,7 @@ PROBLEMA: Login dice "Error de conexion" en cualquier portal
   → Si dice "CORS policy": La URL del portal no esta en ALLOWED_ORIGINS
     de Railway. Ve a Railway → Variables → agrega la URL del portal
   → Si dice "Network Error": El backend esta caido. Verifica:
-    https://TU_URL_BACKEND/health
+    (tu URL de Railway)/health — ve a https://railway.app/dashboard para verla
   → Si dice "404": Falta /api/v1 al final de NEXT_PUBLIC_API_URL en Vercel
 
 PROBLEMA: Login dice "Credenciales invalidas"
@@ -697,7 +721,7 @@ PROBLEMA: "403 Forbidden" al intentar acceder a funciones
 PROBLEMA: Los portales cargan pero todo esta en blanco
   → La variable NEXT_PUBLIC_API_URL no esta bien en Vercel
   → Ve a Vercel → tu proyecto → Settings → Environment Variables
-  → Verifica que NEXT_PUBLIC_API_URL = https://TU_URL_BACKEND/api/v1
+  → Verifica que NEXT_PUBLIC_API_URL = (tu URL de Railway)/api/v1
   → IMPORTANTE: Si la cambias, debes redesplegar (Deployments → Redeploy)
 
 PROBLEMA: Electro Caribe puede ver datos de Santoni (o viceversa)
