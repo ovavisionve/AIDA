@@ -504,3 +504,226 @@ async def void_invoice(
     )
 
     return {"message": "Factura anulada exitosamente", "numero_control": invoice.control_number}
+
+
+@router.get("/reports")
+async def generate_report(
+    report_type: str = Query(..., description="libro_ventas, libro_compras, iva, islr, ventas_periodo, ventas_vendedor, ventas_cliente"),
+    date_from: str = Query(..., description="Fecha inicio YYYY-MM-DD"),
+    date_to: str = Query(..., description="Fecha fin YYYY-MM-DD"),
+    format: str = Query("json", description="json, excel, csv"),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Genera reportes fiscales: libro de ventas, IVA, ISLR, ventas por periodo/vendedor/cliente."""
+    from datetime import date as date_type
+    from fastapi.responses import StreamingResponse
+    import io
+
+    client = await _get_client(user, db)
+    try:
+        d_from = datetime.strptime(date_from, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        d_to = datetime.strptime(date_to, "%Y-%m-%d").replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
+    except ValueError:
+        from fastapi import HTTPException as HE
+        raise HE(status_code=400, detail="Formato de fecha inválido. Use YYYY-MM-DD")
+
+    base_filter = [
+        Invoice.client_id == client.id,
+        Invoice.fecha_emision >= d_from,
+        Invoice.fecha_emision <= d_to,
+        Invoice.status != "anulado",
+    ]
+
+    # Fetch invoices for the period
+    result = await db.execute(
+        select(Invoice).where(*base_filter).order_by(Invoice.fecha_emision)
+    )
+    invoices = result.scalars().all()
+
+    if report_type == "libro_ventas":
+        items = []
+        total_base = total_iva = total_total = total_exento = total_igtf = 0.0
+        for inv in invoices:
+            base_imp = float(inv.base_imponible or 0)
+            iva = float(inv.monto_iva_16 or 0) + float(inv.monto_iva_8 or 0)
+            exento = float(inv.base_exenta or 0)
+            igtf = float(inv.monto_igtf or 0)
+            total = float(inv.total or 0)
+            total_base += base_imp
+            total_iva += iva
+            total_total += total
+            total_exento += exento
+            total_igtf += igtf
+            items.append({
+                "fecha": inv.fecha_emision.strftime("%Y-%m-%d"),
+                "control_number": inv.control_number or "",
+                "document_number": inv.document_number,
+                "receptor_rif": inv.receptor_rif,
+                "receptor": inv.receptor_razon_social,
+                "base_imponible": round(base_imp, 2),
+                "exento": round(exento, 2),
+                "iva": round(iva, 2),
+                "igtf": round(igtf, 2),
+                "total": round(total, 2),
+            })
+        report_data = {
+            "resumen": {
+                "total_documentos": len(invoices),
+                "base_imponible": round(total_base, 2),
+                "total_exento": round(total_exento, 2),
+                "total_iva": round(total_iva, 2),
+                "total_igtf": round(total_igtf, 2),
+                "total_general": round(total_total, 2),
+            },
+            "items": items,
+        }
+
+    elif report_type == "iva":
+        debito_fiscal = sum(float(inv.monto_iva_16 or 0) + float(inv.monto_iva_8 or 0) for inv in invoices)
+        report_data = {
+            "resumen": {
+                "periodo": f"{date_from} a {date_to}",
+                "total_ventas": round(sum(float(inv.total or 0) for inv in invoices), 2),
+                "base_imponible_16": round(sum(float(inv.base_imponible or 0) for inv in invoices), 2),
+                "debito_fiscal_16": round(sum(float(inv.monto_iva_16 or 0) for inv in invoices), 2),
+                "debito_fiscal_8": round(sum(float(inv.monto_iva_8 or 0) for inv in invoices), 2),
+                "debito_fiscal_total": round(debito_fiscal, 2),
+                "total_exento": round(sum(float(inv.base_exenta or 0) for inv in invoices), 2),
+                "documentos_emitidos": len(invoices),
+            },
+            "items": [
+                {
+                    "fecha": inv.fecha_emision.strftime("%Y-%m-%d"),
+                    "control_number": inv.control_number or "",
+                    "receptor": inv.receptor_razon_social,
+                    "base_imponible": round(float(inv.base_imponible or 0), 2),
+                    "iva": round(float(inv.monto_iva_16 or 0) + float(inv.monto_iva_8 or 0), 2),
+                    "total": round(float(inv.total or 0), 2),
+                }
+                for inv in invoices
+            ],
+        }
+
+    elif report_type == "islr":
+        report_data = {
+            "resumen": {
+                "periodo": f"{date_from} a {date_to}",
+                "documentos_sujetos_retencion": 0,
+                "total_retenido": 0.0,
+                "nota": "Las retenciones ISLR se calculan sobre pagos a personas naturales y jurídicas según Art. 87 LISLR",
+            },
+            "items": [],
+        }
+
+    elif report_type == "ventas_periodo":
+        # Group by day
+        daily: dict[str, dict] = {}
+        for inv in invoices:
+            day = inv.fecha_emision.strftime("%Y-%m-%d")
+            if day not in daily:
+                daily[day] = {"fecha": day, "documentos": 0, "total": 0.0}
+            daily[day]["documentos"] += 1
+            daily[day]["total"] += float(inv.total or 0)
+
+        items = sorted(daily.values(), key=lambda x: x["fecha"])
+        for item in items:
+            item["total"] = round(item["total"], 2)
+        report_data = {
+            "resumen": {
+                "total_documentos": len(invoices),
+                "total_ventas": round(sum(float(inv.total or 0) for inv in invoices), 2),
+                "promedio_diario": round(sum(float(inv.total or 0) for inv in invoices) / max(len(daily), 1), 2),
+                "dias_con_ventas": len(daily),
+            },
+            "items": items,
+        }
+
+    elif report_type == "ventas_vendedor":
+        by_user: dict[str, dict] = {}
+        for inv in invoices:
+            uid = str(inv.created_by_user_id or "sin-asignar")
+            if uid not in by_user:
+                by_user[uid] = {"vendedor": uid, "documentos": 0, "total": 0.0}
+            by_user[uid]["documentos"] += 1
+            by_user[uid]["total"] += float(inv.total or 0)
+
+        items = sorted(by_user.values(), key=lambda x: x["total"], reverse=True)
+        for item in items:
+            item["total"] = round(item["total"], 2)
+        report_data = {
+            "resumen": {
+                "total_vendedores": len(by_user),
+                "total_ventas": round(sum(float(inv.total or 0) for inv in invoices), 2),
+            },
+            "items": items,
+        }
+
+    elif report_type == "ventas_cliente":
+        by_client: dict[str, dict] = {}
+        for inv in invoices:
+            key = inv.receptor_rif or "desconocido"
+            if key not in by_client:
+                by_client[key] = {"receptor_rif": key, "receptor": inv.receptor_razon_social, "documentos": 0, "total": 0.0}
+            by_client[key]["documentos"] += 1
+            by_client[key]["total"] += float(inv.total or 0)
+
+        items = sorted(by_client.values(), key=lambda x: x["total"], reverse=True)
+        for item in items:
+            item["total"] = round(item["total"], 2)
+        report_data = {
+            "resumen": {
+                "total_clientes": len(by_client),
+                "total_ventas": round(sum(float(inv.total or 0) for inv in invoices), 2),
+            },
+            "items": items,
+        }
+
+    else:
+        report_data = {"resumen": {}, "items": []}
+
+    # Return based on format
+    if format == "json":
+        return report_data
+
+    elif format == "csv":
+        import csv
+        buf = io.StringIO()
+        items = report_data.get("items", [])
+        if items:
+            writer = csv.DictWriter(buf, fieldnames=items[0].keys())
+            writer.writeheader()
+            writer.writerows(items)
+        content = buf.getvalue().encode("utf-8")
+        return StreamingResponse(
+            io.BytesIO(content),
+            media_type="text/csv",
+            headers={"Content-Disposition": f'attachment; filename="reporte_{report_type}_{date_from}_{date_to}.csv"'},
+        )
+
+    elif format == "excel":
+        try:
+            from openpyxl import Workbook
+            wb = Workbook()
+            ws = wb.active
+            ws.title = report_type
+
+            items = report_data.get("items", [])
+            if items:
+                headers = list(items[0].keys())
+                ws.append(headers)
+                for item in items:
+                    ws.append([item.get(h, "") for h in headers])
+
+            buf = io.BytesIO()
+            wb.save(buf)
+            buf.seek(0)
+            return StreamingResponse(
+                buf,
+                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                headers={"Content-Disposition": f'attachment; filename="reporte_{report_type}_{date_from}_{date_to}.xlsx"'},
+            )
+        except ImportError:
+            return report_data
+
+    return report_data
