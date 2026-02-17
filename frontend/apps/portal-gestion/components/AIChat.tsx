@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
 interface Message {
   role: "user" | "assistant" | "system";
@@ -53,7 +53,7 @@ export default function AIChat({ token }: { token: string }) {
       setStreaming(true);
       setStreamText("");
       try {
-        const res = await fetch(`${API}/api/v1/ai/chat/stream`, {
+        const res = await fetch(`${API}/ai/chat/stream`, {
           method: "POST",
           headers,
           body: JSON.stringify({ message: msg, conversation_history: history, include_context: true }),
@@ -103,7 +103,7 @@ export default function AIChat({ token }: { token: string }) {
       // Regular request
       setLoading(true);
       try {
-        const res = await fetch(`${API}/api/v1/ai/chat`, {
+        const res = await fetch(`${API}/ai/chat`, {
           method: "POST",
           headers,
           body: JSON.stringify({ message: msg, conversation_history: history, include_context: true }),

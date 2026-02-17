@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
 interface DashboardData {
   total_clients_active: number;
@@ -24,8 +24,8 @@ export default function MonitoringDashboard({ token }: { token: string }) {
 
   useEffect(() => {
     Promise.all([
-      fetch(`${API}/api/v1/portal5/dashboard`, { headers }).then(r => r.json()),
-      fetch(`${API}/api/v1/portal5/health/clients?limit=10`, { headers }).then(r => r.json()),
+      fetch(`${API}/portal5/dashboard`, { headers }).then(r => r.json()),
+      fetch(`${API}/portal5/health/clients?limit=10`, { headers }).then(r => r.json()),
     ]).then(([dash, health]) => {
       setData(dash);
       setClients(health.clients || []);

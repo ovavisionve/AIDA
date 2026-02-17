@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
 export default function ErrorManager({ token }: { token: string }) {
   const [errors, setErrors] = useState<any[]>([]);
@@ -29,7 +29,7 @@ export default function ErrorManager({ token }: { token: string }) {
     if (categoryFilter) params.set("category", categoryFilter);
     params.set("limit", "50");
 
-    fetch(`${API}/api/v1/portal5/errors?${params}`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${API}/portal5/errors?${params}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(data => {
         setErrors(data.items || []);
@@ -42,7 +42,7 @@ export default function ErrorManager({ token }: { token: string }) {
   };
 
   const loadStats = () => {
-    fetch(`${API}/api/v1/portal5/errors/stats`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${API}/portal5/errors/stats`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(setStats)
       .catch(() => {});
@@ -53,7 +53,7 @@ export default function ErrorManager({ token }: { token: string }) {
   const resolveError = async (id: string) => {
     const notes = prompt("Notas de resolución:");
     if (!notes) return;
-    await fetch(`${API}/api/v1/portal5/errors/${id}/resolve`, {
+    await fetch(`${API}/portal5/errors/${id}/resolve`, {
       method: "PUT", headers,
       body: JSON.stringify({ resolution_notes: notes }),
     });
@@ -61,13 +61,13 @@ export default function ErrorManager({ token }: { token: string }) {
   };
 
   const retryError = async (id: string) => {
-    await fetch(`${API}/api/v1/portal5/errors/${id}/retry`, { method: "POST", headers });
+    await fetch(`${API}/portal5/errors/${id}/retry`, { method: "POST", headers });
     loadErrors();
   };
 
   const bulkResolve = async () => {
     if (selected.size === 0) return;
-    await fetch(`${API}/api/v1/portal5/errors/bulk-resolve`, {
+    await fetch(`${API}/portal5/errors/bulk-resolve`, {
       method: "POST", headers,
       body: JSON.stringify({ error_ids: Array.from(selected) }),
     });

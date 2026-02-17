@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
 export default function WebhookManager({ token }: { token: string }) {
   const [webhooks, setWebhooks] = useState<any[]>([]);
@@ -21,7 +21,7 @@ export default function WebhookManager({ token }: { token: string }) {
 
   const loadWebhooks = () => {
     setLoading(true);
-    fetch(`${API}/api/v1/portal5/webhooks`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${API}/portal5/webhooks`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(data => setWebhooks(Array.isArray(data) ? data : []))
       .catch(() => {})
@@ -30,7 +30,7 @@ export default function WebhookManager({ token }: { token: string }) {
 
   useEffect(() => {
     loadWebhooks();
-    fetch(`${API}/api/v1/portal5/webhook-events`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${API}/portal5/webhook-events`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(data => setEvents(data.events || []))
       .catch(() => {});
@@ -39,7 +39,7 @@ export default function WebhookManager({ token }: { token: string }) {
   const createWebhook = async () => {
     if (!name || !url || !clientId) return;
     try {
-      const res = await fetch(`${API}/api/v1/portal5/webhooks?client_id=${clientId}`, {
+      const res = await fetch(`${API}/portal5/webhooks?client_id=${clientId}`, {
         method: "POST", headers,
         body: JSON.stringify({ name, url, events: selectedEvents, retry_count: 3, timeout_seconds: 30 }),
       });
@@ -53,7 +53,7 @@ export default function WebhookManager({ token }: { token: string }) {
 
   const testWebhook = async (id: string) => {
     try {
-      const res = await fetch(`${API}/api/v1/portal5/webhooks/${id}/test`, {
+      const res = await fetch(`${API}/portal5/webhooks/${id}/test`, {
         method: "POST", headers, body: JSON.stringify({ event: "test.ping" }),
       });
       const data = await res.json();
@@ -62,7 +62,7 @@ export default function WebhookManager({ token }: { token: string }) {
   };
 
   const toggleWebhook = async (id: string, active: boolean) => {
-    await fetch(`${API}/api/v1/portal5/webhooks/${id}`, {
+    await fetch(`${API}/portal5/webhooks/${id}`, {
       method: "PUT", headers,
       body: JSON.stringify({ is_active: !active }),
     });
@@ -71,7 +71,7 @@ export default function WebhookManager({ token }: { token: string }) {
 
   const deleteWebhook = async (id: string) => {
     if (!confirm("¿Eliminar este webhook?")) return;
-    await fetch(`${API}/api/v1/portal5/webhooks/${id}`, {
+    await fetch(`${API}/portal5/webhooks/${id}`, {
       method: "DELETE", headers: { Authorization: `Bearer ${token}` },
     });
     loadWebhooks();
@@ -79,7 +79,7 @@ export default function WebhookManager({ token }: { token: string }) {
 
   const loadLogs = async (id: string) => {
     setSelectedLogs(id);
-    const res = await fetch(`${API}/api/v1/portal5/webhooks/${id}/logs?limit=20`, {
+    const res = await fetch(`${API}/portal5/webhooks/${id}/logs?limit=20`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     const data = await res.json();

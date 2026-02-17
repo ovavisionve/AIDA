@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
 export default function ConnectionList({ token }: { token: string }) {
   const [connections, setConnections] = useState<any[]>([]);
@@ -16,7 +16,7 @@ export default function ConnectionList({ token }: { token: string }) {
     setLoading(true);
     const params = new URLSearchParams();
     if (statusFilter) params.set("status", statusFilter);
-    fetch(`${API}/api/v1/portal5/connections?${params}`, { headers })
+    fetch(`${API}/portal5/connections?${params}`, { headers })
       .then(r => r.json())
       .then(data => {
         setConnections(data.items || []);
@@ -31,7 +31,7 @@ export default function ConnectionList({ token }: { token: string }) {
   const testConnection = async (id: string) => {
     setTesting(id);
     try {
-      const res = await fetch(`${API}/api/v1/portal5/connections/${id}/test`, {
+      const res = await fetch(`${API}/portal5/connections/${id}/test`, {
         method: "POST", headers,
       });
       const data = await res.json();

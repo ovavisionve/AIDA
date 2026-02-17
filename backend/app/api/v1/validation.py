@@ -59,43 +59,58 @@ def _get_document_models():
     return Invoice, CreditNote, DebitNote
 
 
-def _invoice_to_result(doc, doc_type: str) -> DocumentValidationResult:
+def _doc_to_result(doc, doc_type: str) -> DocumentValidationResult:
+    """Convert an Invoice/CreditNote/DebitNote to a validation result.
+
+    Model field mapping:
+      control_number, emisor_rif, emisor_razon_social,
+      receptor_rif, receptor_razon_social, total, uuid_seniat
+    Invoice IVA: monto_iva_16 + monto_iva_8
+    CreditNote/DebitNote IVA: monto_iva
+    """
+    # IVA: invoices split into monto_iva_16 + monto_iva_8; notes have monto_iva
+    iva = getattr(doc, "monto_iva", None)
+    if iva is None:
+        iva_16 = getattr(doc, "monto_iva_16", 0) or 0
+        iva_8 = getattr(doc, "monto_iva_8", 0) or 0
+        iva = float(iva_16) + float(iva_8)
+
     return DocumentValidationResult(
         found=True,
         document_type=doc_type,
-        numero_control=doc.numero_control,
-        numero_documento=getattr(doc, "numero_documento", None) or doc.numero_control,
+        numero_control=doc.control_number,
+        numero_documento=doc.document_number,
         fecha_emision=str(doc.fecha_emision) if doc.fecha_emision else None,
-        rif_emisor=doc.rif_emisor,
-        razon_social_emisor=getattr(doc, "razon_social_emisor", None),
-        rif_receptor=doc.rif_receptor,
-        razon_social_receptor=getattr(doc, "razon_social_receptor", None),
-        subtotal=float(doc.base_imponible) if doc.base_imponible else None,
-        iva=float(doc.monto_iva) if doc.monto_iva else None,
-        total=float(doc.monto_total) if doc.monto_total else None,
+        rif_emisor=doc.emisor_rif,
+        razon_social_emisor=doc.emisor_razon_social,
+        rif_receptor=doc.receptor_rif,
+        razon_social_receptor=doc.receptor_razon_social,
+        subtotal=float(doc.base_imponible) if getattr(doc, "base_imponible", None) else float(doc.subtotal) if doc.subtotal else None,
+        iva=float(iva) if iva else None,
+        total=float(doc.total) if doc.total else None,
         moneda=getattr(doc, "moneda", "VES"),
         status=doc.status,
-        uuid=str(doc.uuid_documento) if getattr(doc, "uuid_documento", None) else None,
-        hash_seguridad=getattr(doc, "hash_seguridad", None),
+        uuid=str(doc.uuid_seniat) if doc.uuid_seniat else None,
+        hash_seguridad=getattr(doc, "firma_digital", None),
     )
 
 
-def _invoice_to_detail(doc, doc_type: str) -> DocumentDetailResult:
-    base = _invoice_to_result(doc, doc_type)
+def _doc_to_detail(doc, doc_type: str) -> DocumentDetailResult:
+    base = _doc_to_result(doc, doc_type)
     items = []
     if hasattr(doc, "items") and doc.items:
         for item in doc.items:
             items.append({
-                "descripcion": getattr(item, "descripcion", ""),
-                "cantidad": float(getattr(item, "cantidad", 0)),
-                "precio_unitario": float(getattr(item, "precio_unitario", 0)),
-                "subtotal": float(getattr(item, "subtotal", 0)),
+                "descripcion": item.description,
+                "cantidad": float(item.quantity),
+                "precio_unitario": float(item.unit_price),
+                "subtotal": float(item.subtotal),
             })
     return DocumentDetailResult(
         **base.model_dump(),
         items=items,
-        notas=getattr(doc, "notas", None),
-        condiciones_pago=getattr(doc, "condiciones_pago", None),
+        notas=getattr(doc, "observaciones", None),
+        condiciones_pago=getattr(doc, "condicion_pago", None),
         fecha_vencimiento=str(doc.fecha_vencimiento) if getattr(doc, "fecha_vencimiento", None) else None,
     )
 
@@ -110,23 +125,20 @@ async def verify_document(
     """Verificar un documento fiscal por número de control."""
     Invoice, CreditNote, DebitNote = _get_document_models()
 
-    # Search in invoices
-    result = await db.execute(select(Invoice).where(Invoice.numero_control == nc))
+    result = await db.execute(select(Invoice).where(Invoice.control_number == nc))
     doc = result.scalar_one_or_none()
     if doc:
-        return _invoice_to_result(doc, "factura")
+        return _doc_to_result(doc, "factura")
 
-    # Search in credit notes
-    result = await db.execute(select(CreditNote).where(CreditNote.numero_control == nc))
+    result = await db.execute(select(CreditNote).where(CreditNote.control_number == nc))
     doc = result.scalar_one_or_none()
     if doc:
-        return _invoice_to_result(doc, "nota_credito")
+        return _doc_to_result(doc, "nota_credito")
 
-    # Search in debit notes
-    result = await db.execute(select(DebitNote).where(DebitNote.numero_control == nc))
+    result = await db.execute(select(DebitNote).where(DebitNote.control_number == nc))
     doc = result.scalar_one_or_none()
     if doc:
-        return _invoice_to_result(doc, "nota_debito")
+        return _doc_to_result(doc, "nota_debito")
 
     return DocumentValidationResult(found=False)
 
@@ -139,20 +151,20 @@ async def verify_document_detail(
     """Obtener detalle completo de un documento fiscal."""
     Invoice, CreditNote, DebitNote = _get_document_models()
 
-    result = await db.execute(select(Invoice).where(Invoice.numero_control == nc))
+    result = await db.execute(select(Invoice).where(Invoice.control_number == nc))
     doc = result.scalar_one_or_none()
     if doc:
-        return _invoice_to_detail(doc, "factura")
+        return _doc_to_detail(doc, "factura")
 
-    result = await db.execute(select(CreditNote).where(CreditNote.numero_control == nc))
+    result = await db.execute(select(CreditNote).where(CreditNote.control_number == nc))
     doc = result.scalar_one_or_none()
     if doc:
-        return _invoice_to_detail(doc, "nota_credito")
+        return _doc_to_detail(doc, "nota_credito")
 
-    result = await db.execute(select(DebitNote).where(DebitNote.numero_control == nc))
+    result = await db.execute(select(DebitNote).where(DebitNote.control_number == nc))
     doc = result.scalar_one_or_none()
     if doc:
-        return _invoice_to_detail(doc, "nota_debito")
+        return _doc_to_detail(doc, "nota_debito")
 
     raise HTTPException(status_code=404, detail="Documento no encontrado")
 
@@ -165,25 +177,20 @@ async def verify_by_uuid(
     """Verificar un documento por UUID."""
     Invoice, CreditNote, DebitNote = _get_document_models()
 
-    try:
-        uid = uuid.UUID(doc_uuid)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="UUID inválido")
-
-    result = await db.execute(select(Invoice).where(Invoice.uuid_documento == uid))
+    result = await db.execute(select(Invoice).where(Invoice.uuid_seniat == doc_uuid))
     doc = result.scalar_one_or_none()
     if doc:
-        return _invoice_to_result(doc, "factura")
+        return _doc_to_result(doc, "factura")
 
-    result = await db.execute(select(CreditNote).where(CreditNote.uuid_documento == uid))
+    result = await db.execute(select(CreditNote).where(CreditNote.uuid_seniat == doc_uuid))
     doc = result.scalar_one_or_none()
     if doc:
-        return _invoice_to_result(doc, "nota_credito")
+        return _doc_to_result(doc, "nota_credito")
 
-    result = await db.execute(select(DebitNote).where(DebitNote.uuid_documento == uid))
+    result = await db.execute(select(DebitNote).where(DebitNote.uuid_seniat == doc_uuid))
     doc = result.scalar_one_or_none()
     if doc:
-        return _invoice_to_result(doc, "nota_debito")
+        return _doc_to_result(doc, "nota_debito")
 
     return DocumentValidationResult(found=False)
 
@@ -199,37 +206,33 @@ async def documents_by_rif(
     Invoice, CreditNote, DebitNote = _get_document_models()
     documents = []
 
-    # Invoices
     result = await db.execute(
-        select(Invoice).where(Invoice.rif_emisor == rif)
+        select(Invoice).where(Invoice.emisor_rif == rif)
         .order_by(Invoice.fecha_emision.desc())
         .offset((page - 1) * page_size).limit(page_size)
     )
     for doc in result.scalars().all():
-        documents.append(_invoice_to_result(doc, "factura"))
+        documents.append(_doc_to_result(doc, "factura"))
 
-    # Credit notes
     result = await db.execute(
-        select(CreditNote).where(CreditNote.rif_emisor == rif)
+        select(CreditNote).where(CreditNote.emisor_rif == rif)
         .order_by(CreditNote.fecha_emision.desc())
         .limit(page_size)
     )
     for doc in result.scalars().all():
-        documents.append(_invoice_to_result(doc, "nota_credito"))
+        documents.append(_doc_to_result(doc, "nota_credito"))
 
-    # Debit notes
     result = await db.execute(
-        select(DebitNote).where(DebitNote.rif_emisor == rif)
+        select(DebitNote).where(DebitNote.emisor_rif == rif)
         .order_by(DebitNote.fecha_emision.desc())
         .limit(page_size)
     )
     for doc in result.scalars().all():
-        documents.append(_invoice_to_result(doc, "nota_debito"))
+        documents.append(_doc_to_result(doc, "nota_debito"))
 
-    # Count total
     total = 0
     for Model in [Invoice, CreditNote, DebitNote]:
-        count = await db.execute(select(func.count(Model.id)).where(Model.rif_emisor == rif))
+        count = await db.execute(select(func.count(Model.id)).where(Model.emisor_rif == rif))
         total += count.scalar() or 0
 
     return RifDocumentSummary(rif=rif, total_documents=total, documents=documents)
@@ -243,16 +246,16 @@ async def rif_stats(
     """Estadísticas fiscales de un RIF."""
     Invoice, CreditNote, DebitNote = _get_document_models()
 
-    inv_count = (await db.execute(select(func.count(Invoice.id)).where(Invoice.rif_emisor == rif))).scalar() or 0
-    cn_count = (await db.execute(select(func.count(CreditNote.id)).where(CreditNote.rif_emisor == rif))).scalar() or 0
-    dn_count = (await db.execute(select(func.count(DebitNote.id)).where(DebitNote.rif_emisor == rif))).scalar() or 0
+    inv_count = (await db.execute(select(func.count(Invoice.id)).where(Invoice.emisor_rif == rif))).scalar() or 0
+    cn_count = (await db.execute(select(func.count(CreditNote.id)).where(CreditNote.emisor_rif == rif))).scalar() or 0
+    dn_count = (await db.execute(select(func.count(DebitNote.id)).where(DebitNote.emisor_rif == rif))).scalar() or 0
 
     total_amount = (await db.execute(
-        select(func.coalesce(func.sum(Invoice.monto_total), 0)).where(Invoice.rif_emisor == rif)
+        select(func.coalesce(func.sum(Invoice.total), 0)).where(Invoice.emisor_rif == rif)
     )).scalar() or 0
 
     total_iva = (await db.execute(
-        select(func.coalesce(func.sum(Invoice.monto_iva), 0)).where(Invoice.rif_emisor == rif)
+        select(func.coalesce(func.sum(Invoice.monto_iva_16 + Invoice.monto_iva_8), 0)).where(Invoice.emisor_rif == rif)
     )).scalar() or 0
 
     return RifStats(

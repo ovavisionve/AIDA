@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
 interface KPIs {
   today_invoices: number;
@@ -43,7 +43,7 @@ export default function AnalyticsDashboard({ token }: { token: string }) {
   const loadAnalytics = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API}/api/v1/ai/analytics?period_days=${periodDays}`, { headers });
+      const res = await fetch(`${API}/ai/analytics?period_days=${periodDays}`, { headers });
       if (res.ok) {
         const data = await res.json();
         setAnalytics(data);
@@ -55,7 +55,7 @@ export default function AnalyticsDashboard({ token }: { token: string }) {
   const loadInsights = async () => {
     setLoadingInsights(true);
     try {
-      const res = await fetch(`${API}/api/v1/ai/insights`, { headers });
+      const res = await fetch(`${API}/ai/insights`, { headers });
       if (res.ok) {
         const data = await res.json();
         setInsights(data.insights);

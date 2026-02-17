@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
 export default function LoginForm({ onLogin }: { onLogin: (token: string) => void }) {
   const [email, setEmail] = useState("");
@@ -14,7 +14,7 @@ export default function LoginForm({ onLogin }: { onLogin: (token: string) => voi
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`${API}/api/v1/auth/login`, {
+      const res = await fetch(`${API}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

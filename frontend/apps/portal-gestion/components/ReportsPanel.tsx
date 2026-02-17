@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
 const fmt = (n: number) => new Intl.NumberFormat("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 
@@ -29,16 +29,16 @@ export default function ReportsPanel({ token }: { token: string }) {
       let url = "";
       switch (type) {
         case "sales-book":
-          url = `${API}/api/v1/ai/reports/sales-book?year=${year}&month=${month}`;
+          url = `${API}/ai/reports/sales-book?year=${year}&month=${month}`;
           break;
         case "tax-summary":
-          url = `${API}/api/v1/ai/reports/tax-summary?year=${year}&month=${month}`;
+          url = `${API}/ai/reports/tax-summary?year=${year}&month=${month}`;
           break;
         case "fiscal-summary":
-          url = `${API}/api/v1/ai/fiscal-summary?period=${period}`;
+          url = `${API}/ai/fiscal-summary?period=${period}`;
           break;
         case "tax-optimization":
-          url = `${API}/api/v1/ai/tax-optimization`;
+          url = `${API}/ai/tax-optimization`;
           break;
       }
 

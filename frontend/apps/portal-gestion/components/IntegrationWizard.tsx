@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
 interface Template {
   id: string;
@@ -53,7 +53,7 @@ export default function IntegrationWizard({ token }: { token: string }) {
   };
 
   useEffect(() => {
-    fetch(`${API}/api/v1/portal5/templates`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${API}/portal5/templates`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(setTemplates)
       .catch(() => {});
@@ -75,7 +75,7 @@ export default function IntegrationWizard({ token }: { token: string }) {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`${API}/api/v1/portal5/wizard/start`, {
+      const res = await fetch(`${API}/portal5/wizard/start`, {
         method: "POST",
         headers,
         body: JSON.stringify({
@@ -102,7 +102,7 @@ export default function IntegrationWizard({ token }: { token: string }) {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`${API}/api/v1/portal5/wizard/${connectionId}/credentials`, {
+      const res = await fetch(`${API}/portal5/wizard/${connectionId}/credentials`, {
         method: "PUT",
         headers,
         body: JSON.stringify({ system_base_url: systemUrl, credentials }),
@@ -122,7 +122,7 @@ export default function IntegrationWizard({ token }: { token: string }) {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`${API}/api/v1/portal5/wizard/${connectionId}/mapping`, {
+      const res = await fetch(`${API}/portal5/wizard/${connectionId}/mapping`, {
         method: "PUT",
         headers,
         body: JSON.stringify({ field_mapping: currentMapping || {} }),
@@ -148,7 +148,7 @@ export default function IntegrationWizard({ token }: { token: string }) {
         retry_count: 3,
         timeout_seconds: 30,
       }] : [];
-      const res = await fetch(`${API}/api/v1/portal5/wizard/${connectionId}/webhooks`, {
+      const res = await fetch(`${API}/portal5/wizard/${connectionId}/webhooks`, {
         method: "PUT",
         headers,
         body: JSON.stringify({ webhooks, callback_url: webhookUrl || null }),
@@ -167,7 +167,7 @@ export default function IntegrationWizard({ token }: { token: string }) {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`${API}/api/v1/portal5/wizard/${connectionId}/sync`, {
+      const res = await fetch(`${API}/portal5/wizard/${connectionId}/sync`, {
         method: "PUT",
         headers,
         body: JSON.stringify({ sync_enabled: syncEnabled, sync_interval_seconds: syncInterval }),
@@ -186,7 +186,7 @@ export default function IntegrationWizard({ token }: { token: string }) {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`${API}/api/v1/portal5/wizard/${connectionId}/test`, {
+      const res = await fetch(`${API}/portal5/wizard/${connectionId}/test`, {
         method: "POST",
         headers,
         body: JSON.stringify({ activate }),

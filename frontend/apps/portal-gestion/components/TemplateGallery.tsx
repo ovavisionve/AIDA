@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
 interface Template {
   id: string;
@@ -30,7 +30,7 @@ export default function TemplateGallery({ token }: { token: string }) {
     setLoading(true);
     const params = new URLSearchParams();
     if (categoryFilter) params.set("category", categoryFilter);
-    fetch(`${API}/api/v1/portal5/templates?${params}`, { headers })
+    fetch(`${API}/portal5/templates?${params}`, { headers })
       .then(r => r.json())
       .then(data => setTemplates(Array.isArray(data) ? data : []))
       .catch(() => {})
@@ -42,7 +42,7 @@ export default function TemplateGallery({ token }: { token: string }) {
   const seedTemplates = async () => {
     setSeeding(true);
     try {
-      await fetch(`${API}/api/v1/portal5/templates/seed`, {
+      await fetch(`${API}/portal5/templates/seed`, {
         method: "POST", headers,
       });
       loadTemplates();
@@ -52,7 +52,7 @@ export default function TemplateGallery({ token }: { token: string }) {
   };
 
   const viewDetail = async (id: string) => {
-    const res = await fetch(`${API}/api/v1/portal5/templates/${id}`, { headers });
+    const res = await fetch(`${API}/portal5/templates/${id}`, { headers });
     const data = await res.json();
     setSelectedDetail(data);
   };

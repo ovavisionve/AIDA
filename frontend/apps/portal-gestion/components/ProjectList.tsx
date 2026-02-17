@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
 export default function ProjectList({ token }: { token: string }) {
   const [projects, setProjects] = useState<any[]>([]);
@@ -23,7 +23,7 @@ export default function ProjectList({ token }: { token: string }) {
     setLoading(true);
     const params = new URLSearchParams();
     if (statusFilter) params.set("status", statusFilter);
-    fetch(`${API}/api/v1/portal5/projects?${params}`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${API}/portal5/projects?${params}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(data => {
         setProjects(data.items || []);
@@ -38,7 +38,7 @@ export default function ProjectList({ token }: { token: string }) {
   const createProject = async () => {
     if (!clientId || !name) return;
     try {
-      const res = await fetch(`${API}/api/v1/portal5/projects`, {
+      const res = await fetch(`${API}/portal5/projects`, {
         method: "POST", headers,
         body: JSON.stringify({
           client_id: clientId, name, description,
@@ -54,7 +54,7 @@ export default function ProjectList({ token }: { token: string }) {
   };
 
   const updateStatus = async (id: string, newStatus: string) => {
-    await fetch(`${API}/api/v1/portal5/projects/${id}`, {
+    await fetch(`${API}/portal5/projects/${id}`, {
       method: "PUT", headers,
       body: JSON.stringify({ status: newStatus }),
     });
