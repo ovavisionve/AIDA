@@ -12,16 +12,22 @@ export default function Dashboard({ token }: Props) {
     fetch(`${apiUrl}/invoicing/dashboard`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then(setData)
       .catch(() => {});
   }, [token, apiUrl]);
 
+  const fmt = (v: number | undefined) =>
+    v != null ? `Bs. ${v.toLocaleString("es-VE")}` : "Bs. 0";
+
   const stats = [
-    { label: "Ventas Hoy", value: data ? `Bs. ${data.ventas_hoy.toLocaleString("es-VE")}` : "...", color: "bg-blue-500" },
-    { label: "Ventas Semana", value: data ? `Bs. ${data.ventas_semana.toLocaleString("es-VE")}` : "...", color: "bg-green-500" },
-    { label: "Ventas Mes", value: data ? `Bs. ${data.ventas_mes.toLocaleString("es-VE")}` : "...", color: "bg-purple-500" },
-    { label: "Stock Bajo", value: data ? data.productos_stock_bajo : "...", color: "bg-amber-500" },
+    { label: "Ventas Hoy", value: data ? fmt(data.ventas_hoy) : "...", color: "bg-blue-500" },
+    { label: "Ventas Semana", value: data ? fmt(data.ventas_semana) : "...", color: "bg-green-500" },
+    { label: "Ventas Mes", value: data ? fmt(data.ventas_mes) : "...", color: "bg-purple-500" },
+    { label: "Stock Bajo", value: data ? data.productos_stock_bajo ?? 0 : "...", color: "bg-amber-500" },
   ];
 
   return (
@@ -43,7 +49,7 @@ export default function Dashboard({ token }: Props) {
               {data.top_clientes.map((c: any, i: number) => (
                 <div key={i} className="flex items-center justify-between text-sm">
                   <span className="text-gray-600">{c.nombre}</span>
-                  <span className="font-medium">Bs. {c.total.toLocaleString("es-VE")}</span>
+                  <span className="font-medium">{fmt(c.total)}</span>
                 </div>
               ))}
             </div>
@@ -63,7 +69,7 @@ export default function Dashboard({ token }: Props) {
                     <span className="ml-2 text-gray-400">{d.receptor}</span>
                   </div>
                   <div className="text-right">
-                    <span className="font-medium">Bs. {d.total.toLocaleString("es-VE")}</span>
+                    <span className="font-medium">{fmt(d.total)}</span>
                     <span className={`ml-2 rounded px-1.5 py-0.5 text-[10px] font-medium ${
                       d.status === "emitido" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
                     }`}>

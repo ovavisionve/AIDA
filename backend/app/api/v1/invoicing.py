@@ -33,17 +33,27 @@ router = APIRouter()
 
 
 async def _get_client(user: User, db: AsyncSession) -> Client:
+    # Check direct ClientUser association first
     result = await db.execute(
         select(ClientUser.client_id).where(
             ClientUser.user_id == user.id, ClientUser.is_active == True
         ).limit(1)
     )
     row = result.first()
-    if not row:
-        raise HTTPException(status_code=403, detail="No tiene un cliente asociado")
+    if row:
+        client_result = await db.execute(select(Client).where(Client.id == row[0]))
+        return client_result.scalar_one()
 
-    client_result = await db.execute(select(Client).where(Client.id == row[0]))
-    return client_result.scalar_one()
+    # Superadmins can access the first available client
+    if user.is_superadmin:
+        client_result = await db.execute(
+            select(Client).where(Client.is_active == True).order_by(Client.created_at).limit(1)
+        )
+        client = client_result.scalar_one_or_none()
+        if client:
+            return client
+
+    raise HTTPException(status_code=403, detail="No tiene un cliente asociado")
 
 
 @router.get("/dashboard", response_model=FacturadorDashboard)
