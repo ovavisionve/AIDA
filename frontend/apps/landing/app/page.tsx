@@ -1,8 +1,11 @@
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import Features from "@/components/Features";
+import SavingsCalculator from "@/components/SavingsCalculator";
+import ProductCatalog from "@/components/ProductCatalog";
 import HowItWorks from "@/components/HowItWorks";
 import Integrations from "@/components/Integrations";
+import CompetitorComparison from "@/components/CompetitorComparison";
 import WhyAida from "@/components/WhyAida";
 import Pricing from "@/components/Pricing";
 import Testimonials from "@/components/Testimonials";
@@ -20,8 +23,11 @@ export default function Home() {
       <Navbar />
       <Hero />
       <Features />
+      <SavingsCalculator />
+      <ProductCatalog />
       <HowItWorks />
       <Integrations />
+      <CompetitorComparison />
       <WhyAida />
       <Pricing />
       <Testimonials />
@@ -54,7 +60,7 @@ export default function Home() {
               "@type": "AggregateOffer",
               priceCurrency: "USD",
               lowPrice: "29",
-              highPrice: "199",
+              highPrice: "299",
               offerCount: "4",
             },
             featureList: [
@@ -64,6 +70,8 @@ export default function Home() {
               "Inteligencia Artificial",
               "API REST",
               "Generación PDF/XML",
+              "Calculadora de ahorro",
+              "Catálogo de productos con SKU",
             ],
           }),
         }}

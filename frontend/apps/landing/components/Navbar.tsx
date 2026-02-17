@@ -4,9 +4,10 @@ import { useState } from "react";
 
 const links = [
   { href: "#caracteristicas", label: "Características" },
+  { href: "#calculadora", label: "Calculadora" },
+  { href: "#productos", label: "Productos" },
   { href: "#como-funciona", label: "Cómo Funciona" },
-  { href: "#integraciones", label: "Integraciones" },
-  { href: "#por-que-aida", label: "Por qué AIDA" },
+  { href: "#comparativa", label: "AIDA vs Otros" },
   { href: "#planes", label: "Planes" },
 ];
 
@@ -29,7 +30,7 @@ export default function Navbar() {
           </a>
 
           {/* Desktop links */}
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden lg:flex items-center gap-6">
             {links.map((l) => (
               <a
                 key={l.href}
@@ -72,7 +73,7 @@ export default function Navbar() {
           {/* Mobile menu button */}
           <button
             onClick={() => setOpen(!open)}
-            className="md:hidden text-slate-400 hover:text-white"
+            className="lg:hidden text-slate-400 hover:text-white"
             aria-label="Menú"
           >
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -88,7 +89,7 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       {open && (
-        <div className="md:hidden bg-aida-dark/95 backdrop-blur-lg border-t border-white/5 px-4 py-4 space-y-3">
+        <div className="lg:hidden bg-aida-dark/95 backdrop-blur-lg border-t border-white/5 px-4 py-4 space-y-3">
           {links.map((l) => (
             <a
               key={l.href}
