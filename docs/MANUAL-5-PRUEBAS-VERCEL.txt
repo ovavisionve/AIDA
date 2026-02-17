@@ -52,9 +52,23 @@ Esto simula el onboarding de 2 empresas reales con perfiles distintos.
 Este paso solo se ejecuta UNA VEZ. Crea los datos iniciales en la base
 de datos en la nube (Neon) para que los portales tengan con que trabajar.
 
-PASO 2.1: Clonar el repo (si no lo tienes)
-  git clone https://github.com/ovavisionve/AIDA.git
-  cd AIDA/backend
+PASO 2.1: Ir a la carpeta del backend
+  Si ya clonaste el repo (por ejemplo para la landing), NO necesitas clonarlo
+  de nuevo. Solo navega a la carpeta backend. Abre una terminal y escribe:
+
+  EN WINDOWS (CMD o PowerShell):
+    cd C:\Users\TU_USUARIO_WINDOWS\AIDA\backend
+
+  EN MAC/LINUX:
+    cd ~/AIDA/backend
+
+  Si NO tienes el repo clonado, clonalo primero:
+    git clone https://github.com/ovavisionve/AIDA.git
+    cd AIDA/backend
+
+  COMO SABER SI YA LO TIENES: Busca en tu computadora una carpeta llamada
+  "AIDA" que tenga dentro las carpetas "backend" y "frontend". Si la tienes,
+  no clones de nuevo.
 
 PASO 2.2: Crear entorno virtual e instalar dependencias
   python -m venv venv
@@ -62,31 +76,51 @@ PASO 2.2: Crear entorno virtual e instalar dependencias
   - Windows:    venv\Scripts\activate
   pip install -r requirements.txt
 
-PASO 2.3: Configurar las variables de entorno para conectar a la nube
-  Crea un archivo .env en la carpeta backend/ con estos valores.
-  COPIA Y PEGA este bloque, luego reemplaza las 3 lineas marcadas con <<<:
+PASO 2.3: Crear el archivo .env en la carpeta backend
 
-  DATABASE_URL=<<<PEGA AQUI TU URL DE NEON (la copiaste en Manual 1, paso 3.2)
-  REDIS_URL=<<<PEGA AQUI TU URL DE UPSTASH (la copiaste en Manual 1, paso 4.2)
-  SECRET_KEY=<<<PEGA AQUI TU SECRET KEY (la que generaste en Manual 1, paso 5.3)
+  Necesitas crear un archivo llamado ".env" (con el punto al inicio) dentro
+  de la carpeta backend/. Este archivo le dice al backend a que base de datos
+  conectarse.
+
+  COMO CREAR EL ARCHIVO:
+
+  Opcion A — Desde la terminal (ya debes estar en AIDA/backend):
+    EN WINDOWS (PowerShell):
+      notepad .env
+      (Se abre el Bloc de Notas. Si pregunta si quieres crear el archivo, di "Si")
+
+    EN MAC:
+      nano .env
+      (Se abre el editor nano en la terminal)
+
+    EN LINUX:
+      nano .env
+
+  Opcion B — Desde tu editor de codigo (VS Code, etc):
+    1. Abre la carpeta AIDA/backend en tu editor
+    2. Crea un archivo nuevo llamado ".env" (sin extension)
+
+  CONTENIDO DEL ARCHIVO .env — COPIA Y PEGA EXACTAMENTE ESTO:
+
+  DATABASE_URL=postgresql+asyncpg://neondb_owner:npg_NFWATn26sDkQ@ep-ancient-cherry-ai82yur9-pooler.c-4.us-east-1.aws.neon.tech/neondb?ssl=require
+  REDIS_URL=rediss://default:AZzlAAIncDI2Zjc2NjVmMGQ1ZjQ0YzFlYTJkZDE2ZmE3NTdjMGFhNHAyNDAxNjU@national-rooster-40165.upstash.io:6379
+  SECRET_KEY=aida-qa-secret-key-2026-change-in-production
   ENVIRONMENT=qa
   DEBUG=true
   ALLOWED_ORIGINS=["*"]
 
-  DONDE ENCONTRAR ESTOS 3 VALORES:
-    - DATABASE_URL: Ve a https://console.neon.tech → tu proyecto "aida-qa"
-      → Connection Details → copia la URL. Recuerda cambiar el inicio a
-      postgresql+asyncpg:// y el final a ?ssl=require (ver Manual 1, paso 3.2)
-    - REDIS_URL: Ve a https://console.upstash.com → tu base "aida-qa"
-      → pestana "Redis" → copia la URL que empieza con rediss://
-    - SECRET_KEY: Son los MISMOS valores que pusiste en Railway (Manual 1, paso 5.3).
-      Si no los guardaste, genera uno nuevo: abre https://generate-secret.vercel.app/64
+  GUARDA EL ARCHIVO:
+    - En Notepad: Ctrl+S y cierra
+    - En nano: Ctrl+O (guardar), Enter (confirmar), Ctrl+X (salir)
+    - En VS Code: Ctrl+S
 
-  IMPORTANTE: Usa las MISMAS URLs de Neon y Upstash que configuraste en
-  Railway. Asi el seed escribe en la misma base de datos que usa el backend
-  desplegado en la nube.
+  NOTA: Estos son tus datos reales de Neon y Upstash. Son los mismos que
+  estan configurados en Railway, asi que el seed escribe en la misma base
+  de datos que usa el backend en la nube.
 
 PASO 2.4: Ejecutar el backend una vez para que corra el seed
+  Asegurate de que el entorno virtual este activo (paso 2.2) y escribe:
+
   uvicorn app.main:app --host 0.0.0.0 --port 8000
 
   La primera vez que arranca, el backend detecta que no hay usuarios y
@@ -107,18 +141,20 @@ PASO 2.4: Ejecutar el backend una vez para que corra el seed
   Ejemplo: "API Key: aida_J312456783_a1b2c3d4e5f6..."
 
 PASO 2.5: Verificar que los datos se crearon
-  Abre tu navegador y ve a la URL de health de tu backend en Railway.
-  La URL es la que Railway te genero en Manual 1 paso 5.5, agregando /health
-  Ejemplo: si tu backend es https://aida-production-xxxx.up.railway.app
-  entonces abres: https://aida-production-xxxx.up.railway.app/health
+  1. Abre tu navegador (Chrome, Firefox, Edge)
+  2. Pega esta URL en la barra de direcciones:
+     https://aida-production-1f43.up.railway.app/health
+  3. Presiona Enter
+  4. Debes ver este texto en la pantalla:
+     {"status":"ok","version":"1.0.0","database":"connected"}
+     Si ves eso, el backend esta funcionando y conectado a la base de datos.
 
-  Debes ver: {"status":"ok","version":"1.0.0","database":"connected"}
-
-  Ahora intenta hacer login en el Portal Admin de Vercel:
-    URL:      https://aida-admin-7pf4e95dn-ova1.vercel.app
-    Email:    admin@aida.com.ve
-    Password: Admin2024!
-  Si funciona, los datos del seed estan en la nube correctamente.
+  5. Ahora ve a esta URL para probar el login:
+     https://aida-admin-7pf4e95dn-ova1.vercel.app
+  6. Escribe en el campo Email:    admin@aida.com.ve
+  7. Escribe en el campo Password: Admin2024!
+  8. Click "Ingresar"
+  9. Si entras al Dashboard, los datos del seed estan en la nube correctamente.
 
 PASO 2.6: Detener el backend local
   Ya puedes detener el backend local (Ctrl+C). No lo necesitas mas.
@@ -136,34 +172,30 @@ PASO 2.6: Detener el backend local
 3. URLs DE LOS SERVICIOS DESPLEGADOS
 ================================================================================
 
-REPOSITORIO:
+REPOSITORIO GITHUB:
   https://github.com/ovavisionve/AIDA
 
-PORTALES EN VERCEL (URLs reales, ya desplegados):
-  Portal Admin                https://aida-admin-7pf4e95dn-ova1.vercel.app
-  Portal Cliente              https://aida-cliente-qa.vercel.app
-  Portal Facturador           https://aida-facturador-qa.vercel.app
-  Portal Validacion           https://aida-validacion-qa.vercel.app
-  Portal Developers           https://aida-developers-qa.vercel.app
-  Portal Gestion              https://aida-gestion-qa.vercel.app
+BACKEND EN RAILWAY:
+  API Base:            https://aida-production-1f43.up.railway.app/api/v1
+  Swagger / Docs:      https://aida-production-1f43.up.railway.app/api/docs
+  Health Check:        https://aida-production-1f43.up.railway.app/health
+  Dashboard Railway:   https://railway.app/dashboard
 
-BACKEND EN RAILWAY (depende de tu despliegue):
-  La URL la genera Railway cuando despliegas (Manual 1, paso 5.5).
-  Tiene la forma: https://aida-production-XXXX.up.railway.app
-  Una vez que la tengas, estas son las rutas:
-    API Base:          https://TU-RAILWAY-URL.up.railway.app/api/v1
-    Swagger / Docs:    https://TU-RAILWAY-URL.up.railway.app/api/docs
-    Health Check:      https://TU-RAILWAY-URL.up.railway.app/health
+PORTALES EN VERCEL (todos desplegados):
+  Portal Admin         https://aida-admin-7pf4e95dn-ova1.vercel.app
+  Portal Cliente       https://aida-cliente-qa.vercel.app
+  Portal Facturador    https://aida-facturador-qa.vercel.app
+  Portal Validacion    https://aida-validacion-qa.vercel.app
+  Portal Developers    https://aida-developers-qa.vercel.app
+  Portal Gestion       https://aida-gestion-qa.vercel.app
 
-SERVICIOS EN LA NUBE (dependen de tus cuentas):
-  Neon (PostgreSQL):   https://console.neon.tech → proyecto "aida-qa"
-  Upstash (Redis):     https://console.upstash.com → base "aida-qa"
-  Railway (backend):   https://railway.app/dashboard → proyecto AIDA
+SERVICIOS EN LA NUBE:
+  Neon (PostgreSQL):   https://console.neon.tech
+  Upstash (Redis):     https://console.upstash.com
 
 LANDING PAGE (aun no desplegada en Vercel):
   Local:               http://localhost:3100
   Portal SENIAT:       http://localhost:3100/portal-seniat
-  Desplegar como:      aida-landing-qa en Vercel
 
 
 ================================================================================
@@ -564,7 +596,7 @@ PRUEBA 4F.5 — Dashboard de monitoreo
 
 NOTA: La landing page se despliega por separado. Si la tienes en Vercel,
 usa tu URL. Si no, puedes probarla localmente:
-  cd /ruta/a/AIDA/frontend/apps/landing && npm run dev
+  cd AIDA/frontend/apps/landing && npm run dev
   URL local: http://localhost:3100
 
 PRUEBA 4G.1 — Carga y navegacion
@@ -665,30 +697,28 @@ Guardatelo abierto mientras pruebas:
   └──────────────────────────────────────────────────────────────────────────┘
 
   ┌──────────────────────────────────────────────────────────────────────────┐
-  │ URLs REALES DESPLEGADAS (QA / VERCEL)                                   │
+  │ TODAS LAS URLs                                                          │
   ├──────────────────────────────────────────────────────────────────────────┤
-  │ Repositorio:      https://github.com/ovavisionve/AIDA                  │
+  │ Repo GitHub:  https://github.com/ovavisionve/AIDA                      │
   │                                                                         │
-  │ Backend API:      (tu URL de Railway)/api/v1                            │
-  │ Swagger Docs:     (tu URL de Railway)/api/docs                          │
-  │ Health Check:     (tu URL de Railway)/health                            │
-  │  → La URL de Railway la obtienes en: https://railway.app/dashboard     │
-  │    click tu proyecto → Settings → Networking → tu dominio publico       │
+  │ Backend API:  https://aida-production-1f43.up.railway.app/api/v1       │
+  │ Swagger Docs: https://aida-production-1f43.up.railway.app/api/docs     │
+  │ Health Check: https://aida-production-1f43.up.railway.app/health       │
   │                                                                         │
-  │ Portal Admin:     https://aida-admin-7pf4e95dn-ova1.vercel.app         │
-  │ Portal Cliente:   https://aida-cliente-qa.vercel.app                    │
-  │ Portal Facturador:https://aida-facturador-qa.vercel.app                 │
-  │ Portal Validacion:https://aida-validacion-qa.vercel.app (publico)       │
-  │ Portal Developers:https://aida-developers-qa.vercel.app                 │
-  │ Portal Gestion:   https://aida-gestion-qa.vercel.app                    │
+  │ Admin:        https://aida-admin-7pf4e95dn-ova1.vercel.app            │
+  │ Cliente:      https://aida-cliente-qa.vercel.app                       │
+  │ Facturador:   https://aida-facturador-qa.vercel.app                    │
+  │ Validacion:   https://aida-validacion-qa.vercel.app (publico)          │
+  │ Developers:   https://aida-developers-qa.vercel.app                    │
+  │ Gestion:      https://aida-gestion-qa.vercel.app                       │
   │                                                                         │
-  │ Neon (DB):        https://console.neon.tech                             │
-  │ Upstash (Redis):  https://console.upstash.com                           │
-  │ Railway (backend):https://railway.app/dashboard                         │
+  │ Neon (DB):    https://console.neon.tech                                │
+  │ Upstash:      https://console.upstash.com                              │
+  │ Railway:      https://railway.app/dashboard                            │
   │                                                                         │
-  │ Landing Page:     (desplegar como aida-landing-qa en Vercel)            │
-  │ Portal SENIAT:    /portal-seniat (dentro de la landing page)            │
-  │   Login demo:     seniat.auditor / auditor2025                          │
+  │ Landing:      http://localhost:3100 (local)                            │
+  │ SENIAT demo:  http://localhost:3100/portal-seniat                      │
+  │   Login:      seniat.auditor / auditor2025                             │
   └──────────────────────────────────────────────────────────────────────────┘
 
 
@@ -701,8 +731,8 @@ PROBLEMA: Login dice "Error de conexion" en cualquier portal
   → Abre DevTools (F12) → Console → busca el error exacto
   → Si dice "CORS policy": La URL del portal no esta en ALLOWED_ORIGINS
     de Railway. Ve a Railway → Variables → agrega la URL del portal
-  → Si dice "Network Error": El backend esta caido. Verifica:
-    (tu URL de Railway)/health — ve a https://railway.app/dashboard para verla
+  → Si dice "Network Error": El backend esta caido. Verifica abriendo:
+    https://aida-production-1f43.up.railway.app/health
   → Si dice "404": Falta /api/v1 al final de NEXT_PUBLIC_API_URL en Vercel
 
 PROBLEMA: Login dice "Credenciales invalidas"
@@ -721,7 +751,7 @@ PROBLEMA: "403 Forbidden" al intentar acceder a funciones
 PROBLEMA: Los portales cargan pero todo esta en blanco
   → La variable NEXT_PUBLIC_API_URL no esta bien en Vercel
   → Ve a Vercel → tu proyecto → Settings → Environment Variables
-  → Verifica que NEXT_PUBLIC_API_URL = (tu URL de Railway)/api/v1
+  → Verifica que NEXT_PUBLIC_API_URL = https://aida-production-1f43.up.railway.app/api/v1
   → IMPORTANTE: Si la cambias, debes redesplegar (Deployments → Redeploy)
 
 PROBLEMA: Electro Caribe puede ver datos de Santoni (o viceversa)
