@@ -1,3 +1,7 @@
+"use client";
+
+import AnimateOnScroll from "@/components/AnimateOnScroll";
+
 const comparisonCategories = [
   {
     category: "Tecnologia",
@@ -174,138 +178,124 @@ export default function CompetitorComparison() {
     <section id="comparativa" className="py-24 sm:py-32 overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* ── Header ── */}
-        <div className="text-center mb-20">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-aida-cyan">
-            AIDA vs Imprentas Tradicionales
-          </h2>
-          <p className="mt-3 text-3xl sm:text-4xl lg:text-5xl font-bold">
-            La unica imprenta digital en Venezuela{" "}
-            <span className="gradient-text">gestionada por IA</span>
-          </p>
-          <p className="mt-5 text-slate-400 max-w-2xl mx-auto text-base sm:text-lg leading-relaxed">
-            Comparamos lo que ofrecen las plataformas convencionales con lo que
-            AIDA hace posible. Sin marketing vacio, solo hechos verificables.
-          </p>
-        </div>
+        <AnimateOnScroll animation="fade-in">
+          <div className="text-center mb-20">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-aida-cyan">
+              AIDA vs Imprentas Tradicionales
+            </h2>
+            <p className="mt-3 text-3xl sm:text-4xl lg:text-5xl font-bold">
+              La unica imprenta digital en Venezuela{" "}
+              <span className="gradient-text">gestionada por IA</span>
+            </p>
+            <p className="mt-5 text-slate-400 max-w-2xl mx-auto text-base sm:text-lg leading-relaxed">
+              Comparamos lo que ofrecen las plataformas convencionales con lo que
+              AIDA hace posible. Sin marketing vacio, solo hechos verificables.
+            </p>
+          </div>
+        </AnimateOnScroll>
 
         {/* ── Comparison Cards Side-by-Side ── */}
         <div className="mb-24">
-          <h3 className="text-center text-xl sm:text-2xl font-bold text-white mb-4">
-            Lo que ofrecen las demas vs lo que ofrece{" "}
-            <span className="gradient-text">AIDA</span>
-          </h3>
-          <p className="text-center text-sm text-slate-500 mb-12 max-w-xl mx-auto">
-            Seis categorias clave donde la diferencia es absoluta
-          </p>
+          <AnimateOnScroll animation="fade-in">
+            <h3 className="text-center text-xl sm:text-2xl font-bold text-white mb-4">
+              Lo que ofrecen las demas vs lo que ofrece{" "}
+              <span className="gradient-text">AIDA</span>
+            </h3>
+            <p className="text-center text-sm text-slate-500 mb-12 max-w-xl mx-auto">
+              Seis categorias clave donde la diferencia es absoluta
+            </p>
+          </AnimateOnScroll>
 
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {comparisonCategories.map((cat) => (
-              <div
-                key={cat.category}
-                className="perspective-container"
-              >
-                <div className="tilt-card glass-card p-6 h-full flex flex-col">
-                  {/* Category Header */}
-                  <div className="flex items-center gap-3 mb-5">
-                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-aida-accent/20 to-aida-cyan/20 flex items-center justify-center text-aida-cyan shrink-0">
-                      {cat.icon}
+            {comparisonCategories.map((cat, i) => (
+              <AnimateOnScroll key={cat.category} animation="slide-up" delay={i * 100} duration={700}>
+                <div className="perspective-container h-full">
+                  <div className="tilt-card glass-card p-6 h-full flex flex-col">
+                    {/* Category Header */}
+                    <div className="flex items-center gap-3 mb-5">
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-aida-accent/20 to-aida-cyan/20 flex items-center justify-center text-aida-cyan shrink-0">
+                        {cat.icon}
+                      </div>
+                      <h4 className="text-sm font-bold uppercase tracking-wider text-white">
+                        {cat.category}
+                      </h4>
                     </div>
-                    <h4 className="text-sm font-bold uppercase tracking-wider text-white">
-                      {cat.category}
-                    </h4>
-                  </div>
 
-                  {/* Others */}
-                  <div className="mb-4 rounded-xl bg-red-500/[0.04] border border-red-500/10 p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <svg className="w-4 h-4 text-red-400/70 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                      <span className="text-[11px] font-semibold uppercase tracking-wider text-red-400/70">
-                        {cat.others.title}
-                      </span>
+                    {/* Others */}
+                    <div className="mb-4 rounded-xl bg-red-500/[0.04] border border-red-500/10 p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <svg className="w-4 h-4 text-red-400/70 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-red-400/70">
+                          {cat.others.title}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 leading-relaxed">
+                        {cat.others.desc}
+                      </p>
                     </div>
-                    <p className="text-xs text-slate-500 leading-relaxed">
-                      {cat.others.desc}
-                    </p>
-                  </div>
 
-                  {/* AIDA */}
-                  <div className="rounded-xl bg-aida-cyan/[0.04] border border-aida-cyan/15 p-4 mt-auto">
-                    <div className="flex items-center gap-2 mb-2">
-                      <svg className="w-4 h-4 text-aida-cyan shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      <span className="text-[11px] font-semibold uppercase tracking-wider text-aida-cyan">
-                        {cat.aida.title}
-                      </span>
+                    {/* AIDA */}
+                    <div className="rounded-xl bg-aida-cyan/[0.04] border border-aida-cyan/15 p-4 mt-auto">
+                      <div className="flex items-center gap-2 mb-2">
+                        <svg className="w-4 h-4 text-aida-cyan shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-aida-cyan">
+                          {cat.aida.title}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-300 leading-relaxed">
+                        {cat.aida.desc}
+                      </p>
                     </div>
-                    <p className="text-xs text-slate-300 leading-relaxed">
-                      {cat.aida.desc}
-                    </p>
                   </div>
                 </div>
-              </div>
+              </AnimateOnScroll>
             ))}
           </div>
         </div>
 
         {/* ── Feature Comparison Matrix ── */}
-        <div className="mb-24">
-          <h3 className="text-center text-xl sm:text-2xl font-bold text-white mb-4">
-            Matriz de funcionalidades
-          </h3>
-          <p className="text-center text-sm text-slate-500 mb-10 max-w-lg mx-auto">
-            Funcionalidades disponibles en AIDA comparadas con lo que ofrecen
-            las plataformas convencionales en Venezuela
-          </p>
+        <AnimateOnScroll animation="scale-in" duration={800}>
+          <div className="mb-24">
+            <h3 className="text-center text-xl sm:text-2xl font-bold text-white mb-4">
+              Matriz de funcionalidades
+            </h3>
+            <p className="text-center text-sm text-slate-500 mb-10 max-w-lg mx-auto">
+              Funcionalidades disponibles en AIDA comparadas con lo que ofrecen
+              las plataformas convencionales en Venezuela
+            </p>
 
-          <div className="glow-blue overflow-hidden rounded-2xl border border-white/10 max-w-3xl mx-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-white/10 bg-white/[0.03]">
-                  <th className="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 font-semibold">
-                    Funcionalidad
-                  </th>
-                  <th className="px-6 py-4 text-center text-xs uppercase tracking-wider font-semibold w-32">
-                    <span className="gradient-text">AIDA</span>
-                  </th>
-                  <th className="px-6 py-4 text-center text-xs uppercase tracking-wider text-slate-600 font-semibold w-32">
-                    Otras
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {featureMatrix.map((row) => (
-                  <tr
-                    key={row.feature}
-                    className="hover:bg-white/[0.02] transition-colors"
-                  >
-                    <td className="px-6 py-3.5 text-slate-300 text-sm">
-                      {row.feature}
-                    </td>
-                    <td className="px-6 py-3.5 text-center">
-                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-500/10">
-                        <svg
-                          className="w-4 h-4 text-green-400"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2.5}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                      </span>
-                    </td>
-                    <td className="px-6 py-3.5 text-center">
-                      {row.others ? (
-                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-500/5">
+            <div className="glow-blue overflow-hidden rounded-2xl border border-white/10 max-w-3xl mx-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/10 bg-white/[0.03]">
+                    <th className="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 font-semibold">
+                      Funcionalidad
+                    </th>
+                    <th className="px-6 py-4 text-center text-xs uppercase tracking-wider font-semibold w-32">
+                      <span className="gradient-text">AIDA</span>
+                    </th>
+                    <th className="px-6 py-4 text-center text-xs uppercase tracking-wider text-slate-600 font-semibold w-32">
+                      Otras
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {featureMatrix.map((row) => (
+                    <tr
+                      key={row.feature}
+                      className="hover:bg-white/[0.02] transition-colors"
+                    >
+                      <td className="px-6 py-3.5 text-slate-300 text-sm">
+                        {row.feature}
+                      </td>
+                      <td className="px-6 py-3.5 text-center">
+                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-500/10">
                           <svg
-                            className="w-4 h-4 text-green-400/40"
+                            className="w-4 h-4 text-green-400"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -318,118 +308,140 @@ export default function CompetitorComparison() {
                             />
                           </svg>
                         </span>
-                      ) : (
-                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-500/10">
-                          <svg
-                            className="w-4 h-4 text-red-400/60"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2.5}
-                              d="M6 18L18 6M6 6l12 12"
-                            />
-                          </svg>
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      </td>
+                      <td className="px-6 py-3.5 text-center">
+                        {row.others ? (
+                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-500/5">
+                            <svg
+                              className="w-4 h-4 text-green-400/40"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2.5}
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-500/10">
+                            <svg
+                              className="w-4 h-4 text-red-400/60"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2.5}
+                                d="M6 18L18 6M6 6l12 12"
+                              />
+                            </svg>
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
 
-            {/* Summary row */}
-            <div className="border-t border-white/10 bg-white/[0.02] px-6 py-4 flex items-center justify-between">
-              <span className="text-xs text-slate-500">Total de funcionalidades</span>
-              <div className="flex items-center gap-8">
-                <span className="text-sm font-bold text-aida-cyan">
-                  10 / 10
-                </span>
-                <span className="text-sm font-bold text-red-400/60">
-                  2 / 10
-                </span>
+              {/* Summary row */}
+              <div className="border-t border-white/10 bg-white/[0.02] px-6 py-4 flex items-center justify-between">
+                <span className="text-xs text-slate-500">Total de funcionalidades</span>
+                <div className="flex items-center gap-8">
+                  <span className="text-sm font-bold text-aida-cyan">
+                    10 / 10
+                  </span>
+                  <span className="text-sm font-bold text-red-400/60">
+                    2 / 10
+                  </span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </AnimateOnScroll>
 
         {/* ── Los 4 Pilares de AIDA ── */}
         <div className="mb-20">
-          <h3 className="text-center text-xl sm:text-2xl font-bold text-white mb-3">
-            Los 4 pilares de <span className="gradient-text">AIDA</span>
-          </h3>
-          <p className="text-center text-sm text-slate-500 mb-12 max-w-lg mx-auto">
-            Cuatro razones de fondo por las que AIDA es la plataforma de
-            impresion fiscal mas avanzada de Venezuela
-          </p>
+          <AnimateOnScroll animation="fade-in">
+            <h3 className="text-center text-xl sm:text-2xl font-bold text-white mb-3">
+              Los 4 pilares de <span className="gradient-text">AIDA</span>
+            </h3>
+            <p className="text-center text-sm text-slate-500 mb-12 max-w-lg mx-auto">
+              Cuatro razones de fondo por las que AIDA es la plataforma de
+              impresion fiscal mas avanzada de Venezuela
+            </p>
+          </AnimateOnScroll>
 
           <div className="grid gap-6 lg:grid-cols-2">
-            {pillars.map((pillar) => (
-              <div
-                key={pillar.label}
-                className="perspective-container"
-              >
-                <div
-                  className={`tilt-card glass-card p-7 h-full border ${pillar.border} hover:bg-white/[0.06] transition-all duration-500`}
-                >
-                  <div className="flex items-start gap-5">
-                    <div
-                      className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${pillar.gradient} flex items-center justify-center text-aida-cyan shrink-0`}
-                    >
-                      {pillar.icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-1">
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-aida-cyan">
-                          {pillar.label}
-                        </span>
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-aida-cyan/10 border border-aida-cyan/20 text-[10px] text-aida-cyan font-medium">
-                          {pillar.highlight}
-                        </span>
+            {pillars.map((pillar, i) => (
+              <AnimateOnScroll key={pillar.label} animation={i % 2 === 0 ? "slide-left" : "slide-right"} delay={i * 120} duration={750}>
+                <div className="perspective-container h-full">
+                  <div
+                    className={`tilt-card glass-card p-7 h-full border ${pillar.border} hover:bg-white/[0.06] transition-all duration-500`}
+                  >
+                    <div className="flex items-start gap-5">
+                      <div
+                        className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${pillar.gradient} flex items-center justify-center text-aida-cyan shrink-0`}
+                      >
+                        {pillar.icon}
                       </div>
-                      <h4 className="text-lg font-bold text-white mb-3">
-                        {pillar.title}
-                      </h4>
-                      <p className="text-sm text-slate-400 leading-relaxed">
-                        {pillar.description}
-                      </p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-1">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-aida-cyan">
+                            {pillar.label}
+                          </span>
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-aida-cyan/10 border border-aida-cyan/20 text-[10px] text-aida-cyan font-medium">
+                            {pillar.highlight}
+                          </span>
+                        </div>
+                        <h4 className="text-lg font-bold text-white mb-3">
+                          {pillar.title}
+                        </h4>
+                        <p className="text-sm text-slate-400 leading-relaxed">
+                          {pillar.description}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              </AnimateOnScroll>
             ))}
           </div>
         </div>
 
         {/* ── Bottom CTA ── */}
-        <div className="text-center">
-          <div className="glass-card glow-blue inline-block p-8 sm:p-10">
-            <p className="text-lg sm:text-xl font-bold text-white mb-2">
-              La diferencia no es de grado, es de categoria
-            </p>
-            <p className="text-sm text-slate-400 max-w-md mx-auto mb-6">
-              AIDA no es una mejora incremental. Es un cambio completo en como
-              funciona la impresion fiscal digital en Venezuela.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <a
-                href="#calculadora"
-                className="px-8 py-3.5 rounded-xl bg-gradient-to-r from-aida-accent to-aida-cyan text-base font-bold text-white shadow-lg shadow-aida-accent/25 hover:shadow-xl hover:shadow-aida-accent/30 hover:scale-[1.02] transition-all"
-              >
-                Calcula tu ahorro
-              </a>
-              <a
-                href="#contacto"
-                className="px-8 py-3.5 rounded-xl border border-white/10 text-base font-medium text-slate-300 hover:bg-white/5 hover:text-white transition-all"
-              >
-                Solicitar demo
-              </a>
+        <AnimateOnScroll animation="scale-in" delay={100}>
+          <div className="text-center">
+            <div className="glass-card glow-blue inline-block p-8 sm:p-10">
+              <p className="text-lg sm:text-xl font-bold text-white mb-2">
+                La diferencia no es de grado, es de categoria
+              </p>
+              <p className="text-sm text-slate-400 max-w-md mx-auto mb-6">
+                AIDA no es una mejora incremental. Es un cambio completo en como
+                funciona la impresion fiscal digital en Venezuela.
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <a
+                  href="#calculadora"
+                  className="px-8 py-3.5 rounded-xl bg-gradient-to-r from-aida-accent to-aida-cyan text-base font-bold text-white shadow-lg shadow-aida-accent/25 hover:shadow-xl hover:shadow-aida-accent/30 hover:scale-[1.02] transition-all"
+                >
+                  Calcula tu ahorro
+                </a>
+                <a
+                  href="#contacto"
+                  className="px-8 py-3.5 rounded-xl border border-white/10 text-base font-medium text-slate-300 hover:bg-white/5 hover:text-white transition-all"
+                >
+                  Solicitar demo
+                </a>
+              </div>
             </div>
           </div>
-        </div>
+        </AnimateOnScroll>
       </div>
     </section>
   );

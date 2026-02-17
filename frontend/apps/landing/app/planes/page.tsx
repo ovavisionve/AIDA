@@ -13,6 +13,15 @@ export const metadata: Metadata = {
     "precio documentos fiscales",
     "suscripción facturación SENIAT",
   ],
+  openGraph: {
+    title: "Planes AIDA - Facturación Electrónica desde $29/mes",
+    description: "Básico ($29/mes, 500 docs), Profesional ($79/mes, 5,000 docs), Empresarial ($149/mes, ilimitado). IA, SENIAT, soporte 24/7 incluido.",
+    url: "https://aida.com.ve/planes",
+    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+  },
+  alternates: {
+    canonical: "https://aida.com.ve/planes",
+  },
 };
 
 export default function PlanesPage() {

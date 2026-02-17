@@ -13,6 +13,15 @@ export const metadata: Metadata = {
     "conector Odoo imprenta digital",
     "SKU documentos fiscales",
   ],
+  openGraph: {
+    title: "Productos AIDA - Números de Control, Documentos e Integraciones",
+    description: "Catálogo completo: paquetes de NC desde 500 hasta 50,000, facturas, notas de crédito, conectores SAP/Odoo/WooCommerce. Precios transparentes.",
+    url: "https://aida.com.ve/productos",
+    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+  },
+  alternates: {
+    canonical: "https://aida.com.ve/productos",
+  },
 };
 
 export default function ProductosPage() {

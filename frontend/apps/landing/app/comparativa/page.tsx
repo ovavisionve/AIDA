@@ -14,6 +14,16 @@ export const metadata: Metadata = {
     "AIDA vs imprentas tradicionales",
     "plataforma fiscal avanzada",
   ],
+  openGraph: {
+    title: "AIDA vs Imprentas Tradicionales - Comparativa real",
+    description:
+      "IA integrada, API REST, procesamiento en 3 segundos, integraciones ERP nativas. Comparación con datos verificables.",
+    url: "https://aida.com.ve/comparativa",
+    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+  },
+  alternates: {
+    canonical: "https://aida.com.ve/comparativa",
+  },
 };
 
 export default function ComparativaPage() {
