@@ -1,0 +1,739 @@
+================================================================================
+  MANUAL 5: PRUEBAS EN VERCEL - AIDA IMPRENTA DIGITAL
+  Guia para probar la plataforma completa usando los portales desplegados
+  en Vercel, Railway (backend) y la base de datos en la nube.
+  Fecha: 17 de febrero de 2026
+================================================================================
+
+INDICE
+------
+  1. Resumen: como funciona este manual
+  2. PREREQUISITO: Crear los 2 clientes de prueba (LOCAL)
+  3. URLs de los servicios desplegados
+  4. PRUEBAS CON DATOS: Guia paso a paso
+     4A. Pruebas como Super Admin
+     4B. Pruebas como Alimentos Santoni C.A.
+     4C. Pruebas como Electro Caribe C.A.
+     4D. Pruebas del Portal de Validacion Publica
+     4E. Pruebas del Portal Developers (API)
+     4F. Pruebas del Portal Gestion (Integraciones + IA)
+     4G. Pruebas de la Landing Page
+  5. Datos de acceso rapido (cheat sheet)
+  6. Troubleshooting en produccion/QA
+
+
+================================================================================
+1. RESUMEN: COMO FUNCIONA ESTE MANUAL
+================================================================================
+
+Este manual te permite probar TODA la plataforma AIDA usando los portales
+ya desplegados en Vercel. No necesitas levantar ningun frontend localmente.
+
+El unico paso local es ejecutar el seed del backend para crear los 2 clientes
+de prueba (Alimentos Santoni y Electro Caribe) en la base de datos en la nube.
+Esto simula el onboarding de 2 empresas reales con perfiles distintos.
+
+  FLUJO:
+    1. [LOCAL - una sola vez] Ejecutar seed para crear datos de prueba
+    2. [NAVEGADOR] Probar cada portal en las URLs de Vercel
+    3. [NAVEGADOR] Verificar funcionalidad completa (30+ pruebas)
+
+  QUE NECESITAS:
+    - Navegador web (Chrome, Firefox, Edge)
+    - Acceso a internet
+    - Python 3.11+ (solo para ejecutar el seed una vez)
+    - Las URLs de tus servicios desplegados (paso 3)
+
+
+================================================================================
+2. PREREQUISITO: CREAR LOS 2 CLIENTES DE PRUEBA (LOCAL)
+================================================================================
+
+Este paso solo se ejecuta UNA VEZ. Crea los datos iniciales en la base
+de datos en la nube (Neon) para que los portales tengan con que trabajar.
+
+PASO 2.1: Clonar el repo (si no lo tienes)
+  git clone https://github.com/TU_USUARIO/AIDA.git
+  cd AIDA/backend
+
+PASO 2.2: Crear entorno virtual e instalar dependencias
+  python -m venv venv
+  - Linux/Mac:  source venv/bin/activate
+  - Windows:    venv\Scripts\activate
+  pip install -r requirements.txt
+
+PASO 2.3: Configurar las variables de entorno para conectar a la nube
+  Crea un archivo .env en la carpeta backend con estos valores:
+
+  DATABASE_URL=TU_DATABASE_URL_DE_NEON
+  REDIS_URL=TU_REDIS_URL_DE_UPSTASH
+  ENVIRONMENT=qa
+  DEBUG=true
+  SECRET_KEY=TU_SECRET_KEY
+  ALLOWED_ORIGINS=["*"]
+
+  IMPORTANTE: Usa las MISMAS URLs de Neon y Upstash que configuraste en
+  Railway (ver Manual 1). Asi el seed escribe en la misma base de datos
+  que usa el backend desplegado.
+
+  Ejemplo real:
+    DATABASE_URL=postgresql+asyncpg://neondb_owner:abc123@ep-cool-rain-456.us-east-2.aws.neon.tech/neondb?ssl=require
+    REDIS_URL=rediss://default:xyz789@us1-shiny-fish-12345.upstash.io:6379
+
+PASO 2.4: Ejecutar el backend una vez para que corra el seed
+  uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+  La primera vez que arranca, el backend detecta que no hay usuarios y
+  ejecuta el SEED automaticamente. Veras en la terminal:
+
+    - "no_users_found_running_seed"
+    - "Creando permisos... 60+ permisos configurados"
+    - "Creando roles..."
+    - "Super admin creado: admin@aida.com.ve / Admin2024!"
+    - "Cliente 1: Alimentos Santoni C.A. (SAP B1)"
+    - "  Admin: carlos.santoni@arrozsantoni.com.ve / Santoni2025!"
+    - "Cliente 2: Distribuidora Electro Caribe C.A."
+    - "  Admin: luis.perez@electrocaribe.com.ve / Electro2025!"
+    - "seed_completed_admin_created"
+
+  IMPORTANTE: Copia y guarda las API Keys que aparecen en los logs.
+  Solo se muestran UNA VEZ durante el seed.
+  Ejemplo: "API Key: aida_J312456783_a1b2c3d4e5f6..."
+
+PASO 2.5: Verificar que los datos se crearon
+  Abre tu navegador y ve a:
+    https://TU_URL_BACKEND/health
+  (ejemplo: https://aida-production-a1b2.up.railway.app/health)
+
+  Debes ver: {"status":"ok","version":"1.0.0","database":"connected"}
+
+  Ahora intenta hacer login en el Portal Admin de Vercel con:
+    admin@aida.com.ve / Admin2024!
+  Si funciona, los datos del seed estan en la nube correctamente.
+
+PASO 2.6: Detener el backend local
+  Ya puedes detener el backend local (Ctrl+C). No lo necesitas mas.
+  Toda la interaccion de aqui en adelante es a traves de los portales
+  en Vercel, que hablan con el backend en Railway.
+
+  El seed creo estos datos:
+    - 1 Super Admin (admin@aida.com.ve)
+    - 2 Clientes de prueba con sus usuarios (4 usuarios en total)
+    - Roles, permisos, plantillas, rangos de numeros de control
+    - Configuraciones del sistema
+
+
+================================================================================
+3. URLs DE LOS SERVICIOS DESPLEGADOS
+================================================================================
+
+Reemplaza TU_URL_BACKEND con tu URL real de Railway.
+
+  Servicio                    URL
+  ────────────────────────    ─────────────────────────────────────────
+  Backend API                 https://TU_URL_BACKEND
+  Swagger / Docs API          https://TU_URL_BACKEND/api/docs
+  Health Check                https://TU_URL_BACKEND/health
+
+  Portal Admin                https://aida-admin-qa.vercel.app
+  Portal Cliente              https://aida-cliente-qa.vercel.app
+  Portal Facturador           https://aida-facturador-qa.vercel.app
+  Portal Validacion           https://aida-validacion-qa.vercel.app
+  Portal Developers           https://aida-developers-qa.vercel.app
+  Portal Gestion              https://aida-gestion-qa.vercel.app
+
+  NOTA: Tus URLs de Vercel pueden variar. Usa las que obtuviste
+  al desplegar cada portal en el Manual 1 (paso 6).
+
+
+================================================================================
+4. PRUEBAS CON DATOS - GUIA PASO A PASO
+================================================================================
+
+Abre tu navegador. Todas las pruebas se hacen desde aqui.
+No necesitas ninguna terminal abierta.
+
+
+────────────────────────────────────────────────────────────────────────────────
+4A. PRUEBAS COMO SUPER ADMIN (Portal Admin)
+────────────────────────────────────────────────────────────────────────────────
+
+URL: https://aida-admin-qa.vercel.app
+Credenciales:
+  Email:    admin@aida.com.ve
+  Password: Admin2024!
+
+PRUEBA 4A.1 — Login del Admin
+  1. Abrir https://aida-admin-qa.vercel.app
+  2. Escribir email: admin@aida.com.ve
+  3. Escribir password: Admin2024!
+  4. Click "Ingresar"
+  5. ESPERADO: Se abre el Dashboard de administracion
+  6. VERIFICAR: Las tarjetas muestran:
+     - Clientes activos: 2 (Santoni + Electro Caribe)
+     - Usuarios totales: 5 (admin + 2 de Santoni + 2 de Electro Caribe)
+
+PRUEBA 4A.2 — Ver clientes creados por el seed
+  1. En el sidebar izquierdo, click "Clientes"
+  2. ESPERADO: Tabla con 2 filas:
+     - J-31245678-3 | Alimentos Santoni C.A. | empresarial | Activo
+     - J-40987654-1 | Distribuidora Electro Caribe C.A. | profesional | Activo
+  3. Probar buscador: escribir "Santoni" → debe filtrar solo 1 resultado
+  4. Probar buscador: escribir "J-409" → debe filtrar Electro Caribe
+
+PRUEBA 4A.3 — Ver usuarios del sistema
+  1. Click "Usuarios" en el sidebar
+  2. ESPERADO: Tabla con 5 usuarios:
+     - Super Admin (admin@aida.com.ve)
+     - Carlos Santoni (carlos.santoni@arrozsantoni.com.ve)
+     - Maria Rodriguez (maria.rodriguez@arrozsantoni.com.ve)
+     - Luis Perez (luis.perez@electrocaribe.com.ve)
+     - Ana Garcia (ana.garcia@electrocaribe.com.ve)
+
+PRUEBA 4A.4 — Ver roles y permisos
+  1. Click "Roles" en el sidebar
+  2. ESPERADO: Lista de roles incluyendo:
+     - super_admin (Platform)
+     - client_admin (Client)
+     - client_user (Client)
+     - Y otros roles del sistema
+  3. Click en "super_admin" → debe mostrar TODOS los permisos
+  4. Click en "client_admin" → debe mostrar permisos de nivel cliente
+  5. Sin seleccionar ningun rol: deben verse todos los permisos agrupados
+     por modulo (clientes, usuarios, documentos, fiscal, etc.)
+
+PRUEBA 4A.5 — Configuracion del sistema
+  1. Click "Configuracion" en el sidebar
+  2. ESPERADO: Parametros agrupados por categoria:
+     - Empresa: RIF, razon social, direccion, telefono, email
+     - Facturacion: IVA 16%, IVA 8%, exento
+     - Seguridad: intentos login, timeout, longitud password
+     - Almacenamiento: retencion 10 anos
+
+PRUEBA 4A.6 — Auditoria
+  1. Click "Auditoria" en el sidebar
+  2. ESPERADO: Registros de las acciones del seed:
+     - Creacion de usuarios
+     - Creacion de clientes
+     - Asignacion de roles
+  3. Filtrar por accion "create" → solo ver creaciones
+  4. Filtrar por recurso "client" → solo ver operaciones de clientes
+
+
+────────────────────────────────────────────────────────────────────────────────
+4B. PRUEBAS COMO ALIMENTOS SANTONI C.A.
+────────────────────────────────────────────────────────────────────────────────
+
+Escenario: Santoni es una empresa de alimentos con SAP Business One.
+Plan empresarial, alto volumen. RIF: J-31245678-3
+
+--- PORTAL CLIENTE ---
+URL: https://aida-cliente-qa.vercel.app
+
+PRUEBA 4B.1 — Login como admin de Santoni
+  1. Abrir https://aida-cliente-qa.vercel.app
+  2. Email: carlos.santoni@arrozsantoni.com.ve
+  3. Password: Santoni2025!
+  4. Click "Ingresar"
+  5. ESPERADO: Dashboard del cliente Santoni
+  6. VERIFICAR:
+     - Nombre: Carlos Santoni
+     - Empresa: Alimentos Santoni C.A. (o Arroz Santoni)
+     - Documentos hoy: 0 (aun no hemos emitido)
+     - Estado: Activo
+
+PRUEBA 4B.2 — Login como contadora de Santoni
+  1. Cerrar sesion
+  2. Email: maria.rodriguez@arrozsantoni.com.ve
+  3. Password: Santoni2025!
+  4. ESPERADO: Dashboard del mismo cliente pero con permisos de usuario
+     (no admin)
+
+--- PORTAL FACTURADOR ---
+URL: https://aida-facturador-qa.vercel.app
+
+PRUEBA 4B.3 — Crear un producto en el catalogo
+  1. Abrir https://aida-facturador-qa.vercel.app
+  2. Login: carlos.santoni@arrozsantoni.com.ve / Santoni2025!
+  3. Click "Productos" en el sidebar
+  4. Click "+ Nuevo Producto"
+  5. Llenar:
+     - Codigo: ARZ-001
+     - Descripcion: Arroz Santoni Premium 1kg
+     - Precio: 5.50
+     - Impuesto: Gravado 16%
+  6. Click "Guardar"
+  7. ESPERADO: Producto aparece en la lista
+  8. Crear un segundo producto:
+     - Codigo: ARZ-002
+     - Descripcion: Arroz Santoni Integral 1kg
+     - Precio: 7.00
+     - Impuesto: Gravado 16%
+  9. Click "Guardar"
+
+PRUEBA 4B.4 — Crear un cliente receptor
+  1. Click "Clientes" en el sidebar (estos son los clientes de Santoni)
+  2. Click "+ Nuevo Cliente"
+  3. Llenar:
+     - RIF: J-12345678-0
+     - Razon Social: Supermercados Central C.A.
+     - Direccion: Av. Lecuna, Caracas
+     - Email: compras@supercentral.com.ve
+     - Telefono: +58-212-1234567
+  4. Click "Guardar"
+  5. ESPERADO: Cliente aparece en la lista
+
+PRUEBA 4B.5 — Emitir una factura (PRUEBA CENTRAL)
+  1. Click "Facturar" en el sidebar (o "Nueva Factura")
+  2. Tipo de documento: Factura
+  3. Receptor:
+     - Escribir "J-12345678-0" o "Supermercados"
+     - Debe autocompletar con el cliente que creamos
+     - Seleccionarlo
+  4. Agregar items:
+     - Click "+ Agregar item"
+     - Buscar "ARZ-001" (Arroz Premium) → seleccionar
+     - Cantidad: 100
+     - Precio: 5.50 (debe venir precargado del catalogo)
+     - Click "+ Agregar item" de nuevo
+     - Buscar "ARZ-002" (Arroz Integral) → seleccionar
+     - Cantidad: 50
+     - Precio: 7.00
+  5. Verificar los calculos automaticos:
+     - Subtotal Item 1: 100 x 5.50 = 550.00
+     - Subtotal Item 2: 50 x 7.00 = 350.00
+     - Subtotal general: 900.00
+     - IVA 16%: 144.00
+     - Total: 1,044.00
+  6. Condiciones:
+     - Moneda: VES
+     - Forma de pago: Transferencia
+     - Condicion: Contado
+  7. Click "Emitir" o "Emitir Documento"
+  8. ESPERADO:
+     - Numero de control asignado: A-00000001 (primer documento de Santoni)
+     - Confirmacion con opciones: Ver PDF, Descargar, Imprimir
+
+PRUEBA 4B.6 — Emitir segunda factura
+  Repetir PRUEBA 4B.5 con datos diferentes:
+  - Mismo receptor (Supermercados Central)
+  - Solo 1 item: 200 unidades de Arroz Premium a 5.50
+  - Total: 200 x 5.50 = 1,100.00 + IVA 176.00 = 1,276.00
+  - ESPERADO: NC asignado: A-00000002
+
+PRUEBA 4B.7 — Ver historial de documentos
+  1. Click "Documentos" en el sidebar
+  2. ESPERADO: Lista con 2 facturas:
+     - A-00000001 | Factura | VES 1,044.00 | Emitido
+     - A-00000002 | Factura | VES 1,276.00 | Emitido
+  3. Click en la primera factura → ver detalle completo
+  4. VERIFICAR: items, totales, datos emisor/receptor correctos
+
+
+────────────────────────────────────────────────────────────────────────────────
+4C. PRUEBAS COMO DISTRIBUIDORA ELECTRO CARIBE C.A.
+────────────────────────────────────────────────────────────────────────────────
+
+Escenario: Electro Caribe es un distribuidor de electrodomesticos.
+No tiene ERP propio, usa AIDA directamente.
+Plan profesional. RIF: J-40987654-1
+
+--- PORTAL FACTURADOR ---
+URL: https://aida-facturador-qa.vercel.app
+
+PRUEBA 4C.1 — Login como Electro Caribe
+  1. Cerrar sesion de Santoni si esta abierta
+  2. Abrir https://aida-facturador-qa.vercel.app
+  3. Email: luis.perez@electrocaribe.com.ve
+  4. Password: Electro2025!
+  5. ESPERADO: Dashboard del facturador para Electro Caribe
+
+PRUEBA 4C.2 — Crear productos de electrodomesticos
+  1. Click "Productos"
+  2. Crear producto 1:
+     - Codigo: TV-SAM-55
+     - Descripcion: Televisor Samsung 55" 4K UHD
+     - Precio: 450.00
+     - Impuesto: Gravado 16%
+  3. Crear producto 2:
+     - Codigo: LAV-LG-15
+     - Descripcion: Lavadora LG 15kg Automatica
+     - Precio: 380.00
+     - Impuesto: Gravado 16%
+  4. Crear producto 3:
+     - Codigo: SERV-INST
+     - Descripcion: Servicio de Instalacion a Domicilio
+     - Precio: 25.00
+     - Impuesto: Exento
+     (Servicios de instalacion pueden ser exentos segun el caso)
+
+PRUEBA 4C.3 — Crear cliente receptor
+  1. Click "Clientes"
+  2. Crear:
+     - RIF: V-15234567-8
+     - Razon Social: Pedro Ramirez
+     - Direccion: Calle 67, Maracaibo
+     - Email: pedro.ramirez@gmail.com
+     - Telefono: +58-414-5678901
+
+PRUEBA 4C.4 — Emitir factura con item exento y gravado
+  1. Click "Facturar"
+  2. Tipo: Factura
+  3. Receptor: V-15234567-8 (Pedro Ramirez)
+  4. Items:
+     - TV Samsung 55": cantidad 1, precio 450.00 (gravado 16%)
+     - Servicio instalacion: cantidad 1, precio 25.00 (exento)
+  5. VERIFICAR calculos:
+     - Base imponible gravada: 450.00
+     - Base imponible exenta: 25.00
+     - IVA 16%: 72.00 (solo sobre la TV)
+     - Total: 547.00
+  6. Emitir
+  7. ESPERADO: NC asignado: EC-00000001 (serie EC de Electro Caribe)
+
+PRUEBA 4C.5 — Verificar aislamiento multi-tenant
+  1. IMPORTANTISIMO: Electro Caribe NO debe ver documentos de Santoni
+  2. Click "Documentos" → solo debe aparecer EC-00000001
+  3. Click "Productos" → solo deben aparecer los 3 productos de Electro Caribe
+  4. Click "Clientes" → solo Pedro Ramirez
+  5. Santoni y sus datos deben ser INVISIBLES para Electro Caribe
+
+PRUEBA 4C.6 — Login como vendedora Ana Garcia
+  1. Cerrar sesion
+  2. Login: ana.garcia@electrocaribe.com.ve / Electro2025!
+  3. ESPERADO: Acceso al facturador pero con permisos limitados
+     (puede facturar pero no cambiar configuracion)
+
+
+────────────────────────────────────────────────────────────────────────────────
+4D. PRUEBAS DEL PORTAL DE VALIDACION PUBLICA
+────────────────────────────────────────────────────────────────────────────────
+
+URL: https://aida-validacion-qa.vercel.app
+NO requiere login
+
+PRUEBA 4D.1 — Buscar por numero de control
+  1. Abrir https://aida-validacion-qa.vercel.app
+  2. ESPERADO: Pagina publica con buscador, sin login
+  3. Seleccionar busqueda por "Numero de Control"
+  4. Escribir: A-00000001 (la primera factura de Santoni)
+  5. Click "Verificar"
+  6. ESPERADO:
+     - Documento verificado (check verde)
+     - Tipo: Factura
+     - Emisor: Alimentos Santoni C.A.
+     - RIF: J-31245678-3
+     - Total: VES 1,044.00
+     - Estado: Emitido
+
+PRUEBA 4D.2 — Buscar factura de Electro Caribe
+  1. Buscar: EC-00000001
+  2. ESPERADO:
+     - Documento verificado
+     - Emisor: Distribuidora Electro Caribe C.A.
+     - Total: VES 547.00
+
+PRUEBA 4D.3 — Buscar documento inexistente
+  1. Buscar: XX-99999999
+  2. ESPERADO: "Documento no encontrado"
+
+PRUEBA 4D.4 — Buscar por RIF
+  1. Cambiar a busqueda por "RIF Emisor"
+  2. Escribir: J-31245678-3
+  3. ESPERADO: Lista de todos los documentos de Santoni (2 facturas)
+
+PRUEBA 4D.5 — Ver detalle completo
+  1. Desde el resultado, click "Ver detalle"
+  2. ESPERADO: Items del documento, desglose de impuestos, UUID, hash
+
+
+────────────────────────────────────────────────────────────────────────────────
+4E. PRUEBAS DEL PORTAL DEVELOPERS (API)
+────────────────────────────────────────────────────────────────────────────────
+
+URL: https://aida-developers-qa.vercel.app
+
+PRUEBA 4E.1 — Acceso y documentacion
+  1. Abrir https://aida-developers-qa.vercel.app
+  2. Login: carlos.santoni@arrozsantoni.com.ve / Santoni2025!
+  3. ESPERADO: Dashboard de developers con secciones
+
+PRUEBA 4E.2 — Quick Start
+  1. Click "Quick Start" en la navegacion
+  2. VERIFICAR: Guia de 4 pasos visible
+  3. Debe mostrar ejemplos de codigo en cURL, Python y JavaScript
+  4. Cambiar entre lenguajes → los ejemplos deben cambiar
+
+PRUEBA 4E.3 — API Docs
+  1. Click "API Docs"
+  2. VERIFICAR: Lista de endpoints con:
+     - POST /fiscal/emit
+     - POST /fiscal/void
+     - GET /fiscal/documents
+     - etc.
+  3. Click en un endpoint → debe expandir con detalles
+
+PRUEBA 4E.4 — Crear API Key
+  1. Click "API Keys"
+  2. Click "+ Nueva API Key"
+  3. Nombre: "Testing QA"
+  4. Click "Crear"
+  5. ESPERADO: Se muestra la API Key completa
+  6. IMPORTANTE: Copiar la key → se muestra 1 sola vez
+  7. Debe aparecer en la lista con prefijo visible
+
+PRUEBA 4E.5 — Probar la API con la key (Sandbox)
+  1. Click "Sandbox"
+  2. ESPERADO: Herramienta interactiva para probar la API
+  3. Seleccionar un endpoint de prueba (ej: Health Check)
+  4. Click "Enviar" o "Send"
+  5. ESPERADO: Respuesta del backend con status 200
+
+PRUEBA 4E.6 — Revocar API Key
+  1. Volver a "API Keys"
+  2. Buscar "Testing QA"
+  3. Click "Revocar"
+  4. ESPERADO: Estado cambia a "Revocada"
+
+PRUEBA 4E.7 — Usage (Metricas)
+  1. Click "Usage"
+  2. VERIFICAR: Metricas de uso (pueden reflejar las peticiones hechas)
+
+
+────────────────────────────────────────────────────────────────────────────────
+4F. PRUEBAS DEL PORTAL GESTION (Integraciones + IA)
+────────────────────────────────────────────────────────────────────────────────
+
+URL: https://aida-gestion-qa.vercel.app
+
+PRUEBA 4F.1 — Login y navegacion
+  1. Abrir https://aida-gestion-qa.vercel.app
+  2. Login: admin@aida.com.ve / Admin2024!
+  3. ESPERADO: Dashboard de gestion con sidebar completo
+
+PRUEBA 4F.2 — Chat IA
+  1. Click "Chat IA" en el sidebar
+  2. Escribir: "Cuantos clientes tenemos en el sistema?"
+  3. ESPERADO: Respuesta en streaming del asistente IA
+  4. NOTA: Requiere que AI_API_KEY este configurada en Railway.
+     Si no hay key de Groq/OpenAI configurada, dara error de conexion.
+
+PRUEBA 4F.3 — Templates de integracion
+  1. Click "Templates" en el sidebar
+  2. ESPERADO: Galeria con templates:
+     - Odoo, SAP Business One, World Office, QuickBooks, Personalizado
+  3. Click en "SAP Business One" → ver detalles de configuracion
+
+PRUEBA 4F.4 — Webhooks
+  1. Click "Webhooks"
+  2. Click "+ Nuevo Webhook"
+  3. Llenar:
+     - URL: https://httpbin.org/post (URL de prueba publica)
+     - Eventos: document.emitted
+  4. Guardar
+  5. ESPERADO: Webhook aparece en la lista
+
+PRUEBA 4F.5 — Dashboard de monitoreo
+  1. Click "Dashboard" en seccion Monitoreo
+  2. VERIFICAR: Panel con metricas de conexiones
+
+
+────────────────────────────────────────────────────────────────────────────────
+4G. PRUEBAS DE LA LANDING PAGE (Pagina Publica)
+────────────────────────────────────────────────────────────────────────────────
+
+NOTA: La landing page se despliega por separado. Si la tienes en Vercel,
+usa tu URL. Si no, puedes probarla localmente:
+  cd /ruta/a/AIDA/frontend/apps/landing && npm run dev
+  URL local: http://localhost:3100
+
+PRUEBA 4G.1 — Carga y navegacion
+  1. Abrir la URL de la landing
+  2. ESPERADO: Pagina de marketing moderna con fondo oscuro
+  3. VERIFICAR navegacion:
+     - Logo AIDA arriba a la izquierda
+     - Menu: Caracteristicas, Como Funciona, Integraciones, Por que AIDA, Planes
+     - Boton "Imprenta Digital" (enlace al portal de validacion)
+     - Boton "Solicitar Demo"
+
+PRUEBA 4G.2 — Boton Imprenta Digital
+  1. Click en "Imprenta Digital" en el navbar
+  2. ESPERADO: Se abre en nueva pestana el portal de validacion
+     (https://aida-validacion-qa.vercel.app)
+
+PRUEBA 4G.3 — Navegacion movil
+  1. Abrir DevTools (F12) → Click icono de telefono (responsive)
+  2. Seleccionar un dispositivo movil (ej: iPhone 14)
+  3. VERIFICAR:
+     - El menu se colapsa en un boton hamburguesa
+     - Al hacer click se despliega el menu
+     - El boton "Imprenta Digital" aparece en el menu movil
+     - El boton "Solicitar Demo" aparece al final
+
+PRUEBA 4G.4 — Footer
+  1. Scroll hasta el fondo de la pagina
+  2. VERIFICAR:
+     - Seccion "Producto" con enlaces
+     - Seccion "Empresa" con enlaces
+     - Seccion "Cumplimiento SENIAT" con:
+       * Providencia SNAT/2024/000121
+       * Imprenta Autorizada SENIAT
+       * Boton "Portal Imprenta Digital"
+     - Copyright en el fondo
+
+PRUEBA 4G.5 — Secciones de contenido
+  1. Scroll por la pagina completa
+  2. VERIFICAR que existen estas secciones:
+     - Hero (arriba, con titulo y CTA)
+     - Caracteristicas (tarjetas con funcionalidades)
+     - Como Funciona (pasos del proceso)
+     - Integraciones (logos/cards de sistemas compatibles)
+     - Por que AIDA (diferenciadores)
+     - Planes y Precios (3 planes con precios)
+     - Contacto/CTA final
+
+
+================================================================================
+5. DATOS DE ACCESO RAPIDO (CHEAT SHEET)
+================================================================================
+
+Guardatelo abierto mientras pruebas:
+
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │ SUPER ADMIN (AIDA)                                                      │
+  ├──────────────────────────────────────────────────────────────────────────┤
+  │ Email:    admin@aida.com.ve                                             │
+  │ Password: Admin2024!                                                    │
+  │ Rol:      Super Admin (todos los permisos)                              │
+  │ Portales: Admin, Gestion, todos                                        │
+  └──────────────────────────────────────────────────────────────────────────┘
+
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │ ALIMENTOS SANTONI C.A. — Plan Empresarial                               │
+  │ RIF: J-31245678-3 | Serie NC: A | Rango: 1-5000                         │
+  ├──────────────────────────────────────────────────────────────────────────┤
+  │ Admin:                                                                  │
+  │   Email:    carlos.santoni@arrozsantoni.com.ve                          │
+  │   Password: Santoni2025!                                                │
+  │   Rol:      client_admin                                                │
+  ├──────────────────────────────────────────────────────────────────────────┤
+  │ Contadora:                                                              │
+  │   Email:    maria.rodriguez@arrozsantoni.com.ve                         │
+  │   Password: Santoni2025!                                                │
+  │   Rol:      client_user                                                 │
+  ├──────────────────────────────────────────────────────────────────────────┤
+  │ Integracion:  SAP Business One                                          │
+  │ Autorizacion: SNAT-2025-IMP-001234                                      │
+  └──────────────────────────────────────────────────────────────────────────┘
+
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │ DISTRIBUIDORA ELECTRO CARIBE C.A. — Plan Profesional                    │
+  │ RIF: J-40987654-1 | Serie NC: EC | Rango: 1-1000                        │
+  ├──────────────────────────────────────────────────────────────────────────┤
+  │ Admin:                                                                  │
+  │   Email:    luis.perez@electrocaribe.com.ve                             │
+  │   Password: Electro2025!                                                │
+  │   Rol:      client_admin                                                │
+  ├──────────────────────────────────────────────────────────────────────────┤
+  │ Vendedora:                                                              │
+  │   Email:    ana.garcia@electrocaribe.com.ve                             │
+  │   Password: Electro2025!                                                │
+  │   Rol:      client_user                                                 │
+  ├──────────────────────────────────────────────────────────────────────────┤
+  │ Integracion:  API Directa AIDA (sin ERP)                                │
+  │ Autorizacion: SNAT-2025-IMP-005678                                      │
+  └──────────────────────────────────────────────────────────────────────────┘
+
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │ URLs DESPLEGADAS (QA / VERCEL)                                          │
+  ├──────────────────────────────────────────────────────────────────────────┤
+  │ Backend API:      https://TU_URL_BACKEND                                │
+  │ Swagger Docs:     https://TU_URL_BACKEND/api/docs                       │
+  │ Health Check:     https://TU_URL_BACKEND/health                         │
+  │                                                                         │
+  │ Portal Admin:     https://aida-admin-qa.vercel.app                      │
+  │ Portal Cliente:   https://aida-cliente-qa.vercel.app                    │
+  │ Portal Facturador:https://aida-facturador-qa.vercel.app                 │
+  │ Portal Validacion:https://aida-validacion-qa.vercel.app (publico)       │
+  │ Portal Developers:https://aida-developers-qa.vercel.app                 │
+  │ Portal Gestion:   https://aida-gestion-qa.vercel.app                    │
+  └──────────────────────────────────────────────────────────────────────────┘
+
+
+================================================================================
+6. TROUBLESHOOTING EN PRODUCCION / QA
+================================================================================
+
+PROBLEMA: Login dice "Error de conexion" en cualquier portal
+  → El portal no puede comunicarse con el backend en Railway
+  → Abre DevTools (F12) → Console → busca el error exacto
+  → Si dice "CORS policy": La URL del portal no esta en ALLOWED_ORIGINS
+    de Railway. Ve a Railway → Variables → agrega la URL del portal
+  → Si dice "Network Error": El backend esta caido. Verifica:
+    https://TU_URL_BACKEND/health
+  → Si dice "404": Falta /api/v1 al final de NEXT_PUBLIC_API_URL en Vercel
+
+PROBLEMA: Login dice "Credenciales invalidas"
+  → Verifica que escribiste bien el email y password (ver cheat sheet)
+  → Si el seed no ha corrido, no existen los usuarios.
+    Vuelve al paso 2 y ejecuta el seed.
+
+PROBLEMA: Login funciona pero despues todo da error "401 Unauthorized"
+  → El token de sesion caduco (dura 30 minutos por defecto)
+  → Cierra la pestana, abrela de nuevo, y haz login otra vez
+
+PROBLEMA: "403 Forbidden" al intentar acceder a funciones
+  → El usuario no tiene el rol correcto
+  → Verifica que estas usando las credenciales correctas para ese portal
+
+PROBLEMA: Los portales cargan pero todo esta en blanco
+  → La variable NEXT_PUBLIC_API_URL no esta bien en Vercel
+  → Ve a Vercel → tu proyecto → Settings → Environment Variables
+  → Verifica que NEXT_PUBLIC_API_URL = https://TU_URL_BACKEND/api/v1
+  → IMPORTANTE: Si la cambias, debes redesplegar (Deployments → Redeploy)
+
+PROBLEMA: Electro Caribe puede ver datos de Santoni (o viceversa)
+  → Esto es un BUG CRITICO de aislamiento multi-tenant
+  → Reportar inmediatamente con: que portal, que usuario, que datos se ven
+
+PROBLEMA: El backend en Railway esta caido
+  → Ve a https://railway.app/dashboard → tu proyecto → Deployments
+  → Verifica que el ultimo deployment esta en "Success" (verde)
+  → Si esta en "Failed" (rojo): click en el deployment → View Logs
+  → Errores comunes:
+    - "Connection refused" a DB: Neon puede estar pausado por inactividad
+      Solucion: Ve a Neon → tu proyecto → deberia reactivarse automaticamente
+    - "Memory limit exceeded": El plan free de Railway tiene limite
+      Solucion: Redespliega o sube de plan
+
+PROBLEMA: Las metricas de uso aparecen en 0
+  → Esto es NORMAL si aun no has hecho llamadas a la API
+  → Despues de emitir facturas y usar los portales, deben incrementar
+
+PROBLEMA: El Chat IA no responde
+  → Verifica que en Railway estan configuradas las variables:
+    AI_PROVIDER=groq
+    AI_API_KEY=(tu key de Groq)
+    AI_MODEL=llama-3.3-70b-versatile
+    AI_BASE_URL=https://api.groq.com/openai/v1
+  → Si no tienes AI_API_KEY, el chat no funcionara. Obten una en:
+    https://console.groq.com/keys (es gratuito)
+
+
+================================================================================
+FIN DEL MANUAL 5 — PRUEBAS EN VERCEL
+================================================================================
+
+Resumen de lo que puedes probar:
+  - Login con 5 usuarios diferentes (3 roles distintos)
+  - Crear productos, clientes y facturas desde los portales en Vercel
+  - Verificar aislamiento multi-tenant entre Santoni y Electro Caribe
+  - Validacion publica de documentos emitidos
+  - Documentacion API, API Keys y Sandbox interactivo
+  - Integraciones, webhooks y monitoreo
+  - Chat IA (si configuraste AI_API_KEY en Railway)
+  - Landing page publica con enlace a portal SENIAT
+
+Total de pruebas documentadas: 30+
+Todo desde el navegador, sin necesidad de correr nada localmente
+(excepto el seed inicial una sola vez).

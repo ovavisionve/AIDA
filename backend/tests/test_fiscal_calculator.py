@@ -411,3 +411,143 @@ class TestEndToEndCalculation:
         assert totales.base_imponible_igtf == 0.00
         assert totales.monto_igtf == 0.00
         assert totales.total_con_igtf == totales.total
+
+    def test_fixed_discount_takes_priority_over_percentage(self):
+        """When both discount types are set, monto takes priority per calculator logic."""
+        item = FiscalItem(
+            numero_linea=1,
+            descripcion="Item con ambos descuentos",
+            cantidad=1,
+            precio_unitario=100.00,
+            descuento_monto=15.00,
+            descuento_porcentaje=10.0,
+            tipo_impuesto="G",
+        )
+        result = calcular_item(item)
+
+        # descuento_monto > 0, so it is applied instead of percentage
+        assert result.descuento == 15.00
+        assert result.subtotal == 85.00
+        assert result.monto_impuesto == 13.60  # 85 * 0.16
+
+    def test_large_invoice_precision(self):
+        """Large invoice amounts maintain precision."""
+        items = [
+            FiscalItem(
+                numero_linea=1,
+                descripcion="Maquinaria industrial",
+                cantidad=1,
+                precio_unitario=1_500_000.00,
+                tipo_impuesto="G",
+            ),
+            FiscalItem(
+                numero_linea=2,
+                descripcion="Instalacion",
+                cantidad=1,
+                precio_unitario=350_000.00,
+                descuento_porcentaje=5.0,
+                tipo_impuesto="G",
+            ),
+        ]
+
+        calculated = [calcular_item(item) for item in items]
+        totales = calcular_totales(calculated)
+
+        assert calculated[0].subtotal == 1_500_000.00
+        assert calculated[0].monto_impuesto == 240_000.00
+        assert calculated[1].descuento == 17_500.00
+        assert calculated[1].subtotal == 332_500.00
+        assert totales.base_imponible == 1_832_500.00
+        assert totales.monto_iva_16 == 293_200.00
+        assert totales.total == 2_125_700.00
+
+    def test_igtf_with_mixed_tax_types(self):
+        """IGTF applies on full total including all tax types."""
+        items = [
+            FiscalItem(
+                numero_linea=1,
+                descripcion="Servicio gravado",
+                cantidad=1,
+                precio_unitario=500.00,
+                tipo_impuesto="G",
+            ),
+            FiscalItem(
+                numero_linea=2,
+                descripcion="Alimento reducido",
+                cantidad=1,
+                precio_unitario=200.00,
+                tipo_impuesto="R",
+            ),
+            FiscalItem(
+                numero_linea=3,
+                descripcion="Servicio exento",
+                cantidad=1,
+                precio_unitario=300.00,
+                tipo_impuesto="E",
+            ),
+        ]
+
+        calculated = [calcular_item(item) for item in items]
+        totales = calcular_totales(calculated, pago_en_divisas=True)
+
+        # total = (500+80) + (200+16) + 300 = 1096
+        assert totales.total == 1096.00
+        assert totales.base_imponible_igtf == 1096.00
+        assert totales.monto_igtf == 32.88  # 1096 * 0.03
+        assert totales.total_con_igtf == 1128.88
+
+    def test_100_percent_discount(self):
+        """100% discount results in zero subtotal."""
+        item = FiscalItem(
+            numero_linea=1,
+            descripcion="Cortesia total",
+            cantidad=1,
+            precio_unitario=100.00,
+            descuento_porcentaje=100.0,
+            tipo_impuesto="G",
+        )
+        result = calcular_item(item)
+
+        assert result.descuento == 100.00
+        assert result.subtotal == 0.00
+        assert result.monto_impuesto == 0.00
+        assert result.total == 0.00
+
+    def test_very_small_amounts(self):
+        """Very small amounts (centavos) are handled correctly."""
+        item = FiscalItem(
+            numero_linea=1,
+            descripcion="Microtransaccion",
+            cantidad=1,
+            precio_unitario=0.01,
+            tipo_impuesto="G",
+        )
+        result = calcular_item(item)
+
+        assert result.subtotal == 0.01
+        assert result.monto_impuesto == 0.0  # 0.01 * 0.16 = 0.0016 -> rounds to 0.00
+        assert result.total == 0.01
+
+    def test_constants_have_correct_values(self):
+        """Verify the tax constants are correct per Venezuelan law."""
+        assert ALICUOTA_GENERAL == 16.00
+        assert ALICUOTA_REDUCIDA == 8.00
+        assert ALICUOTA_EXENTO == 0.00
+
+    def test_item_preserves_metadata(self):
+        """calcular_item preserves non-numeric fields."""
+        item = FiscalItem(
+            numero_linea=42,
+            codigo="ABC-123",
+            descripcion="Test product",
+            unidad="KG",
+            cantidad=1,
+            precio_unitario=100.00,
+            tipo_impuesto="G",
+        )
+        result = calcular_item(item)
+
+        assert result.numero_linea == 42
+        assert result.codigo == "ABC-123"
+        assert result.descripcion == "Test product"
+        assert result.unidad == "KG"
