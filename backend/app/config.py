@@ -16,6 +16,7 @@ class Settings(BaseSettings):
         "http://localhost:3004",  # Portal 4 - Developers
         "http://localhost:3005",  # Portal 5 - Gestion
     ]
+    ALLOWED_ORIGIN_REGEX: str = r"https://.*\.vercel\.app|https://.*\.up\.railway\.app"
 
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://aida:aida_secret_2024@localhost:5432/aida_db"

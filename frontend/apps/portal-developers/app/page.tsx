@@ -35,8 +35,8 @@ export default function PortalDevelopers() {
     try {
       const res = await fetch(`${API}/auth/login`, {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({ username: email, password }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
       });
       if (!res.ok) { setLoginError("Credenciales invalidas"); return; }
       const data = await res.json();
