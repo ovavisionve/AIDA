@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Footer() {
   return (
     <footer className="border-t border-white/5 py-12">
@@ -5,7 +7,7 @@ export default function Footer() {
         <div className="grid gap-8 md:grid-cols-4">
           {/* Brand */}
           <div className="md:col-span-1">
-            <a href="#" className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-aida-accent to-aida-cyan flex items-center justify-center">
                 <span className="text-white font-black text-xs">AI</span>
               </div>
@@ -13,32 +15,32 @@ export default function Footer() {
                 <span className="text-white">AID</span>
                 <span className="text-aida-cyan">A</span>
               </span>
-            </a>
+            </Link>
             <p className="mt-3 text-sm text-slate-500 leading-relaxed">
               La imprenta digital más inteligente de Venezuela. Facturación electrónica
               con IA, cumplimiento SENIAT automático.
             </p>
           </div>
 
-          {/* Product */}
+          {/* Páginas */}
           <div>
-            <h4 className="text-sm font-semibold text-white mb-4">Producto</h4>
+            <h4 className="text-sm font-semibold text-white mb-4">Páginas</h4>
             <ul className="space-y-2 text-sm text-slate-500">
-              <li><a href="#caracteristicas" className="hover:text-white transition-colors">Características</a></li>
-              <li><a href="#integraciones" className="hover:text-white transition-colors">Integraciones</a></li>
-              <li><a href="#planes" className="hover:text-white transition-colors">Planes y Precios</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">API Docs</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Status</a></li>
+              <li><Link href="/calculadora" className="hover:text-white transition-colors">Calculadora de Ahorro</Link></li>
+              <li><Link href="/productos" className="hover:text-white transition-colors">Productos y SKUs</Link></li>
+              <li><Link href="/como-funciona" className="hover:text-white transition-colors">Cómo Funciona</Link></li>
+              <li><Link href="/comparativa" className="hover:text-white transition-colors">AIDA vs Competencia</Link></li>
+              <li><Link href="/planes" className="hover:text-white transition-colors">Planes y Precios</Link></li>
             </ul>
           </div>
 
-          {/* Company */}
+          {/* Empresa */}
           <div>
             <h4 className="text-sm font-semibold text-white mb-4">Empresa</h4>
             <ul className="space-y-2 text-sm text-slate-500">
-              <li><a href="#" className="hover:text-white transition-colors">Sobre Nosotros</a></li>
               <li><a href="#contacto" className="hover:text-white transition-colors">Contacto</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
+              <li><a href="#" className="hover:text-white transition-colors">API Docs</a></li>
+              <li><a href="#" className="hover:text-white transition-colors">Status</a></li>
               <li><a href="#" className="hover:text-white transition-colors">Términos de Servicio</a></li>
               <li><a href="#" className="hover:text-white transition-colors">Política de Privacidad</a></li>
             </ul>

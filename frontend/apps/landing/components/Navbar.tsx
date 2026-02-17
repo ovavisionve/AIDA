@@ -1,14 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 const links = [
-  { href: "#caracteristicas", label: "Características" },
-  { href: "#calculadora", label: "Calculadora" },
-  { href: "#productos", label: "Productos" },
-  { href: "#como-funciona", label: "Cómo Funciona" },
-  { href: "#comparativa", label: "AIDA vs Otros" },
-  { href: "#planes", label: "Planes" },
+  { href: "/calculadora", label: "Calculadora" },
+  { href: "/productos", label: "Productos" },
+  { href: "/como-funciona", label: "Cómo Funciona" },
+  { href: "/comparativa", label: "AIDA vs Otros" },
+  { href: "/planes", label: "Planes" },
 ];
 
 export default function Navbar() {
@@ -19,7 +19,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <a href="#" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-aida-accent to-aida-cyan flex items-center justify-center">
               <span className="text-white font-black text-sm">AI</span>
             </div>
@@ -27,18 +27,18 @@ export default function Navbar() {
               <span className="text-white">AID</span>
               <span className="text-aida-cyan">A</span>
             </span>
-          </a>
+          </Link>
 
           {/* Desktop links */}
           <div className="hidden lg:flex items-center gap-6">
             {links.map((l) => (
-              <a
+              <Link
                 key={l.href}
                 href={l.href}
                 className="text-sm text-slate-400 hover:text-white transition-colors"
               >
                 {l.label}
-              </a>
+              </Link>
             ))}
           </div>
 
@@ -91,14 +91,14 @@ export default function Navbar() {
       {open && (
         <div className="lg:hidden bg-aida-dark/95 backdrop-blur-lg border-t border-white/5 px-4 py-4 space-y-3">
           {links.map((l) => (
-            <a
+            <Link
               key={l.href}
               href={l.href}
               onClick={() => setOpen(false)}
               className="block text-sm text-slate-300 hover:text-white py-2"
             >
               {l.label}
-            </a>
+            </Link>
           ))}
           <a
             href="https://aida-validacion-qa.vercel.app"
