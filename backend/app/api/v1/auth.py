@@ -5,9 +5,9 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.core.security import (
-    verify_password, hash_password, create_access_token, create_refresh_token,
-    decode_token, generate_totp_secret, get_totp_uri, verify_totp,
-    generate_qr_code_base64,
+    verify_password, hash_password, hash_token, create_access_token,
+    create_refresh_token, decode_token, generate_totp_secret, get_totp_uri,
+    verify_totp, generate_qr_code_base64,
 )
 from app.core.deps import get_current_user, log_audit
 from app.models.security import User, Session, UserRole, RolePermission
@@ -131,7 +131,7 @@ async def login(
     # Save session
     session = Session(
         user_id=user.id,
-        refresh_token_hash=hash_password(refresh_token),
+        refresh_token_hash=hash_token(refresh_token),
         ip_address=request.client.host if request.client else None,
         user_agent=request.headers.get("user-agent"),
         expires_at=datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
