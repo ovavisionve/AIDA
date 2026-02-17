@@ -46,13 +46,24 @@ export default function Footer() {
 
           {/* Legal */}
           <div>
-            <h4 className="text-sm font-semibold text-white mb-4">Cumplimiento</h4>
+            <h4 className="text-sm font-semibold text-white mb-4">Cumplimiento SENIAT</h4>
             <ul className="space-y-2 text-sm text-slate-500">
               <li>Providencia SNAT/2024/000121</li>
               <li>Imprenta Autorizada SENIAT</li>
               <li>Datos almacenados en Venezuela</li>
               <li>Retención 10 años SENIAT</li>
             </ul>
+            <a
+              href="https://aida-validacion-qa.vercel.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-aida-cyan/30 bg-aida-cyan/5 text-sm font-semibold text-aida-cyan hover:bg-aida-cyan/10 transition-all"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              Portal Imprenta Digital
+            </a>
             <div className="mt-6">
               <h4 className="text-sm font-semibold text-white mb-2">Contacto</h4>
               <p className="text-sm text-slate-500">info@aida.com.ve</p>
