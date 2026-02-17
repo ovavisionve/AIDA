@@ -1,0 +1,830 @@
+================================================================================
+  MANUAL 4: PRUEBAS LOCALES - AIDA IMPRENTA DIGITAL
+  Guia paso a paso para levantar todo en tu computadora y probar
+  con los clientes Santoni y Electro Caribe
+  Fecha: 17 de febrero de 2026
+================================================================================
+
+INDICE
+------
+  1. Que necesitas tener instalado
+  2. Levantar la base de datos y Redis (Docker)
+  3. Levantar el backend (FastAPI)
+  4. Levantar los portales frontend
+  5. Verificar que todo funciona
+  6. PRUEBAS CON DATOS: Guia paso a paso
+     6A. Pruebas como Super Admin
+     6B. Pruebas como Alimentos Santoni C.A.
+     6C. Pruebas como Electro Caribe C.A.
+     6D. Pruebas del Portal de Validacion Publica
+     6E. Pruebas del Portal Developers (API)
+     6F. Pruebas del Portal Gestion (Integraciones + IA)
+     6G. Pruebas de la Landing Page
+  7. Datos de acceso rapido (cheat sheet)
+  8. Troubleshooting local
+
+
+================================================================================
+1. QUE NECESITAS TENER INSTALADO
+================================================================================
+
+Antes de empezar, necesitas estas herramientas en tu computadora:
+
+  Herramienta      Version minima   Para que se usa
+  ──────────────   ──────────────   ────────────────────────────────
+  Docker Desktop   cualquiera       Base de datos + Redis
+  Python           3.11 o 3.12      El backend
+  Node.js          18.x o 20.x      Los portales frontend
+  npm              9.x o 10.x       Instalar paquetes frontend
+  Git              cualquiera       Ya lo tienes (clonaste el repo)
+
+COMO VERIFICAR SI LOS TIENES:
+  Abre una terminal/cmd y ejecuta estos comandos:
+
+  docker --version          → Debe decir "Docker version 2X.X.X" o similar
+  python --version          → Debe decir "Python 3.11.X" o "Python 3.12.X"
+  node --version            → Debe decir "v18.X.X" o "v20.X.X"
+  npm --version             → Debe decir "9.X.X" o "10.X.X"
+  git --version             → Cualquier version esta bien
+
+SI TE FALTA ALGUNO:
+  Docker Desktop: https://www.docker.com/products/docker-desktop/
+    → Descarga, instala, abre la app Docker Desktop, espera que el
+      icono de la ballena diga "Docker Desktop is running"
+
+  Python 3.12: https://www.python.org/downloads/
+    → Descarga e instala. En Windows marca "Add to PATH" durante la instalacion
+
+  Node.js 20: https://nodejs.org/
+    → Descarga la version LTS, instala (npm viene incluido)
+
+
+================================================================================
+2. LEVANTAR LA BASE DE DATOS Y REDIS (Docker)
+================================================================================
+
+Docker se encarga de PostgreSQL 16 y Redis 7. No necesitas instalarlos
+manualmente.
+
+PASO 2.1: Abrir Docker Desktop
+  - Asegurate de que Docker Desktop esta corriendo
+  - En Windows: busca "Docker Desktop" en el menu de inicio y abrelo
+  - En Mac: busca Docker en Spotlight
+  - Espera hasta que diga "Docker Desktop is running"
+
+PASO 2.2: Levantar los servicios
+  1. Abre una terminal/cmd
+  2. Navega a la carpeta del proyecto:
+     cd /ruta/a/AIDA
+  3. Ejecuta:
+     docker compose up -d db redis
+  4. Espera 10-20 segundos
+  5. Verifica que estan corriendo:
+     docker compose ps
+
+  Debes ver algo como:
+    NAME            STATUS
+    aida_postgres   Up (healthy)
+    aida_redis      Up (healthy)
+
+  Si ambos dicen "Up" y "(healthy)": PERFECTO, sigue al paso 3.
+
+  Si alguno dice "Exit" o no aparece:
+    → Ejecuta: docker compose logs db redis
+    → Lee el error. Lo mas comun:
+      - "port already in use": Ya hay un PostgreSQL o Redis corriendo
+        Solucion: Para el servicio que ocupa el puerto, o cambia el puerto
+        en docker-compose.yml (ej: "5433:5432" en vez de "5432:5432")
+
+NOTA: Los datos se guardan en volumenes Docker. Si paras y vuelves a
+  levantar, tus datos seguiran ahi. Para BORRAR todo y empezar de cero:
+  docker compose down -v   (la -v borra los volumenes)
+
+
+================================================================================
+3. LEVANTAR EL BACKEND (FastAPI)
+================================================================================
+
+PASO 3.1: Crear el archivo .env
+  1. Ve a la carpeta backend:
+     cd /ruta/a/AIDA/backend
+  2. Copia el archivo de ejemplo:
+     - En Linux/Mac: cp .env.example .env
+     - En Windows:   copy .env.example .env
+  3. El archivo .env ya viene con valores por defecto que funcionan
+     con Docker local. NO necesitas cambiar nada para pruebas locales.
+
+  Los valores por defecto son:
+    DATABASE_URL=postgresql+asyncpg://aida:aida_secret_2024@localhost:5432/aida_db
+    REDIS_URL=redis://localhost:6379/0
+    ENVIRONMENT=development
+    DEBUG=true
+    SECRET_KEY=CAMBIAR-EN-PRODUCCION-usar-openssl-rand-hex-64
+    ALLOWED_ORIGINS=["http://localhost:3000","http://localhost:3001","http://localhost:3002","http://localhost:3003","http://localhost:3004","http://localhost:3005","http://localhost:3100"]
+
+PASO 3.2: Crear entorno virtual de Python
+  1. Estando en /ruta/a/AIDA/backend:
+  2. Crear el entorno virtual:
+     python -m venv venv
+  3. Activar el entorno virtual:
+     - Linux/Mac:  source venv/bin/activate
+     - Windows:    venv\Scripts\activate
+     Cuando se active, veras (venv) al inicio de la linea de la terminal.
+
+PASO 3.3: Instalar dependencias
+  1. Con el entorno virtual activado, ejecuta:
+     pip install -r requirements.txt
+  2. Esto toma 2-5 minutos la primera vez
+  3. Debes ver al final: "Successfully installed ..." con muchos paquetes
+
+PASO 3.4: Arrancar el backend
+  1. Con el entorno virtual activado, ejecuta:
+     uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+  2. La primera vez que arranca, el backend:
+     a) Crea todas las tablas en PostgreSQL (40 tablas)
+     b) Detecta que no hay usuarios → ejecuta el SEED automaticamente
+     c) Crea: admin, roles, permisos, clientes Santoni y Electro Caribe
+  3. Debes ver en la terminal mensajes como:
+     - "creating_tables"
+     - "database_tables_ready"
+     - "no_users_found_running_seed"
+     - "Creando permisos... 60+ permisos configurados"
+     - "Creando roles..."
+     - "Super admin creado: admin@aida.com.ve / Admin2024!"
+     - "Cliente 1: Alimentos Santoni C.A. (SAP B1)"
+     - "  Admin: carlos.santoni@arrozsantoni.com.ve / Santoni2025!"
+     - "Cliente 2: Distribuidora Electro Caribe C.A."
+     - "  Admin: luis.perez@electrocaribe.com.ve / Electro2025!"
+     - "seed_completed_admin_created"
+     - "Uvicorn running on http://0.0.0.0:8000"
+
+  4. IMPORTANTE: Copia y guarda las API Keys que aparecen en los logs.
+     Solo se muestran UNA VEZ durante el seed.
+     Ejemplo: "API Key: aida_J312456783_a1b2c3d4e5f6..."
+
+PASO 3.5: Verificar que el backend esta vivo
+  1. Abre tu navegador
+  2. Ve a: http://localhost:8000/health
+  3. Debes ver:
+     {"status":"ok","version":"1.0.0","database":"connected"}
+  4. Ve a: http://localhost:8000/api/docs
+  5. Debes ver la interfaz Swagger con todos los endpoints
+
+DEJA ESTA TERMINAL ABIERTA. El backend debe seguir corriendo.
+
+
+================================================================================
+4. LEVANTAR LOS PORTALES FRONTEND
+================================================================================
+
+Necesitas OTRA terminal (no cierres la del backend).
+
+PASO 4.1: Instalar dependencias del frontend
+  1. Abre una nueva terminal
+  2. Ve a la carpeta frontend:
+     cd /ruta/a/AIDA/frontend
+  3. Instala todo:
+     npm install
+  4. Esto toma 1-3 minutos. Instala dependencias de TODOS los portales.
+
+PASO 4.2: Levantar todos los portales a la vez
+  OPCION A — Todos juntos (mas facil):
+    npm run dev
+    Esto arranca los 7 portales al mismo tiempo con Turbo.
+    Veras logs intercalados de todas las apps.
+
+  OPCION B — Uno por uno (mas control):
+    Abrir terminales separadas para cada portal:
+
+    Terminal 1: cd /ruta/a/AIDA/frontend && npm run dev:admin
+    Terminal 2: cd /ruta/a/AIDA/frontend && npm run dev:client
+    Terminal 3: cd /ruta/a/AIDA/frontend && npm run dev:facturador
+    Y asi para cada uno...
+
+  OPCION C — Solo los que necesites:
+    Si solo quieres probar la landing:
+      cd /ruta/a/AIDA/frontend/apps/landing && npm run dev
+
+    Si quieres probar el admin:
+      npm run dev:admin
+
+PASO 4.3: URLs de cada portal
+
+  Una vez arrancados, los portales estan en estas URLs:
+
+  Portal                    URL                          Puerto
+  ────────────────────────  ───────────────────────────  ──────
+  Landing (pagina publica)  http://localhost:3100         3100
+  Portal 1 - Cliente        http://localhost:3000         3000
+  Portal 2 - Facturador     http://localhost:3002         3002
+  Portal 3 - Validacion     http://localhost:3003         3003
+  Portal 4 - Developers     http://localhost:3004         3004
+  Portal 5 - Gestion        http://localhost:3005         3005
+  Portal 6 - Admin          http://localhost:3001         3001
+
+  NOTA: Los puertos estan definidos en el package.json de cada app.
+
+
+================================================================================
+5. VERIFICAR QUE TODO FUNCIONA
+================================================================================
+
+Checklist rapido:
+
+  [ ] Docker: aida_postgres y aida_redis estan "Up (healthy)"
+      → docker compose ps
+
+  [ ] Backend: http://localhost:8000/health dice {"status":"ok"}
+
+  [ ] Swagger: http://localhost:8000/api/docs carga la documentacion
+
+  [ ] Landing: http://localhost:3100 muestra la pagina de marketing
+
+  [ ] Admin: http://localhost:3001 muestra pantalla de login
+
+  [ ] Facturador: http://localhost:3002 muestra pantalla de login
+
+Si todo lo anterior funciona, estas listo para las pruebas.
+
+
+================================================================================
+6. PRUEBAS CON DATOS - GUIA PASO A PASO
+================================================================================
+
+El seed automatico creo 3 tipos de acceso:
+  - 1 Super Admin (AIDA)
+  - 2 Clientes de prueba con sus usuarios
+  - Roles, permisos, plantillas, rangos de NC
+
+A continuacion, las pruebas organizadas por escenario:
+
+
+────────────────────────────────────────────────────────────────────────────────
+6A. PRUEBAS COMO SUPER ADMIN (Portal 6 - Admin)
+────────────────────────────────────────────────────────────────────────────────
+
+URL: http://localhost:3001
+Credenciales:
+  Email:    admin@aida.com.ve
+  Password: Admin2024!
+
+PRUEBA 6A.1 — Login del Admin
+  1. Abrir http://localhost:3001
+  2. Escribir email: admin@aida.com.ve
+  3. Escribir password: Admin2024!
+  4. Click "Ingresar"
+  5. ESPERADO: Se abre el Dashboard de administracion
+  6. VERIFICAR: Las tarjetas muestran:
+     - Clientes activos: 2 (Santoni + Electro Caribe)
+     - Usuarios totales: 5 (admin + 2 de Santoni + 2 de Electro Caribe)
+
+PRUEBA 6A.2 — Ver clientes creados por el seed
+  1. En el sidebar izquierdo, click "Clientes"
+  2. ESPERADO: Tabla con 2 filas:
+     - J-31245678-3 | Alimentos Santoni C.A. | empresarial | Activo
+     - J-40987654-1 | Distribuidora Electro Caribe C.A. | profesional | Activo
+  3. Probar buscador: escribir "Santoni" → debe filtrar solo 1 resultado
+  4. Probar buscador: escribir "J-409" → debe filtrar Electro Caribe
+
+PRUEBA 6A.3 — Ver usuarios del sistema
+  1. Click "Usuarios" en el sidebar
+  2. ESPERADO: Tabla con 5 usuarios:
+     - Super Admin (admin@aida.com.ve)
+     - Carlos Santoni (carlos.santoni@arrozsantoni.com.ve)
+     - Maria Rodriguez (maria.rodriguez@arrozsantoni.com.ve)
+     - Luis Perez (luis.perez@electrocaribe.com.ve)
+     - Ana Garcia (ana.garcia@electrocaribe.com.ve)
+
+PRUEBA 6A.4 — Ver roles y permisos
+  1. Click "Roles" en el sidebar
+  2. ESPERADO: Lista de roles incluyendo:
+     - super_admin (Platform)
+     - client_admin (Client)
+     - client_user (Client)
+     - Y otros roles del sistema
+  3. Click en "super_admin" → debe mostrar TODOS los permisos
+  4. Click en "client_admin" → debe mostrar permisos de nivel cliente
+  5. Sin seleccionar ningun rol: deben verse todos los permisos agrupados
+     por modulo (clientes, usuarios, documentos, fiscal, etc.)
+
+PRUEBA 6A.5 — Configuracion del sistema
+  1. Click "Configuracion" en el sidebar
+  2. ESPERADO: Parametros agrupados por categoria:
+     - Empresa: RIF, razon social, direccion, telefono, email
+     - Facturacion: IVA 16%, IVA 8%, exento
+     - Seguridad: intentos login, timeout, longitud password
+     - Almacenamiento: retencion 10 anos
+
+PRUEBA 6A.6 — Auditoria
+  1. Click "Auditoria" en el sidebar
+  2. ESPERADO: Registros de las acciones del seed:
+     - Creacion de usuarios
+     - Creacion de clientes
+     - Asignacion de roles
+  3. Filtrar por accion "create" → solo ver creaciones
+  4. Filtrar por recurso "client" → solo ver operaciones de clientes
+
+
+────────────────────────────────────────────────────────────────────────────────
+6B. PRUEBAS COMO ALIMENTOS SANTONI C.A.
+────────────────────────────────────────────────────────────────────────────────
+
+Escenario: Santoni es una empresa de alimentos con SAP Business One.
+Plan empresarial, alto volumen. RIF: J-31245678-3
+
+--- PORTAL 1 (Cliente) ---
+URL: http://localhost:3000
+
+PRUEBA 6B.1 — Login como admin de Santoni
+  1. Abrir http://localhost:3000
+  2. Email: carlos.santoni@arrozsantoni.com.ve
+  3. Password: Santoni2025!
+  4. Click "Ingresar"
+  5. ESPERADO: Dashboard del cliente Santoni
+  6. VERIFICAR:
+     - Nombre: Carlos Santoni
+     - Empresa: Alimentos Santoni C.A. (o Arroz Santoni)
+     - Documentos hoy: 0 (aun no hemos emitido)
+     - Estado: Activo
+
+PRUEBA 6B.2 — Login como contadora de Santoni
+  1. Cerrar sesion
+  2. Email: maria.rodriguez@arrozsantoni.com.ve
+  3. Password: Santoni2025!
+  4. ESPERADO: Dashboard del mismo cliente pero con permisos de usuario
+     (no admin)
+
+--- PORTAL 2 (Facturador) ---
+URL: http://localhost:3002
+
+PRUEBA 6B.3 — Crear un producto en el catalogo
+  1. Abrir http://localhost:3002
+  2. Login: carlos.santoni@arrozsantoni.com.ve / Santoni2025!
+  3. Click "Productos" en el sidebar
+  4. Click "+ Nuevo Producto"
+  5. Llenar:
+     - Codigo: ARZ-001
+     - Descripcion: Arroz Santoni Premium 1kg
+     - Precio: 5.50
+     - Impuesto: Gravado 16%
+  6. Click "Guardar"
+  7. ESPERADO: Producto aparece en la lista
+  8. Crear un segundo producto:
+     - Codigo: ARZ-002
+     - Descripcion: Arroz Santoni Integral 1kg
+     - Precio: 7.00
+     - Impuesto: Gravado 16%
+  9. Click "Guardar"
+
+PRUEBA 6B.4 — Crear un cliente receptor
+  1. Click "Clientes" en el sidebar (estos son los clientes de Santoni)
+  2. Click "+ Nuevo Cliente"
+  3. Llenar:
+     - RIF: J-12345678-0
+     - Razon Social: Supermercados Central C.A.
+     - Direccion: Av. Lecuna, Caracas
+     - Email: compras@supercentral.com.ve
+     - Telefono: +58-212-1234567
+  4. Click "Guardar"
+  5. ESPERADO: Cliente aparece en la lista
+
+PRUEBA 6B.5 — Emitir una factura (PRUEBA CENTRAL)
+  1. Click "Facturar" en el sidebar (o "Nueva Factura")
+  2. Tipo de documento: Factura
+  3. Receptor:
+     - Escribir "J-12345678-0" o "Supermercados"
+     - Debe autocompletar con el cliente que creamos
+     - Seleccionarlo
+  4. Agregar items:
+     - Click "+ Agregar item"
+     - Buscar "ARZ-001" (Arroz Premium) → seleccionar
+     - Cantidad: 100
+     - Precio: 5.50 (debe venir precargado del catalogo)
+     - Click "+ Agregar item" de nuevo
+     - Buscar "ARZ-002" (Arroz Integral) → seleccionar
+     - Cantidad: 50
+     - Precio: 7.00
+  5. Verificar los calculos automaticos:
+     - Subtotal Item 1: 100 x 5.50 = 550.00
+     - Subtotal Item 2: 50 x 7.00 = 350.00
+     - Subtotal general: 900.00
+     - IVA 16%: 144.00
+     - Total: 1,044.00
+  6. Condiciones:
+     - Moneda: VES
+     - Forma de pago: Transferencia
+     - Condicion: Contado
+  7. Click "Emitir" o "Emitir Documento"
+  8. ESPERADO:
+     - Numero de control asignado: A-00000001 (primer documento de Santoni)
+     - Confirmacion con opciones: Ver PDF, Descargar, Imprimir
+
+PRUEBA 6B.6 — Emitir segunda factura
+  Repetir PRUEBA 6B.5 con datos diferentes:
+  - Mismo receptor (Supermercados Central)
+  - Solo 1 item: 200 unidades de Arroz Premium a 5.50
+  - Total: 200 x 5.50 = 1,100.00 + IVA 176.00 = 1,276.00
+  - ESPERADO: NC asignado: A-00000002
+
+PRUEBA 6B.7 — Ver historial de documentos
+  1. Click "Documentos" en el sidebar
+  2. ESPERADO: Lista con 2 facturas:
+     - A-00000001 | Factura | VES 1,044.00 | Emitido
+     - A-00000002 | Factura | VES 1,276.00 | Emitido
+  3. Click en la primera factura → ver detalle completo
+  4. VERIFICAR: items, totales, datos emisor/receptor correctos
+
+
+────────────────────────────────────────────────────────────────────────────────
+6C. PRUEBAS COMO DISTRIBUIDORA ELECTRO CARIBE C.A.
+────────────────────────────────────────────────────────────────────────────────
+
+Escenario: Electro Caribe es un distribuidor de electrodomesticos.
+No tiene ERP propio, usa AIDA directamente.
+Plan profesional. RIF: J-40987654-1
+
+--- PORTAL 2 (Facturador) ---
+URL: http://localhost:3002
+
+PRUEBA 6C.1 — Login como Electro Caribe
+  1. Cerrar sesion de Santoni si esta abierta
+  2. Abrir http://localhost:3002
+  3. Email: luis.perez@electrocaribe.com.ve
+  4. Password: Electro2025!
+  5. ESPERADO: Dashboard del facturador para Electro Caribe
+
+PRUEBA 6C.2 — Crear productos de electrodomesticos
+  1. Click "Productos"
+  2. Crear producto 1:
+     - Codigo: TV-SAM-55
+     - Descripcion: Televisor Samsung 55" 4K UHD
+     - Precio: 450.00
+     - Impuesto: Gravado 16%
+  3. Crear producto 2:
+     - Codigo: LAV-LG-15
+     - Descripcion: Lavadora LG 15kg Automatica
+     - Precio: 380.00
+     - Impuesto: Gravado 16%
+  4. Crear producto 3:
+     - Codigo: SERV-INST
+     - Descripcion: Servicio de Instalacion a Domicilio
+     - Precio: 25.00
+     - Impuesto: Exento
+     (Servicios de instalacion pueden ser exentos segun el caso)
+
+PRUEBA 6C.3 — Crear cliente receptor
+  1. Click "Clientes"
+  2. Crear:
+     - RIF: V-15234567-8
+     - Razon Social: Pedro Ramirez
+     - Direccion: Calle 67, Maracaibo
+     - Email: pedro.ramirez@gmail.com
+     - Telefono: +58-414-5678901
+
+PRUEBA 6C.4 — Emitir factura con item exento y gravado
+  1. Click "Facturar"
+  2. Tipo: Factura
+  3. Receptor: V-15234567-8 (Pedro Ramirez)
+  4. Items:
+     - TV Samsung 55": cantidad 1, precio 450.00 (gravado 16%)
+     - Servicio instalacion: cantidad 1, precio 25.00 (exento)
+  5. VERIFICAR calculos:
+     - Base imponible gravada: 450.00
+     - Base imponible exenta: 25.00
+     - IVA 16%: 72.00 (solo sobre la TV)
+     - Total: 547.00
+  6. Emitir
+  7. ESPERADO: NC asignado: EC-00000001 (serie EC de Electro Caribe)
+
+PRUEBA 6C.5 — Verificar aislamiento multi-tenant
+  1. IMPORTANTISIMO: Electro Caribe NO debe ver documentos de Santoni
+  2. Click "Documentos" → solo debe aparecer EC-00000001
+  3. Click "Productos" → solo deben aparecer los 3 productos de Electro Caribe
+  4. Click "Clientes" → solo Pedro Ramirez
+  5. Santoni y sus datos deben ser INVISIBLES para Electro Caribe
+
+PRUEBA 6C.6 — Login como vendedora Ana Garcia
+  1. Cerrar sesion
+  2. Login: ana.garcia@electrocaribe.com.ve / Electro2025!
+  3. ESPERADO: Acceso al facturador pero con permisos limitados
+     (puede facturar pero no cambiar configuracion)
+
+
+────────────────────────────────────────────────────────────────────────────────
+6D. PRUEBAS DEL PORTAL DE VALIDACION PUBLICA (Portal 3)
+────────────────────────────────────────────────────────────────────────────────
+
+URL: http://localhost:3003
+NO requiere login
+
+PRUEBA 6D.1 — Buscar por numero de control
+  1. Abrir http://localhost:3003
+  2. ESPERADO: Pagina publica con buscador, sin login
+  3. Seleccionar busqueda por "Numero de Control"
+  4. Escribir: A-00000001 (la primera factura de Santoni)
+  5. Click "Verificar"
+  6. ESPERADO:
+     - Documento verificado (check verde)
+     - Tipo: Factura
+     - Emisor: Alimentos Santoni C.A.
+     - RIF: J-31245678-3
+     - Total: VES 1,044.00
+     - Estado: Emitido
+
+PRUEBA 6D.2 — Buscar factura de Electro Caribe
+  1. Buscar: EC-00000001
+  2. ESPERADO:
+     - Documento verificado
+     - Emisor: Distribuidora Electro Caribe C.A.
+     - Total: VES 547.00
+
+PRUEBA 6D.3 — Buscar documento inexistente
+  1. Buscar: XX-99999999
+  2. ESPERADO: "Documento no encontrado"
+
+PRUEBA 6D.4 — Buscar por RIF
+  1. Cambiar a busqueda por "RIF Emisor"
+  2. Escribir: J-31245678-3
+  3. ESPERADO: Lista de todos los documentos de Santoni (2 facturas)
+
+PRUEBA 6D.5 — Ver detalle completo
+  1. Desde el resultado, click "Ver detalle"
+  2. ESPERADO: Items del documento, desglose de impuestos, UUID, hash
+
+
+────────────────────────────────────────────────────────────────────────────────
+6E. PRUEBAS DEL PORTAL DEVELOPERS (Portal 4)
+────────────────────────────────────────────────────────────────────────────────
+
+URL: http://localhost:3004
+
+PRUEBA 6E.1 — Acceso y documentacion
+  1. Abrir http://localhost:3004
+  2. Login: carlos.santoni@arrozsantoni.com.ve / Santoni2025!
+  3. ESPERADO: Dashboard de developers con 4 secciones
+
+PRUEBA 6E.2 — Quick Start
+  1. Click "Quick Start" en el sidebar
+  2. VERIFICAR: Guia de 4 pasos visible
+  3. Debe mostrar ejemplos de codigo en cURL, Python y JavaScript
+  4. Cambiar entre lenguajes → los ejemplos deben cambiar
+
+PRUEBA 6E.3 — API Docs
+  1. Click "API Docs"
+  2. VERIFICAR: Lista de endpoints con:
+     - POST /fiscal/emit
+     - POST /fiscal/void
+     - GET /fiscal/documents
+     - etc.
+  3. Click en un endpoint → debe expandir con detalles
+
+PRUEBA 6E.4 — Crear API Key
+  1. Click "API Keys"
+  2. Click "+ Nueva API Key"
+  3. Nombre: "Testing Local"
+  4. Click "Crear"
+  5. ESPERADO: Se muestra la API Key completa
+  6. IMPORTANTE: Copiar la key → se muestra 1 sola vez
+  7. Debe aparecer en la lista con prefijo visible
+
+PRUEBA 6E.5 — Revocar API Key
+  1. En la lista de API Keys, buscar "Testing Local"
+  2. Click "Revocar"
+  3. ESPERADO: Estado cambia a "Revocada"
+
+PRUEBA 6E.6 — Usage (Metricas)
+  1. Click "Usage"
+  2. VERIFICAR: Metricas de uso (pueden estar en 0 si no has usado la API)
+
+
+────────────────────────────────────────────────────────────────────────────────
+6F. PRUEBAS DEL PORTAL GESTION (Portal 5)
+────────────────────────────────────────────────────────────────────────────────
+
+URL: http://localhost:3005
+
+PRUEBA 6F.1 — Login y navegacion
+  1. Abrir http://localhost:3005
+  2. Login: admin@aida.com.ve / Admin2024!
+  3. ESPERADO: Dashboard de gestion con sidebar completo
+
+PRUEBA 6F.2 — Chat IA
+  1. Click "Chat IA" en el sidebar
+  2. Escribir: "Cuantos clientes tenemos en el sistema?"
+  3. ESPERADO: Respuesta en streaming del asistente IA
+  4. NOTA: Si no configuraste AI_API_KEY en el .env, dara error
+     Para probar sin IA: dejar esta seccion para despues
+
+PRUEBA 6F.3 — Templates de integracion
+  1. Click "Templates" en el sidebar
+  2. ESPERADO: Galeria con templates:
+     - Odoo, SAP Business One, World Office, QuickBooks, Personalizado
+  3. Click en "SAP Business One" → ver detalles de configuracion
+
+PRUEBA 6F.4 — Webhooks
+  1. Click "Webhooks"
+  2. Click "+ Nuevo Webhook"
+  3. Llenar:
+     - URL: https://httpbin.org/post (URL de prueba publica)
+     - Eventos: document.emitted
+  4. Guardar
+  5. ESPERADO: Webhook aparece en la lista
+
+PRUEBA 6F.5 — Dashboard de monitoreo
+  1. Click "Dashboard" en seccion Monitoreo
+  2. VERIFICAR: Panel con metricas de conexiones
+
+
+────────────────────────────────────────────────────────────────────────────────
+6G. PRUEBAS DE LA LANDING PAGE (Pagina Publica)
+────────────────────────────────────────────────────────────────────────────────
+
+URL: http://localhost:3100
+
+PRUEBA 6G.1 — Carga y navegacion
+  1. Abrir http://localhost:3100
+  2. ESPERADO: Pagina de marketing moderna con fondo oscuro
+  3. VERIFICAR navegacion:
+     - Logo AIDA arriba a la izquierda
+     - Menu: Caracteristicas, Como Funciona, Integraciones, Por que AIDA, Planes
+     - Boton "Imprenta Digital" (enlace al portal de validacion)
+     - Boton "Solicitar Demo"
+
+PRUEBA 6G.2 — Boton Imprenta Digital
+  1. Click en "Imprenta Digital" en el navbar
+  2. ESPERADO: Se abre en nueva pestana el portal de validacion
+     (cumplimiento de Providencia SENIAT)
+
+PRUEBA 6G.3 — Navegacion movil
+  1. Abrir DevTools (F12) → Click icono de telefono (responsive)
+  2. Seleccionar un dispositivo movil (ej: iPhone 14)
+  3. VERIFICAR:
+     - El menu se colapsa en un boton hamburguesa
+     - Al hacer click se despliega el menu
+     - El boton "Imprenta Digital" aparece en el menu movil
+     - El boton "Solicitar Demo" aparece al final
+
+PRUEBA 6G.4 — Footer
+  1. Scroll hasta el fondo de la pagina
+  2. VERIFICAR:
+     - Seccion "Producto" con enlaces
+     - Seccion "Empresa" con enlaces
+     - Seccion "Cumplimiento SENIAT" con:
+       * Providencia SNAT/2024/000121
+       * Imprenta Autorizada SENIAT
+       * Boton "Portal Imprenta Digital"
+     - Copyright en el fondo
+
+PRUEBA 6G.5 — Secciones de contenido
+  1. Scroll por la pagina completa
+  2. VERIFICAR que existen estas secciones:
+     - Hero (arriba, con titulo y CTA)
+     - Caracteristicas (tarjetas con funcionalidades)
+     - Como Funciona (pasos del proceso)
+     - Integraciones (logos/cards de sistemas compatibles)
+     - Por que AIDA (diferenciadores)
+     - Planes y Precios (3 planes con precios)
+     - Contacto/CTA final
+
+
+================================================================================
+7. DATOS DE ACCESO RAPIDO (CHEAT SHEET)
+================================================================================
+
+Guardatelo abierto mientras pruebas:
+
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │ SUPER ADMIN (AIDA)                                                      │
+  ├──────────────────────────────────────────────────────────────────────────┤
+  │ Email:    admin@aida.com.ve                                             │
+  │ Password: Admin2024!                                                    │
+  │ Rol:      Super Admin (todos los permisos)                              │
+  │ Portales: Admin (3001), Gestion (3005), todos                           │
+  └──────────────────────────────────────────────────────────────────────────┘
+
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │ ALIMENTOS SANTONI C.A. — Plan Empresarial                               │
+  │ RIF: J-31245678-3 | Serie NC: A | Rango: 1-5000                         │
+  ├──────────────────────────────────────────────────────────────────────────┤
+  │ Admin:                                                                  │
+  │   Email:    carlos.santoni@arrozsantoni.com.ve                          │
+  │   Password: Santoni2025!                                                │
+  │   Rol:      client_admin                                                │
+  ├──────────────────────────────────────────────────────────────────────────┤
+  │ Contadora:                                                              │
+  │   Email:    maria.rodriguez@arrozsantoni.com.ve                         │
+  │   Password: Santoni2025!                                                │
+  │   Rol:      client_user                                                 │
+  ├──────────────────────────────────────────────────────────────────────────┤
+  │ Integracion:  SAP Business One                                          │
+  │ Autorizacion: SNAT-2025-IMP-001234                                      │
+  └──────────────────────────────────────────────────────────────────────────┘
+
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │ DISTRIBUIDORA ELECTRO CARIBE C.A. — Plan Profesional                    │
+  │ RIF: J-40987654-1 | Serie NC: EC | Rango: 1-1000                        │
+  ├──────────────────────────────────────────────────────────────────────────┤
+  │ Admin:                                                                  │
+  │   Email:    luis.perez@electrocaribe.com.ve                             │
+  │   Password: Electro2025!                                                │
+  │   Rol:      client_admin                                                │
+  ├──────────────────────────────────────────────────────────────────────────┤
+  │ Vendedora:                                                              │
+  │   Email:    ana.garcia@electrocaribe.com.ve                             │
+  │   Password: Electro2025!                                                │
+  │   Rol:      client_user                                                 │
+  ├──────────────────────────────────────────────────────────────────────────┤
+  │ Integracion:  API Directa AIDA (sin ERP)                                │
+  │ Autorizacion: SNAT-2025-IMP-005678                                      │
+  └──────────────────────────────────────────────────────────────────────────┘
+
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │ URLs LOCALES                                                            │
+  ├──────────────────────────────────────────────────────────────────────────┤
+  │ Backend API:      http://localhost:8000                                  │
+  │ Swagger Docs:     http://localhost:8000/api/docs                         │
+  │ Health Check:     http://localhost:8000/health                           │
+  │                                                                         │
+  │ Landing:          http://localhost:3100                                  │
+  │ Portal Cliente:   http://localhost:3000                                  │
+  │ Portal Admin:     http://localhost:3001                                  │
+  │ Portal Facturador:http://localhost:3002                                  │
+  │ Portal Validacion:http://localhost:3003  (publico, sin login)            │
+  │ Portal Developers:http://localhost:3004                                  │
+  │ Portal Gestion:   http://localhost:3005                                  │
+  └──────────────────────────────────────────────────────────────────────────┘
+
+
+================================================================================
+8. TROUBLESHOOTING LOCAL
+================================================================================
+
+PROBLEMA: "docker compose up" falla
+  → Verifica que Docker Desktop esta abierto y corriendo
+  → En Windows: el icono de la ballena en la bandeja debe estar verde
+
+PROBLEMA: "pip install" falla con "error: Microsoft Visual C++ required"
+  → Solo en Windows: necesitas instalar Build Tools para C++
+  → Descarga: https://visualstudio.microsoft.com/visual-cpp-build-tools/
+  → Instala seleccionando "Desktop development with C++"
+
+PROBLEMA: El backend no arranca, dice "Connection refused" a PostgreSQL
+  → Verifica: docker compose ps → aida_postgres debe estar "Up"
+  → Si no esta: docker compose up -d db
+  → Si ya esta pero no conecta: verifica que el .env tiene
+    DATABASE_URL=postgresql+asyncpg://aida:aida_secret_2024@localhost:5432/aida_db
+
+PROBLEMA: El backend arranca pero el seed no corre
+  → El seed solo corre si NO hay usuarios en la BD
+  → Si ya corrio antes, los datos ya estan
+  → Para forzar re-seed: para todo, borra la BD y vuelve a empezar:
+    docker compose down -v
+    docker compose up -d db redis
+    (espera 10s)
+    uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+PROBLEMA: "npm run dev" falla en el frontend
+  → Verifica que hiciste "npm install" en la carpeta /frontend
+  → Si da error de turbo: npm install turbo --save-dev
+  → Si da error de dependencias: rm -rf node_modules && npm install
+
+PROBLEMA: Puerto ocupado (ej: "EADDRINUSE ::: 3000")
+  → Otro proceso usa ese puerto
+  → En Linux/Mac: lsof -i :3000 → ver que proceso es → kill -9 [PID]
+  → En Windows: netstat -ano | findstr :3000 → taskkill /PID [PID] /F
+  → O simplemente cierra la otra terminal que este corriendo algo
+
+PROBLEMA: Login dice "Error de conexion" o "Network Error"
+  → Verifica que el backend esta corriendo en otra terminal
+  → Verifica: http://localhost:8000/health
+  → Si funciona el health pero no el login: abre DevTools (F12) →
+    Console → busca el error exacto
+
+PROBLEMA: Login funciona pero dice "403 Forbidden"
+  → El usuario no tiene el rol correcto
+  → Verifica que el seed corrio correctamente
+  → Revisa los logs del backend (la terminal donde corre uvicorn)
+
+PROBLEMA: Los portales cargan pero todo esta en blanco
+  → Puede faltar la variable NEXT_PUBLIC_API_URL en el entorno
+  → Para local, los portales estan configurados para usar
+    http://localhost:8000/api/v1 por defecto
+  → Si no funciona, crea un archivo .env.local en la carpeta del portal:
+    echo "NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1" > .env.local
+
+
+================================================================================
+FIN DEL MANUAL 4 — PRUEBAS LOCALES
+================================================================================
+
+Resumen de lo que puedes probar:
+  - Login con 5 usuarios diferentes (3 roles distintos)
+  - Crear productos, clientes y facturas
+  - Verificar aislamiento multi-tenant
+  - Validacion publica de documentos
+  - Documentacion API y API Keys
+  - Integraciones, webhooks y monitoreo
+  - Chat IA (si configuras AI_API_KEY)
+  - Landing page publica con enlace a portal SENIAT
+
+Total de pruebas documentadas: 30+

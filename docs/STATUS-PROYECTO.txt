@@ -1,489 +1,298 @@
 ================================================================================
               AIDA - IMPRENTA DIGITAL | STATUS DE PROYECTO
-              Fecha: 16 de febrero de 2026
+              Fecha: 17 de febrero de 2026 (Actualizado)
 ================================================================================
 
 1. RESUMEN EJECUTIVO
 ================================================================================
 
-AIDA es una plataforma SaaS de facturación electrónica e imprenta digital
+AIDA es una plataforma SaaS de facturacion electronica e imprenta digital
 para Venezuela, conforme con las regulaciones del SENIAT. Arquitectura
-multi-tenant con 6 portales web, API fiscal estándar, y motor de emisión
-de documentos.
+multi-tenant con 7 portales web (6 funcionales + 1 landing), API fiscal
+estandar, motor de emision de documentos, y asistente IA integrado.
 
-Tecnologías:
+Tecnologias:
   - Backend:  Python 3.12 + FastAPI + SQLAlchemy 2.0 (async) + PostgreSQL 16
   - Frontend: Next.js 15 + TypeScript + Tailwind CSS (Turborepo monorepo)
   - Cache:    Redis 7
-  - AI:       Groq API (llama-3.3-70b-versatile)
-  - PDF:      ReportLab
+  - AI:       Groq API (llama-3.3-70b-versatile) / Anthropic / OpenAI
+  - PDF:      ReportLab + WeasyPrint
   - Deploy:   Vercel (frontend) + Railway (backend) + Neon (DB) + Upstash (Redis)
 
-Estadísticas del codebase:
-  - Backend:  ~26,000 líneas Python en 80+ archivos
-  - Frontend: ~6,200 líneas TypeScript/TSX en 6 aplicaciones
+Estadisticas del codebase:
+  - Backend:  ~26,000 lineas Python en 80+ archivos
+  - Frontend: ~7,000 lineas TypeScript/TSX en 7 aplicaciones
   - Modelos:  40 tablas de base de datos
-  - Endpoints: 17 módulos de API
-  - Total:    ~32,000 líneas de código
+  - Endpoints: 121 endpoints en 20 modulos de API
+  - Tests:    44+ tests automatizados
+  - Total:    ~33,000 lineas de codigo
 
 
-2. FASES COMPLETADAS
+2. FASES COMPLETADAS (7 de 10)
 ================================================================================
 
 FASE 1 — Arquitectura Base y Seguridad               [COMPLETADA] commit a6d53e8
 ─────────────────────────────────────────────────────────────────────────────────
-  ✓ Estructura del proyecto (monorepo Turbo)
-  ✓ Docker Compose (PostgreSQL 16, Redis 7, backend)
-  ✓ Modelos ORM: User, Role, Permission, Session, AuditLog
-  ✓ Autenticación JWT (access + refresh tokens)
-  ✓ 2FA con TOTP (Google Authenticator)
-  ✓ RBAC con 60+ permisos organizados por módulo
-  ✓ Middleware de auditoría (IP, MAC, user agent)
-  ✓ Sistema de seeds (roles, permisos, admin inicial)
+  OK  Estructura del proyecto (monorepo Turbo)
+  OK  Docker Compose (PostgreSQL 16, Redis 7, backend)
+  OK  Modelos ORM: User, Role, Permission, Session, AuditLog
+  OK  Autenticacion JWT (access + refresh tokens)
+  OK  2FA con TOTP (Google Authenticator)
+  OK  RBAC con 60+ permisos organizados por modulo
+  OK  Middleware de auditoria (IP, MAC, user agent)
+  OK  Sistema de seeds (roles, permisos, admin inicial)
 
-FASE 2 — API Fiscal + Portal Facturador + Portal Gestión   [COMPLETADA] commit e84a660
+FASE 2 — API Fiscal + Portal Facturador + Portal Gestion  [COMPLETADA] commit e84a660
 ─────────────────────────────────────────────────────────────────────────────────
-  ✓ Modelos: Invoice, CreditNote, DebitNote, DispatchGuide, Withholding
-  ✓ Modelo DocumentItem (líneas compartidas entre documentos)
-  ✓ Modelos: Client, ClientUser, ClientSetting, ClientSubscription
-  ✓ Modelos: Product, ProductCategory, Inventory
-  ✓ Modelos: Customer (clientes de los facturadores)
-  ✓ Modelos: ControlNumberRange, ControlNumber, ControlNumberAudit
-  ✓ API Fiscal: emit, void con validación completa
-  ✓ Calculadora fiscal: IVA 16%, IVA 8%, exento, no sujeto
-  ✓ Números de control: asignación atómica con SELECT FOR UPDATE
-  ✓ Firma digital SHA-256
-  ✓ Portal 2 (Facturador): Login, Dashboard, InvoiceForm, ProductList, CustomerList
-  ✓ Portal 5 (Gestión): Scaffold base
+  OK  Modelos: Invoice, CreditNote, DebitNote, DispatchGuide, Withholding
+  OK  Modelo DocumentItem (lineas compartidas entre documentos)
+  OK  Modelos: Client, ClientUser, ClientSetting, ClientSubscription
+  OK  Modelos: Product, ProductCategory, Inventory
+  OK  Modelos: Customer (clientes de los facturadores)
+  OK  Modelos: ControlNumberRange, ControlNumber, ControlNumberAudit
+  OK  API Fiscal: emit, void con validacion completa
+  OK  Calculadora fiscal: IVA 16%, IVA 8%, exento, no sujeto
+  OK  Numeros de control: asignacion atomica con SELECT FOR UPDATE
+  OK  Firma digital SHA-256
+  OK  Portal 2 (Facturador): Login, Dashboard, InvoiceForm, ProductList, CustomerList
+  OK  Portal 5 (Gestion): Scaffold base
 
-FASE 3 — Portal Gestión Avanzado                     [COMPLETADA] commit 5e66dfc
+FASE 3 — Portal Gestion Avanzado                     [COMPLETADA] commit 5e66dfc
 ─────────────────────────────────────────────────────────────────────────────────
-  ✓ Modelos: IntegrationTemplate, IntegrationConnection, Webhook, WebhookLog
-  ✓ Modelos: IntegrationError, MonitoringMetric
-  ✓ Wizard de integración de 6 pasos
-  ✓ Galería de templates (Odoo, SAP, WooCommerce, etc.)
-  ✓ Dashboard de monitoreo en tiempo real
-  ✓ Gestor de errores con auto-retry y fingerprinting
-  ✓ Gestor de webhooks con logs de entrega
-  ✓ Conectores para sistemas externos
+  OK  Modelos: IntegrationTemplate, IntegrationConnection, Webhook, WebhookLog
+  OK  Modelos: IntegrationError, MonitoringMetric
+  OK  Wizard de integracion de 6 pasos
+  OK  Galeria de templates (Odoo, SAP, WooCommerce, etc.)
+  OK  Dashboard de monitoreo en tiempo real
+  OK  Gestor de errores con auto-retry y fingerprinting
+  OK  Gestor de webhooks con logs de entrega
+  OK  Conectores para sistemas externos
 
 FASE 4 — Asistente AI + Analytics + Reportes         [COMPLETADA] commit fb42f38
 ─────────────────────────────────────────────────────────────────────────────────
-  ✓ Cliente LLM multi-proveedor (Groq, Anthropic, OpenAI)
-  ✓ Asistente fiscal AI con streaming
-  ✓ Analytics avanzado (KPIs, tendencias, top clientes)
-  ✓ Generador de reportes AI
-  ✓ Widget de chat AI integrado en Portal 1
+  OK  Cliente LLM multi-proveedor (Groq, Anthropic, OpenAI)
+  OK  Asistente fiscal AI con streaming
+  OK  Analytics avanzado (KPIs, tendencias, top clientes)
+  OK  Generador de reportes AI
+  OK  Widget de chat AI integrado en Portal 1
 
 FASE 5 — Portales 3, 4 y 6                           [COMPLETADA] commit 5d6e226
 ─────────────────────────────────────────────────────────────────────────────────
-  ✓ Portal 3 (Validación Pública): búsqueda por NC, UUID, RIF, sin auth
-  ✓ Portal 4 (Developers): docs API, gestión de API keys, quickstart, usage
-  ✓ Portal 6 (Admin): Dashboard completo con 6 secciones funcionales
+  OK  Portal 3 (Validacion Publica): busqueda por NC, UUID, RIF, sin auth
+  OK  Portal 4 (Developers): docs API, gestion de API keys, quickstart, usage
+  OK  Portal 6 (Admin): Dashboard completo con 6 secciones funcionales
     - Dashboard con stats en vivo
-    - CRUD de Clientes con búsqueda y paginación
-    - CRUD de Usuarios con asignación de roles
-    - Gestión de Roles y Permisos (60+ permisos agrupados)
-    - Configuración del sistema por categorías
-    - Visor de logs de auditoría con filtros
+    - CRUD de Clientes con busqueda y paginacion
+    - CRUD de Usuarios con asignacion de roles
+    - Gestion de Roles y Permisos (60+ permisos agrupados)
+    - Configuracion del sistema por categorias
+    - Visor de logs de auditoria con filtros
 
-FASE 6 — Generación PDF/XML, Email, Export, Batch    [COMPLETADA] commit e0aa3ab
+FASE 6 — Generacion PDF/XML, Email, Export, Batch    [COMPLETADA] commit e0aa3ab
 ─────────────────────────────────────────────────────────────────────────────────
-  ✓ Generador PDF con ReportLab (layout profesional)
-  ✓ Generador XML UBL 2.1 con extensiones SENIAT
-  ✓ Servicio de email SMTP con templates HTML
-  ✓ Envío de documentos por email (PDF + XML adjuntos)
-  ✓ Export CSV (UTF-8 con BOM)
-  ✓ Export Excel (con estilos, colores por status, fila de totales)
-  ✓ Export TXT SENIAT (formato pipe-delimited para declaración IVA)
-  ✓ Emisión batch (máx 50 docs por request)
-  ✓ Storage service con abstracción S3
+  OK  Generador PDF con ReportLab (layout profesional)
+  OK  Generador XML UBL 2.1 con extensiones SENIAT
+  OK  Servicio de email SMTP con templates HTML
+  OK  Envio de documentos por email (PDF + XML adjuntos)
+  OK  Export CSV (UTF-8 con BOM)
+  OK  Export Excel (con estilos, colores por status, fila de totales)
+  OK  Export TXT SENIAT (formato pipe-delimited para declaracion IVA)
+  OK  Emision batch (max 50 docs por request)
+  OK  Storage service con abstraccion S3
 
-DOCUMENTACIÓN                                         [COMPLETADA] commit 384ebda
+FASE 10 — SFTP + API Keys + Pagos + Tests            [COMPLETADA]
 ─────────────────────────────────────────────────────────────────────────────────
-  ✓ Manual 1: Despliegue QA (Vercel + Railway + Neon + Upstash)
-  ✓ Manual 2: Lanzamiento a Producción (legal, dominio, infraestructura)
-  ✓ Manual 3: Manual de Uso por Portal (6 portales + flujos comunes)
-  ✓ .env.example con 58 variables documentadas
-  ✓ Fix CORS para los 6 portales
+  OK  Receptor batch/SFTP para carga masiva (CSV, JSON, XML; hasta 10MB)
+  OK  API keys persistidas en BD (SHA-256, rate limiting, request tracking)
+  OK  Tests automatizados: 44+ tests (fiscal, batch, API keys, pagos)
+  OK  Pasarela de pagos (transferencia, pago movil, zelle, stripe, paypal)
+
+DOCUMENTACION + LANDING + DESPLIEGUE                  [COMPLETADA]
+─────────────────────────────────────────────────────────────────────────────────
+  OK  Manual 1: Despliegue QA (Vercel + Railway + Neon + Upstash)
+  OK  Manual 2: Lanzamiento a Produccion (legal, dominio, infraestructura)
+  OK  Manual 3: Manual de Uso por Portal (6 portales + flujos comunes)
+  OK  Manual 4: Pruebas Locales (paso a paso con data Santoni y Electro Caribe)
+  OK  .env.example con 58 variables documentadas
+  OK  Fix CORS para los 7 portales (6 + landing)
+  OK  Landing page publica (marketing, planes, call-to-action)
+  OK  Enlace obligatorio "Imprenta Digital" en navbar y footer (Providencia SENIAT)
+  OK  vercel.json para deploy de landing en Vercel
+  OK  Seed automatico con 2 clientes de prueba completos
 
 
 3. INVENTARIO DE PORTALES
 ================================================================================
 
-Portal | Nombre            | Puerto | Auth     | Estado       | Completitud
--------|-------------------|--------|----------|--------------|------------
-  1    | Portal Cliente    | 3000   | JWT+2FA  | Funcional    | 95%
-  2    | Portal Facturador | 3001   | JWT+2FA  | Funcional    | 95%
-  3    | Validación Pública| 3002   | Ninguna  | Funcional    | 95%
-  4    | Portal Developers | 3003   | JWT+Key  | Funcional    | 95%
-  5    | Portal Gestión    | 3004   | JWT+2FA  | Funcional    | 95%
-  6    | Portal Admin      | 3005   | JWT+2FA  | Funcional    | 95%
+Portal | Nombre             | Puerto | Auth     | Estado       | Completitud
+-------|--------------------|--------|----------|--------------|------------
+  0    | Landing (publica)  | 3100   | Ninguna  | Funcional    | 100%
+  1    | Portal Cliente     | 3000   | JWT+2FA  | Funcional    | 95%
+  2    | Portal Facturador  | 3002   | JWT+2FA  | Funcional    | 95%
+  3    | Validacion Publica | 3003   | Ninguna  | Funcional    | 95%
+  4    | Portal Developers  | 3004   | JWT+Key  | Funcional    | 95%
+  5    | Portal Gestion     | 3005   | JWT+2FA  | Funcional    | 95%
+  6    | Portal Admin       | 3001   | JWT+2FA  | Funcional    | 95%
 
-Notas de completitud:
-  - Portal 1: Documentos, Plantillas y Perfil implementados (Fase 9)
-  - Portal 2: Documentos y Reportes completos (Fase 9)
-  - Portal 3: Totalmente funcional
-  - Portal 4: Falta examples interactivos en sandbox
-  - Portal 5: Totalmente funcional
-  - Portal 6: Totalmente funcional
+Notas:
+  - Landing: Pagina publica de marketing con enlace a portal de validacion
+    (cumplimiento Providencia SENIAT para imprentas digitales)
+  - Portal 1: Dashboard, documentos, chat IA
+  - Portal 2: Facturacion completa, productos, clientes, historial
+  - Portal 3: Verificacion publica sin login
+  - Portal 4: Docs API, API Keys, quickstart, usage metrics
+  - Portal 5: Integraciones, monitoreo, chat IA, analytics, reportes
+  - Portal 6: Admin completo con CRUD, RBAC, auditoria
 
 
 4. INVENTARIO DE MODELOS DE BASE DE DATOS (40 tablas)
 ================================================================================
 
 Seguridad (7):
-  ✓ users, roles, permissions, role_permissions, user_roles, sessions, audit_logs
+  OK  users, roles, permissions, role_permissions, user_roles, sessions, audit_logs
 
 Documentos Fiscales (6):
-  ✓ invoices, credit_notes, debit_notes, dispatch_guides, withholdings,
+  OK  invoices, credit_notes, debit_notes, dispatch_guides, withholdings,
     document_items
 
 Clientes (4):
-  ✓ clients, client_users, client_settings, client_subscriptions
+  OK  clients, client_users, client_settings, client_subscriptions
 
 Productos (3):
-  ✓ products, product_categories, inventory
+  OK  products, product_categories, inventory
 
-Números de Control (3):
-  ✓ control_number_ranges, control_numbers, control_number_audit
+Numeros de Control (3):
+  OK  control_number_ranges, control_numbers, control_number_audit
 
 Proyectos (2):
-  ✓ projects, project_logs
+  OK  projects, project_logs
 
-Configuración (3):
-  ✓ system_settings, email_templates, business_rules
+Configuracion (3):
+  OK  system_settings, email_templates, business_rules
 
 Integraciones (6):
-  ✓ integration_templates, integration_connections, webhooks, webhook_logs,
+  OK  integration_templates, integration_connections, webhooks, webhook_logs,
     integration_errors, monitoring_metrics
 
 Clientes Finales (1):
-  ✓ customers
+  OK  customers
+
+Pagos (2):
+  OK  payments, payment_transactions
+
+API Keys (1):
+  OK  api_keys
+
+Plantillas (1):
+  OK  document_templates
 
 
-5. ANÁLISIS DE BRECHAS — QUÉ FALTA
+5. ANALISIS DE BRECHAS — QUE FALTA
 ================================================================================
 
-Comparando el estado actual con las plantillas de documentos fiscales
-venezolanos reales (formatos adjuntos del usuario) y requisitos de negocio:
+Comparando con los formatos reales SENIAT y requisitos de negocio:
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-5.1 BRECHAS CRÍTICAS EN PDF/PLANTILLAS (Prioridad ALTA)
+5.1 BRECHAS CRITICAS EN PDF/PLANTILLAS (Prioridad ALTA)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 [FALTA] IGTF (Impuesto a las Grandes Transacciones Financieras) 3%
   - Los formatos reales muestran "Base Imponible IGTF" y "Total IGTF 3%"
-  - Este impuesto aplica a transacciones en divisas
+  - Aplica a transacciones en divisas
   - Falta en: modelo Invoice, calculadora fiscal, PDF, XML
-  - Impacto: Sin esto, las facturas NO cumplen con la normativa actual
 
-[FALTA] Logo del cliente en documentos
-  - Los formatos muestran el logo de la empresa emisora (ej: Herbalife)
-  - El modelo Client tiene logo_url pero el PDF no lo renderiza
+[FALTA] Logo del cliente en documentos PDF
+  - El modelo tiene logo_url pero el PDF no lo renderiza
   - Necesita: endpoint de upload + renderizado en PDF
 
-[FALTA] Código QR funcional en PDF
-  - Los formatos muestran QR al lado del encabezado del documento
-  - El modelo tiene qr_code pero el generador PDF no lo incrusta
-  - El QR debe apuntar a la URL de validación pública
+[FALTA] Codigo QR funcional en PDF
+  - El QR debe apuntar a la URL de validacion publica
 
-[FALTA] Código de barras en pie de página
-  - Los formatos muestran un barcode al final
-  - No implementado en absoluto
+[FALTA] Codigo de barras en pie de pagina
 
-[FALTA] Sistema de múltiples plantillas
-  - El usuario quiere que el cliente pueda ELEGIR entre varias plantillas
-  - Actualmente hay 1 sola plantilla hardcoded
-  - Necesita: modelo DocumentTemplate, al menos 3-4 diseños,
-    preview, selección por cliente/tipo documento
+[FALTA] Sistema de multiples plantillas (seleccion visual)
+  - DocumentTemplate ya existe en BD con 4 plantillas
+  - Falta la UI para que el cliente ELIJA y previsualice
 
 [FALTA] Banner publicitario por tipo de documento
-  - El usuario quiere que el cliente suba banners para sus documentos
-  - Autogestión: el cliente decide qué banner va en cada tipo de doc
-  - Necesita: modelo ClientBanner, upload, renderizado en PDF
 
-[FALTA] Datos del Supervisor (sección en formato real)
-  - Los formatos muestran una sección "Datos del Supervisor"
-  - No existe en el modelo ni en el PDF
-
-[FALTA] Datos de Entrega (sección en formato real)
-  - Los formatos muestran "Datos de Entrega" en la factura
-  - Solo existe parcialmente en DispatchGuide, no en Invoice
-
-[FALTA] Cargo Administrativo
-  - Los formatos muestran columna "Cargo Administrativo" en items
-  - También aparece en totales
-  - No existe en DocumentItem ni en Invoice
-
-[FALTA] Referencia a Providencia Administrativa SNAT
-  - Los formatos muestran "Según Prov. Administrativa Nro. SNAT/..."
-  - No incluido en el PDF actual
-
-[FALTA] Rango de Números de Control en pie de documento
-  - Los formatos muestran "Desde el N° hasta el N° del Control"
-  - Información existe en ControlNumberRange pero no se renderiza
-
-[FALTA] Ud. Pedidas vs Ud. Enviadas
-  - Los formatos de factura muestran ambas cantidades
-  - Solo tenemos "quantity" en DocumentItem
+[FALTA] Campos adicionales en PDF SENIAT
+  - Datos del Supervisor
+  - Datos de Entrega
+  - Cargo Administrativo
+  - Referencia a Providencia Administrativa
+  - Rango de Numeros de Control en pie
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-5.2 BRECHAS EN FUNCIONALIDAD (Prioridad MEDIA)
+5.2 BRECHAS EN ESTETICA/UI (Prioridad MEDIA)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-[FALTA] Receptor SFTP para carga masiva
-  - El usuario mencionó que clientes envían info por SFTP
-  - No hay servicio SFTP implementado
-  - Necesita: servidor SFTP con parsing automático de archivos
-
-[FALTA] Sección "Documentos" funcional en Portal 2
-  - Actualmente es un placeholder
-  - Debe listar documentos con filtros, búsqueda, descarga PDF/XML
-
-[FALTA] Sección "Reportes" funcional en Portal 2
-  - Actualmente es un placeholder
-  - Libro de ventas, libro de compras, IVA, ISLR, etc.
-
-[FALTA] Gestión de plantillas en dashboard del cliente
-  - UI para seleccionar/previsualizar plantillas
-  - UI para subir/cambiar banner por tipo de documento
-  - UI para subir logo de empresa
-
-[FALTA] Upload de archivos (logos, banners)
-  - Endpoint de upload genérico
-  - Almacenamiento y serving de imágenes
-  - Validación de formato/tamaño
+[FALTA] Unificar paleta de colores AIDA en los 6 portales
+[FALTA] Diseno mas moderno (glassmorphism, gradientes, animaciones)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-5.3 BRECHAS EN ESTÉTICA/UI (Prioridad MEDIA)
+5.3 BRECHAS MENORES (Prioridad BAJA)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-[FALTA] Paleta de colores AIDA (según logo e imagen de referencia)
-  - Colores actuales: #1a1a2e (oscuro púrpura), #16213e, #0f3460, #e94560
-  - Colores deseados: Azul oscuro profundo, azul claro, fondo blanco
-  - Los colores del logo AIDA son: gradiente azul oscuro → azul/cyan claro
-  - Referencia web: fondo navy oscuro, acentos azul claro, texto blanco
-  - Cada portal debe tener personalidad visual diferente pero coherente
-
-[FALTA] Diseño tecnológico/moderno
-  - Referencia: cards con glassmorphism, gradientes sutiles
-  - Tipografía moderna, iconografía consistente
-  - Animaciones sutiles de transición
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-5.4 BRECHAS MENORES (Prioridad BAJA)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-[FALTA] Integración real con SENIAT API
-  - Infraestructura lista, credenciales pendientes
-  - Depende de tener la autorización de imprenta digital
-
-[LISTO] Pasarela de pagos
-  - Modelo Payment + PaymentTransaction en BD
-  - PaymentGateway service con flujo completo (crear, procesar, confirmar, fallar, reembolsar)
-  - API endpoints en /billing/ (crear, listar, confirmar, reembolsar)
-  - Soporte para transferencia, pago movil, zelle, stripe, paypal
-
-[LISTO] Tests automatizados
-  - conftest.py con fixtures (SQLite async in-memory)
-  - test_fiscal_calculator.py: 15+ tests de cálculo IVA/descuentos/totales
-  - test_batch_processor.py: 12+ tests de parsing CSV/JSON/XML
-  - test_api_keys.py: 7+ tests de hashing y persistencia
-  - test_payments.py: 10+ tests del flujo de pagos completo
-  - pytest.ini configurado con asyncio_mode=auto
-
+[FALTA] Integracion real con SENIAT API (depende de autorizacion)
 [FALTA] Versionado de documentos
-  - Sin historial de cambios en documentos
-
-[LISTO] API keys para Portal 4 persistidas en BD
-  - Modelo APIKey con hash SHA-256, key_prefix, request_count, rate_limit
-  - developers.py reescrito: in-memory → DB (PostgreSQL)
-  - authenticate_api_key dependency para validar X-API-Key header
-  - Migración Alembic incluida
 
 
-6. RESUMEN DE LO QUE FUNCIONA BIEN
+6. RESUMEN DE LO QUE FUNCIONA
 ================================================================================
 
-✓ Autenticación completa (JWT + 2FA + sesiones + refresh)
-✓ RBAC granular con 60+ permisos por módulo
-✓ Pipeline de emisión: validación → cálculo → N° control → firma → PDF → DB
-✓ Multi-tenant con aislamiento total por client_id
-✓ Asignación atómica de números de control (concurrencia segura)
-✓ PDF profesional (aunque necesita actualizarse al formato SENIAT real)
-✓ XML UBL 2.1 para SENIAT
-✓ Export CSV, Excel, TXT SENIAT
-✓ Email con attachments
-✓ Framework de integraciones con wizard de 6 pasos
-✓ Monitoreo de integraciones en tiempo real
-✓ AI Assistant con streaming
-✓ Validación pública de documentos
-✓ Portal de developers con docs y API keys
-✓ Admin completo con auditoría
+OK  Autenticacion completa (JWT + 2FA + sesiones + refresh)
+OK  RBAC granular con 60+ permisos por modulo
+OK  Pipeline de emision: validacion → calculo → NC → firma → PDF → DB
+OK  Multi-tenant con aislamiento total por client_id
+OK  Asignacion atomica de numeros de control (concurrencia segura)
+OK  PDF profesional con ReportLab
+OK  XML UBL 2.1 para SENIAT
+OK  Export CSV, Excel, TXT SENIAT
+OK  Email SMTP con attachments
+OK  Framework de integraciones con wizard de 6 pasos
+OK  Monitoreo de integraciones en tiempo real
+OK  AI Assistant con streaming (multi-proveedor)
+OK  Validacion publica de documentos
+OK  Portal developers con docs y API keys (persistidas en BD)
+OK  Admin completo con auditoria
+OK  Pasarela de pagos multi-metodo
+OK  Batch processing (CSV, JSON, XML)
+OK  44+ tests automatizados
+OK  Landing page publica con cumplimiento Providencia
+OK  2 clientes de prueba con seed automatico
+OK  4 manuales de documentacion completos
 
 
-7. PLAN DE TRABAJO PROPUESTO
+7. PLAN DE TRABAJO RESTANTE
 ================================================================================
 
-FASE 7 — Plantillas de Documentos + IGTF + Formato SENIAT Real
+FASE 7 — Plantillas IGTF + Formato SENIAT Real       [PENDIENTE]
 ─────────────────────────────────────────────────────────────────
-Prioridad: CRÍTICA
-Estimación: Esta es la fase más importante
+Prioridad: CRITICA
+  7.1  Agregar campos IGTF al modelo Invoice y calculadora
+  7.2  Agregar campos faltantes: supervisor, entrega, cargo admin
+  7.3  Reescribir generador PDF con formato SENIAT real completo
+  7.4  QR code + codigo de barras en PDF
+  7.5  Logo del cliente en PDF
+  7.6  Banner publicitario por documento
+  7.7  UI de seleccion/preview de plantillas
 
-  7.1  Agregar campos IGTF al modelo Invoice
-       - base_imponible_igtf, porcentaje_igtf, monto_igtf
-       - Actualizar calculadora fiscal
-
-  7.2  Agregar campos faltantes a DocumentItem
-       - cargo_administrativo (monto)
-       - cantidad_pedida vs cantidad_enviada
-
-  7.3  Agregar campos faltantes a Invoice
-       - datos_supervisor (nombre, CI)
-       - datos_entrega (dirección, fecha, responsable)
-       - cargo_administrativo_total
-       - providencia_administrativa (string con N° de providencia)
-       - referencia_rango_control (string)
-
-  7.4  Crear modelo DocumentTemplate
-       - id, nombre, descripción, tipo (factura, NC, ND, GD)
-       - layout_config (JSON con posiciones, colores, fuentes)
-       - preview_image_url
-       - is_default, is_active
-       - Seed con al menos 4 plantillas
-
-  7.5  Crear modelo ClientBanner
-       - client_id, document_type, banner_image_url
-       - position (header/footer), is_active
-       - Endpoint de upload
-
-  7.6  Endpoint de upload de archivos
-       - POST /uploads/logo (para logo de empresa)
-       - POST /uploads/banner (para banners publicitarios)
-       - Validación de formato (PNG, JPG, max 2MB)
-       - Almacenamiento en storage service
-
-  7.7  Reescribir generador PDF completo
-       - Plantilla base que replica el formato SENIAT real
-       - Logo del emisor (top-left)
-       - QR code funcional (URL de validación)
-       - Código de barras (control number)
-       - Secciones: Emisor, Receptor, Supervisor, Entrega
-       - Tabla de items con todas las columnas
-       - Totales completos incluyendo IGTF
-       - Pie: providencia, rango de control, barcode
-       - Espacio para banner publicitario
-       - Soporte para selección de plantilla
-
-  7.8  Crear al menos 4 plantillas diferentes
-       - "Clásica" (estilo verde/formal como el formato adjunto)
-       - "Moderna" (estilo AIDA azul/minimalista)
-       - "Corporativa" (estilo sobrio gris/negro)
-       - "Compacta" (optimizada para imprimir en media carta)
-
-  7.9  API endpoints para gestión de plantillas
-       - GET /templates (listar disponibles)
-       - GET /templates/{id}/preview (previsualizar)
-       - POST /clients/{id}/template-preference (seleccionar plantilla)
-       - POST /clients/{id}/banner (subir banner)
-
-
-FASE 8 — Estética UI de los 6 Portales
+FASE 8 — Estetica UI de los 6 Portales               [PENDIENTE]
 ─────────────────────────────────────────────────────────────────
 Prioridad: ALTA
+  8.1  Unificar paleta AIDA en todos los portales
+  8.2  Rediseno visual moderno (glassmorphism, gradientes, animaciones)
 
-  8.1  Definir nueva paleta AIDA
-       - Azul oscuro:  #0a1628 (fondos principales, sidebars)
-       - Azul medio:   #1e3a5f (headers, cards destacadas)
-       - Azul claro:   #3b82f6 (botones, acentos, links)
-       - Cyan/light:   #06b6d4 (highlights, badges, hover)
-       - Blanco:       #ffffff (fondo de contenido)
-       - Gris claro:   #f1f5f9 (fondo secundario)
-       - Texto:        #0f172a (oscuro), #64748b (secundario)
-
-  8.2  Actualizar tailwind.config.ts en los 6 portales
-       - Unificar paleta de colores
-       - Agregar utilidades compartidas
-
-  8.3  Rediseño Portal 1 (Cliente)
-       - Sidebar azul oscuro con gradiente
-       - Cards con bordes sutiles y sombras
-       - Login con fondo gradiente AIDA
-
-  8.4  Rediseño Portal 2 (Facturador)
-       - Mismo estilo pero con acento diferente
-       - Dashboard con gráficos estilizados
-
-  8.5  Rediseño Portal 3 (Validación)
-       - Estilo público, limpio, fondo blanco
-       - Header azul oscuro con logo AIDA
-
-  8.6  Rediseño Portal 4 (Developers)
-       - Estilo documentation-like
-       - Code blocks con tema oscuro
-
-  8.7  Rediseño Portal 5 (Gestión)
-       - Dashboard técnico, monitoreo
-       - Cards con glassmorphism
-
-  8.8  Rediseño Portal 6 (Admin)
-       - Estilo ejecutivo, dashboard completo
-       - Gráficos y métricas prominentes
-
-
-FASE 9 — Funcionalidades Pendientes de Portales
+FASE 9 — Funcionalidades Pendientes de Portales      [PENDIENTE]
 ─────────────────────────────────────────────────────────────────
 Prioridad: MEDIA
-
-  9.1  Portal 2: Sección "Documentos" completa
-       - Lista con filtros (tipo, status, fecha, RIF)
-       - Búsqueda por NC, documento, receptor
-       - Acciones: ver, descargar PDF/XML, reenviar email, anular
-
-  9.2  Portal 2: Sección "Reportes" completa
-       - Libro de ventas
-       - Libro de compras
-       - Declaración IVA
-       - Retenciones ISLR
-       - Ventas por período/vendedor/cliente
-
-  9.3  Portal 1: Sección "Documentos" del cliente
-       - Lista de documentos recibidos
-       - Descarga PDF/XML
-       - Historial
-
-  9.4  Dashboard del cliente: Gestión de plantillas y banners
-       - Selector visual de plantilla con preview
-       - Upload de logo
-       - Upload de banner por tipo de documento
-       - Preview de cómo se verá el documento
+  9.1  Portal 2: Seccion "Reportes" (libro ventas, IVA, ISLR)
+  9.2  Portal 1: Gestion de plantillas y banners en dashboard
+  9.3  Portal 4: Sandbox interactivo para API
 
 
-FASE 10 — SFTP + API Keys + Pagos + Tests  [COMPLETADA]
-─────────────────────────────────────────────────────────────────
-Prioridad: BAJA (puede ser post-lanzamiento)
-
-  10.1 [LISTO] Receptor batch/SFTP para carga masiva de documentos
-       - SFTPDocumentProcessor: parseo CSV, JSON, XML
-       - API /fiscal/batch/upload con hasta 10MB
-       - Templates descargables CSV/JSON
-       - Resultados por fila con número de control asignado
-  10.2 [LISTO] Persistir API keys del Portal 4 en base de datos
-       - Modelo APIKey con SHA-256 hash, request_count, rate_limit
-       - developers.py reescrito de in-memory a DB
-       - authenticate_api_key dependency
-  10.3 [LISTO] Tests automatizados (pipeline fiscal + batch + api keys + pagos)
-       - 44+ tests en 4 archivos de test
-       - conftest.py con SQLite async fixtures
-  10.4 [LISTO] Pasarela de pagos
-       - Modelos Payment + PaymentTransaction
-       - PaymentGateway service con flujo completo
-       - API /billing/ con CRUD + confirm/fail/refund
-  10.5 Integración real SENIAT (cuando se tenga autorización)
-
-
-8. ARQUITECTURA DE DATOS ACTUAL
+8. ARQUITECTURA DE DATOS
 ================================================================================
 
                     ┌─────────────┐
@@ -503,7 +312,7 @@ Prioridad: BAJA (puede ser post-lanzamiento)
 
   ┌──────────┐      ┌──────────────┐      ┌─────────────────┐
   │ CLIENTS  │──────│ INVOICES     │──────│ DOCUMENT_ITEMS  │
-  │(empresas)│      │ CREDIT_NOTES │      │ (líneas)        │
+  │(empresas)│      │ CREDIT_NOTES │      │ (lineas)        │
   │          │      │ DEBIT_NOTES  │      └─────────────────┘
   │          │      │ DISPATCH_G.  │
   │          │      │ WITHHOLDINGS │
@@ -514,57 +323,112 @@ Prioridad: BAJA (puede ser post-lanzamiento)
        │            │ (secuencial) │
        │            └──────────────┘
        │
-  ┌────┴─────────┐  ┌──────────────┐
-  │ PRODUCTS     │  │ CUSTOMERS    │
-  │ CATEGORIES   │  │ (receptores) │
-  │ INVENTORY    │  └──────────────┘
+  ┌────┴─────────┐  ┌──────────────┐  ┌──────────────┐
+  │ PRODUCTS     │  │ CUSTOMERS    │  │ PAYMENTS     │
+  │ CATEGORIES   │  │ (receptores) │  │ TRANSACTIONS │
+  │ INVENTORY    │  └──────────────┘  └──────────────┘
   └──────────────┘
 
-  ┌──────────────┐  ┌──────────────┐
-  │ INTEGRATIONS │  │ PROJECTS     │
-  │ WEBHOOKS     │  │ PROJECT_LOGS │
-  │ ERRORS       │  └──────────────┘
+  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+  │ INTEGRATIONS │  │ PROJECTS     │  │ API_KEYS     │
+  │ WEBHOOKS     │  │ PROJECT_LOGS │  │ DOC_TEMPLATES│
+  │ ERRORS       │  └──────────────┘  └──────────────┘
   │ MONITORING   │
   └──────────────┘
 
 
-9. RESUMEN DE RIESGOS
+================================================================================
+9. ANALISIS DE TIEMPO — ESTIMACION VS REALIDAD
 ================================================================================
 
-Riesgo                              | Impacto | Mitigación
-------------------------------------|---------|------------------------------------------
-IGTF no implementado                | ALTO    | Fase 7: agregar campos y cálculo
-PDF no cumple formato SENIAT 100%   | ALTO    | Fase 7: reescribir con formato real
-Sin SFTP para carga masiva          | MEDIO   | Fase 10: implementar receptor SFTP
-Sin tests automatizados             | MEDIO   | Fase 10: agregar suite de tests
-API keys en memoria                 | BAJO    | Fase 10: persistir en BD
-Sin pasarela de pagos               | BAJO    | Fase 10: integrar post-lanzamiento
-Integración SENIAT pendiente        | BAJO*   | Depende de autorización de imprenta
+ESTIMACION ORIGINAL: 10 semanas minimo para el proyecto completo
 
-* Bajo porque la infraestructura está lista, solo falta la configuración
-  real cuando se obtenga la autorización del SENIAT.
+TIEMPO REAL INVERTIDO:
+  - Inicio del desarrollo: ~13-14 de febrero de 2026
+  - Fecha actual: 17 de febrero de 2026
+  - Tiempo real: ~3-4 dias de desarrollo intensivo
+
+DESGLOSE DE LO COMPLETADO EN ~4 DIAS:
+
+  Fase    Descripcion                              Est. tradicional
+  ──────  ────────────────────────────────────────  ─────────────────
+  Fase 1  Arquitectura + Seguridad + Auth + RBAC   2 semanas
+  Fase 2  API Fiscal + Facturador + Modelos        2 semanas
+  Fase 3  Portal Gestion Avanzado                  1 semana
+  Fase 4  AI + Analytics + Reportes                1 semana
+  Fase 5  Portales 3, 4 y 6                        1.5 semanas
+  Fase 6  PDF/XML + Email + Export + Batch         1 semana
+  Fase 10 SFTP + API Keys + Pagos + Tests          1 semana
+  Docs    4 Manuales + Landing + Deploy            0.5 semanas
+  ──────  ────────────────────────────────────────  ─────────────────
+  TOTAL   Lo completado hasta ahora                ~10 semanas equiv.
+
+RESUMEN DE AHORRO:
+  ┌──────────────────────────────────────────────────────────────────┐
+  │  Estimacion original:     10 semanas (70 dias habiles)          │
+  │  Tiempo real invertido:    4 dias                               │
+  │  Fases completadas:       7 de 10 + documentacion + landing     │
+  │  Porcentaje completado:   ~75-80% del proyecto total            │
+  │  Tiempo ahorrado:         ~9 semanas (63 dias habiles)          │
+  │  Factor de aceleracion:   ~17x mas rapido                       │
+  └──────────────────────────────────────────────────────────────────┘
+
+LO QUE FALTA (Fases 7, 8, 9):
+  - Equivalente tradicional: ~3-4 semanas
+  - Estimacion con IA: ~2-3 dias mas
+  - Total estimado final: ~1 semana de desarrollo total
+
+RESULTADO PROYECTADO:
+  - Proyecto que normalmente toma 10+ semanas
+  - Completado en ~1 semana total
+  - Ahorro neto: ~9 semanas = ~2 meses de trabajo
 
 
-10. PRÓXIMOS PASOS RECOMENDADOS
+10. METRICAS DEL PROYECTO
 ================================================================================
 
-1. INMEDIATO:  Fase 7 (Plantillas + IGTF + formato SENIAT real)
-               → Esto es lo que hace que el producto sea vendible
+Codigo:
+  - 33,000+ lineas de codigo
+  - 7 aplicaciones frontend
+  - 80+ archivos backend
+  - 40 tablas de base de datos
+  - 121 endpoints API
+  - 44+ tests automatizados
 
-2. SIGUIENTE:  Fase 8 (Estética UI)
-               → Profesionaliza la imagen para demos/clientes
+Documentacion:
+  - 4 manuales completos (~3,000 lineas de documentacion)
+  - Manual 1: Despliegue QA paso a paso
+  - Manual 2: Lanzamiento a Produccion
+  - Manual 3: Uso por Portal (6 portales)
+  - Manual 4: Pruebas Locales con datos de prueba
 
-3. DESPUÉS:    Fase 9 (Funcionalidades de portales)
+Datos de Prueba:
+  - 1 Super Admin (admin@aida.com.ve)
+  - 2 Clientes completos con usuarios, roles, NC, config
+  - 5 usuarios con 3 niveles de acceso diferentes
+  - Rangos de numeros de control pre-asignados
+  - Seed automatico en primer arranque
+
+
+11. PROXIMOS PASOS
+================================================================================
+
+1. INMEDIATO:  Probar localmente con Manual 4 (Santoni + Electro Caribe)
+
+2. SIGUIENTE:  Fase 7 (IGTF + PDF SENIAT real + QR + plantillas)
+               → Hace que el producto sea legalmente vendible
+
+3. DESPUES:    Fase 8 (Estetica UI)
+               → Profesionaliza para demos y primeros clientes
+
+4. FINAL:      Fase 9 (Reportes + sandbox)
                → Completa la experiencia del usuario
 
-4. PARALELO:   Seguir los manuales de despliegue para QA
-               → Mientras se desarrolla, ir probando en staging
-
-5. PRE-LAUNCH: Fase 10 (SFTP, tests, pagos)
-               → Lo que se necesite antes de ir a producción
+5. PARALELO:   Cuando Vercel se desbloquee, redesplegar landing con
+               Framework Preset = "Next.js" en Settings > General
 
 
 ================================================================================
               FIN DEL DOCUMENTO DE STATUS
-              Generado: 15/02/2026
+              Generado: 17/02/2026
 ================================================================================
