@@ -27,20 +27,10 @@ async def lifespan(app: FastAPI):
         traceback.print_exc()
 
     try:
-        from sqlalchemy import select, func
-        from app.database import async_session
-        from app.models.security import User
-
-        async with async_session() as session:
-            count = (await session.execute(select(func.count(User.id)))).scalar() or 0
-            if count == 0:
-                logger.info("no_users_found_running_seed")
-                from app.services.seed import seed_database
-                await seed_database()
-                logger.info("seed_completed_admin_created",
-                            email="admin@aida.com.ve", password="Admin2024!")
-            else:
-                logger.info("users_exist_skipping_seed", user_count=count)
+        from app.services.seed import seed_database
+        logger.info("running_seed_idempotent")
+        await seed_database()
+        logger.info("seed_completed")
     except Exception as e:
         logger.error("seed_failed", error=str(e))
         traceback.print_exc()
