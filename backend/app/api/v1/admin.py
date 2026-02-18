@@ -1,7 +1,7 @@
-"""Portal 6 Admin - Configuración Global, Roles, Auditoría."""
+"""Portal 6 Admin - Configuración Global, Roles, Auditoría, Números de Control."""
 import uuid
 import math
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,11 +9,14 @@ from app.database import get_db
 from app.core.deps import get_current_user, require_permissions, log_audit
 from app.core.permissions import (
     P6_SYSTEM_CONFIG, P6_ROLES_MANAGE, P6_AUDIT_VIEW, P6_CLIENTS_VIEW,
+    P6_CONTROL_NUMBERS_GLOBAL,
     ALL_PERMISSIONS, DEFAULT_ROLES,
 )
 from app.models.security import User, Role, Permission, RolePermission, AuditLog
 from app.models.config import SystemSetting
-from pydantic import BaseModel
+from app.models.control_numbers import ControlNumberRange, ControlNumber
+from app.models.clients import Client
+from pydantic import BaseModel, Field
 
 router = APIRouter()
 
@@ -303,3 +306,300 @@ async def admin_dashboard(
         total_documents_month=docs_month,
         alerts=alerts,
     )
+
+
+# --- Control Number Ranges (Números de Control) ---
+
+class ControlNumberRangeResponse(BaseModel):
+    id: uuid.UUID
+    client_id: uuid.UUID
+    client_name: str | None = None
+    client_rif: str | None = None
+    serie: str
+    numero_inicio: int
+    numero_fin: int
+    numero_actual: int
+    prefijo: str | None
+    sufijo: str | None
+    is_active: bool
+    fecha_asignacion: datetime
+    fecha_vencimiento: datetime | None
+    autorizacion_seniat: str | None
+    notas: str | None
+    numeros_disponibles: int
+    porcentaje_uso: float
+
+
+class ControlNumberRangeListResponse(BaseModel):
+    items: list[ControlNumberRangeResponse]
+    total: int
+    page: int
+    pages: int
+
+
+class CreateControlNumberRangeRequest(BaseModel):
+    client_id: uuid.UUID
+    serie: str = Field(max_length=10)
+    numero_inicio: int = Field(ge=1)
+    numero_fin: int = Field(ge=1)
+    prefijo: str | None = Field(default=None, max_length=10)
+    sufijo: str | None = Field(default=None, max_length=10)
+    autorizacion_seniat: str | None = Field(default=None, max_length=100)
+    fecha_vencimiento: datetime | None = None
+    notas: str | None = None
+
+
+class UpdateControlNumberRangeRequest(BaseModel):
+    is_active: bool | None = None
+    autorizacion_seniat: str | None = None
+    fecha_vencimiento: datetime | None = None
+    notas: str | None = None
+
+
+@router.get("/control-numbers/ranges", response_model=ControlNumberRangeListResponse)
+async def list_control_number_ranges(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(15, ge=1, le=100),
+    client_id: uuid.UUID | None = None,
+    is_active: bool | None = None,
+    user: User = require_permissions(P6_CONTROL_NUMBERS_GLOBAL),
+    db: AsyncSession = Depends(get_db),
+):
+    """List all control number ranges, optionally filtered by client."""
+    query = select(ControlNumberRange)
+    if client_id:
+        query = query.where(ControlNumberRange.client_id == client_id)
+    if is_active is not None:
+        query = query.where(ControlNumberRange.is_active == is_active)
+
+    count_query = select(func.count()).select_from(query.subquery())
+    total = (await db.execute(count_query)).scalar() or 0
+    total_pages = math.ceil(total / page_size) if total > 0 else 0
+
+    query = query.order_by(ControlNumberRange.fecha_asignacion.desc())
+    query = query.offset((page - 1) * page_size).limit(page_size)
+    result = await db.execute(query)
+    ranges = result.scalars().all()
+
+    # Fetch client names for display
+    client_ids = {r.client_id for r in ranges}
+    clients_map: dict[uuid.UUID, Client] = {}
+    if client_ids:
+        clients_result = await db.execute(
+            select(Client).where(Client.id.in_(client_ids))
+        )
+        for c in clients_result.scalars().all():
+            clients_map[c.id] = c
+
+    items = []
+    for r in ranges:
+        client = clients_map.get(r.client_id)
+        items.append(ControlNumberRangeResponse(
+            id=r.id,
+            client_id=r.client_id,
+            client_name=client.razon_social if client else None,
+            client_rif=client.rif if client else None,
+            serie=r.serie,
+            numero_inicio=r.numero_inicio,
+            numero_fin=r.numero_fin,
+            numero_actual=r.numero_actual,
+            prefijo=r.prefijo,
+            sufijo=r.sufijo,
+            is_active=r.is_active,
+            fecha_asignacion=r.fecha_asignacion,
+            fecha_vencimiento=r.fecha_vencimiento,
+            autorizacion_seniat=r.autorizacion_seniat,
+            notas=r.notas,
+            numeros_disponibles=r.numeros_disponibles,
+            porcentaje_uso=round(r.porcentaje_uso, 1),
+        ))
+
+    return ControlNumberRangeListResponse(
+        items=items, total=total, page=page, pages=total_pages,
+    )
+
+
+@router.post("/control-numbers/ranges", response_model=ControlNumberRangeResponse, status_code=201)
+async def create_control_number_range(
+    data: CreateControlNumberRangeRequest,
+    request: Request,
+    user: User = require_permissions(P6_CONTROL_NUMBERS_GLOBAL),
+    db: AsyncSession = Depends(get_db),
+):
+    """Create a new control number range for a client."""
+    if data.numero_fin <= data.numero_inicio:
+        raise HTTPException(status_code=400, detail="numero_fin debe ser mayor que numero_inicio")
+
+    # Verify client exists
+    client_result = await db.execute(select(Client).where(Client.id == data.client_id))
+    client = client_result.scalar_one_or_none()
+    if not client:
+        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+
+    # Check for overlapping ranges on same client + serie
+    overlap = await db.execute(
+        select(ControlNumberRange).where(
+            ControlNumberRange.client_id == data.client_id,
+            ControlNumberRange.serie == data.serie,
+            ControlNumberRange.numero_inicio <= data.numero_fin,
+            ControlNumberRange.numero_fin >= data.numero_inicio,
+        )
+    )
+    if overlap.scalar_one_or_none():
+        raise HTTPException(
+            status_code=409,
+            detail=f"Ya existe un rango que se superpone con {data.serie} {data.numero_inicio}-{data.numero_fin} para este cliente",
+        )
+
+    rango = ControlNumberRange(
+        client_id=data.client_id,
+        serie=data.serie,
+        numero_inicio=data.numero_inicio,
+        numero_fin=data.numero_fin,
+        numero_actual=data.numero_inicio,
+        prefijo=data.prefijo,
+        sufijo=data.sufijo,
+        is_active=True,
+        fecha_asignacion=datetime.now(timezone.utc),
+        fecha_vencimiento=data.fecha_vencimiento,
+        autorizacion_seniat=data.autorizacion_seniat,
+        notas=data.notas,
+    )
+    db.add(rango)
+    await db.flush()
+
+    await log_audit(
+        db, user.id, "create", "control_number_range", str(rango.id),
+        details=f"Rango {data.serie} {data.numero_inicio}-{data.numero_fin} para {client.razon_social} ({client.rif})",
+        request=request,
+    )
+
+    return ControlNumberRangeResponse(
+        id=rango.id,
+        client_id=rango.client_id,
+        client_name=client.razon_social,
+        client_rif=client.rif,
+        serie=rango.serie,
+        numero_inicio=rango.numero_inicio,
+        numero_fin=rango.numero_fin,
+        numero_actual=rango.numero_actual,
+        prefijo=rango.prefijo,
+        sufijo=rango.sufijo,
+        is_active=rango.is_active,
+        fecha_asignacion=rango.fecha_asignacion,
+        fecha_vencimiento=rango.fecha_vencimiento,
+        autorizacion_seniat=rango.autorizacion_seniat,
+        notas=rango.notas,
+        numeros_disponibles=rango.numeros_disponibles,
+        porcentaje_uso=round(rango.porcentaje_uso, 1),
+    )
+
+
+@router.put("/control-numbers/ranges/{range_id}", response_model=ControlNumberRangeResponse)
+async def update_control_number_range(
+    range_id: uuid.UUID,
+    data: UpdateControlNumberRangeRequest,
+    request: Request,
+    user: User = require_permissions(P6_CONTROL_NUMBERS_GLOBAL),
+    db: AsyncSession = Depends(get_db),
+):
+    """Update a control number range (activate/deactivate, notes, etc.)."""
+    result = await db.execute(
+        select(ControlNumberRange).where(ControlNumberRange.id == range_id)
+    )
+    rango = result.scalar_one_or_none()
+    if not rango:
+        raise HTTPException(status_code=404, detail="Rango no encontrado")
+
+    changes = []
+    if data.is_active is not None and data.is_active != rango.is_active:
+        rango.is_active = data.is_active
+        changes.append(f"is_active={data.is_active}")
+    if data.autorizacion_seniat is not None:
+        rango.autorizacion_seniat = data.autorizacion_seniat
+        changes.append("autorizacion_seniat actualizada")
+    if data.fecha_vencimiento is not None:
+        rango.fecha_vencimiento = data.fecha_vencimiento
+        changes.append("fecha_vencimiento actualizada")
+    if data.notas is not None:
+        rango.notas = data.notas
+        changes.append("notas actualizadas")
+
+    if changes:
+        await db.flush()
+        await log_audit(
+            db, user.id, "update", "control_number_range", str(range_id),
+            details=", ".join(changes),
+            request=request,
+        )
+
+    # Fetch client for response
+    client_result = await db.execute(select(Client).where(Client.id == rango.client_id))
+    client = client_result.scalar_one_or_none()
+
+    return ControlNumberRangeResponse(
+        id=rango.id,
+        client_id=rango.client_id,
+        client_name=client.razon_social if client else None,
+        client_rif=client.rif if client else None,
+        serie=rango.serie,
+        numero_inicio=rango.numero_inicio,
+        numero_fin=rango.numero_fin,
+        numero_actual=rango.numero_actual,
+        prefijo=rango.prefijo,
+        sufijo=rango.sufijo,
+        is_active=rango.is_active,
+        fecha_asignacion=rango.fecha_asignacion,
+        fecha_vencimiento=rango.fecha_vencimiento,
+        autorizacion_seniat=rango.autorizacion_seniat,
+        notas=rango.notas,
+        numeros_disponibles=rango.numeros_disponibles,
+        porcentaje_uso=round(rango.porcentaje_uso, 1),
+    )
+
+
+@router.get("/control-numbers/stats")
+async def control_numbers_stats(
+    user: User = require_permissions(P6_CONTROL_NUMBERS_GLOBAL),
+    db: AsyncSession = Depends(get_db),
+):
+    """Global stats for all control number ranges."""
+    total_ranges = (await db.execute(
+        select(func.count(ControlNumberRange.id))
+    )).scalar() or 0
+    active_ranges = (await db.execute(
+        select(func.count(ControlNumberRange.id)).where(ControlNumberRange.is_active == True)
+    )).scalar() or 0
+    total_used = (await db.execute(
+        select(func.count(ControlNumber.id))
+    )).scalar() or 0
+    total_voided = (await db.execute(
+        select(func.count(ControlNumber.id)).where(ControlNumber.status == "anulado")
+    )).scalar() or 0
+
+    # Ranges with low stock (< 20% available)
+    all_active = await db.execute(
+        select(ControlNumberRange).where(ControlNumberRange.is_active == True)
+    )
+    low_stock = []
+    for r in all_active.scalars().all():
+        total = r.numero_fin - r.numero_inicio + 1
+        disponibles = r.numero_fin - r.numero_actual
+        if total > 0 and (disponibles / total) < 0.20:
+            # Fetch client name
+            c = (await db.execute(select(Client).where(Client.id == r.client_id))).scalar_one_or_none()
+            low_stock.append({
+                "range_id": str(r.id),
+                "client_name": c.razon_social if c else "Desconocido",
+                "serie": r.serie,
+                "disponibles": disponibles,
+                "porcentaje_uso": round(r.porcentaje_uso, 1),
+            })
+
+    return {
+        "total_ranges": total_ranges,
+        "active_ranges": active_ranges,
+        "total_numbers_used": total_used,
+        "total_numbers_voided": total_voided,
+        "low_stock_ranges": low_stock,
+    }
