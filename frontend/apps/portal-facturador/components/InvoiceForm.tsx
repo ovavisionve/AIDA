@@ -373,12 +373,17 @@ export default function InvoiceForm({ token }: Props) {
     setResult(null);
     setShowPreview(false);
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+
     try {
       const res = await fetch(`${apiUrl}/invoicing/invoices`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(buildPayload()),
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
 
       if (!res.ok) {
         let detail = `Error ${res.status}`;
@@ -402,8 +407,11 @@ export default function InvoiceForm({ token }: Props) {
       const data = await res.json();
       setResult(data);
     } catch (err: any) {
+      clearTimeout(timeout);
       const msg = err?.message || String(err);
-      if (msg.includes("Failed to fetch") || msg.includes("NetworkError")) {
+      if (err?.name === "AbortError") {
+        setError("La solicitud tardó demasiado (>30s). El servidor puede estar procesando. Intente de nuevo.");
+      } else if (msg.includes("Failed to fetch") || msg.includes("NetworkError")) {
         setError(`Error de conexión: el servidor no respondió. Verifique que el backend esté activo (${apiUrl})`);
       } else {
         setError(`Error inesperado: ${msg}`);

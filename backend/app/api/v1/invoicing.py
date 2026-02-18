@@ -30,6 +30,7 @@ from app.schemas.fiscal import (
     EmitirDocumentoRequest, FiscalReceptor, FiscalItem, FiscalPago,
 )
 from app.services.fiscal.document_emitter import emitir_documento, DocumentEmissionError
+from app.services.fiscal.control_numbers import ControlNumberError
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -320,6 +321,14 @@ async def create_invoice(
         )
     except DocumentEmissionError as e:
         raise HTTPException(status_code=400, detail=e.message)
+    except ControlNumberError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Error de numeración de control: {e}. Contacte al administrador para configurar rangos.",
+        )
+    except Exception as e:
+        logger.exception("Error inesperado al emitir factura")
+        raise HTTPException(status_code=500, detail=f"Error interno al emitir factura: {str(e)}")
 
     # Actualizar stock de productos
     for item in data.items:
@@ -464,6 +473,11 @@ async def create_credit_note(
         )
     except DocumentEmissionError as e:
         raise HTTPException(status_code=400, detail=e.message)
+    except ControlNumberError as e:
+        raise HTTPException(status_code=400, detail=f"Error de numeración de control: {e}")
+    except Exception as e:
+        logger.exception("Error inesperado al emitir nota de crédito")
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
     await log_audit(
         db, user.id, "create_credit_note", "credit_note", str(result.document_id),
@@ -532,6 +546,11 @@ async def create_debit_note(
         )
     except DocumentEmissionError as e:
         raise HTTPException(status_code=400, detail=e.message)
+    except ControlNumberError as e:
+        raise HTTPException(status_code=400, detail=f"Error de numeración de control: {e}")
+    except Exception as e:
+        logger.exception("Error inesperado al emitir nota de débito")
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
     await log_audit(
         db, user.id, "create_debit_note", "debit_note", str(result.document_id),
