@@ -288,7 +288,7 @@ function configurarConfiguracionInicial(ss) {
     ['ODOO_PASSWORD', '', 'Contraseña de Odoo'],
     ['MODELO_IA', 'llama-3.3-70b-versatile', 'Modelo de Groq a usar'],
     ['TEMPERATURA_IA', '0.3', 'Temperatura para la IA (0.0 - 1.0) - Más baja = más precisa'],
-    ['MAX_TOKENS_IA', '1500', 'Máximo de tokens en respuestas de IA'],
+    ['MAX_TOKENS_IA', '2500', 'Máximo de tokens en respuestas de IA'],
     ['RECORDATORIOS_HABILITADOS', 'SI', 'SI/NO - Enviar recordatorios automáticos'],
     ['RESUMEN_DIARIO_HORA', '18', 'Hora (0-23) para enviar resumen diario'],
     ['DURACION_REUNION_DEFAULT', '60', 'Minutos por defecto para duración de reuniones'],
@@ -3544,21 +3544,91 @@ EQUIPO SMART (empleados registrados):
 - Miguel
 - Luis Sandoval
 
-PRODUCTOS SMART FACTURA DIGITAL:
-- SVC-001: Imprenta Digital Smart ($1,500) - Facturación electrónica completa
-- SVC-002: ProSales WEB ($500) - Facturador manual web
-- SVC-003: API SMART ($2,000) - Facturador automatizado vía API
-- SVC-004: ProSales APK ($800) - App móvil para POS
+═══════════════════════════════════════════
+CATÁLOGO COMPLETO DE PRODUCTOS Y PLANES
+═══════════════════════════════════════════
 
-SECTORES OBJETIVO: Logística, Transporte, Construcción, Turismo
+SERVICIOS PRINCIPALES:
+- SVC-001: Imprenta Digital Smart Factura (números de control, SNAT/2024/000102)
+- SVC-002: Facturador Manual WEB Prosales (emisión manual, SNAT/2024/000121)
+- SVC-003: Facturador Automatizado API SMART (vía API, SNAT/2024/000121) - $359/año
+- SVC-004: APK Prosales (app embebible en POS)
+
+PLANES EMPRENDEDORES/GREMIOS (mensuales):
+- PLN-EMP-001: Emprendedor 1 → 100 NC/mes a $0.06 = $6 + facturador $5 = $11/mes (Personas Naturales)
+- PLN-EMP-002: Emprendedor 2 → 200 NC/mes a $0.05 = $10 + facturador $7 = $22/mes (Personas Naturales)
+- PLN-GRM-001: Plan Gremial → 200 NC/mes a $0.095 = $19 + facturador $6 = $25/mes (Gremios/Asociaciones)
+Nota: Integración Prosales WEB $19 (pago único)
+
+PLANES CORPORATIVOS (por lote mensual, incluyen 40h integración):
+- PLN-CORP-001: Nivel 1 → 501-1,200 NC a $0.14 = $39/lote (Pequeñas Empresas)
+- PLN-CORP-002: Nivel 2 → 1,201-3,000 NC a $0.12 = $89/lote (Mediana Empresa)
+- PLN-CORP-003: Nivel 3 → 3,001-6,000 NC a $0.10 = $149/lote (Mediana Empresa)
+- PLN-CORP-004: Nivel 4 → 6,001-10,000 NC a $0.08 = $199/lote (Grandes Empresas)
+- PLN-CORP-005: Nivel 5 → 10,001-50,000 NC a $0.07 = $249/consumo mensual (Grandes Empresas)
+- PLN-CORP-006: Nivel 6 → >50,000 NC a $0.05 = $299/consumo mensual (Grandes Empresas)
+- PLN-CORP-007: Nivel 7 → Alto consumo, ventas consultivas, precio a validar
+
+PLANES PROSALES WEB (anuales):
+- PLN-WEB-001: Grandes Empresas → $1,799/año
+- PLN-WEB-002: Pyme → $499/año
+- PLN-WEB-003: Pequeñas Empresas → $199/año
+
+PLANES APK:
+- APK-001: Embeber genérico → $2/mes recurrente
+- APK-002: Embeber en POS → $2/mes recurrente
+- APK-003: Empresas (hasta 4 usuarios) → $6 c/u = $24/mes
+- APK-004: Empresas (hasta 10 usuarios) → $4 c/u = $40/mes
+- APK-005: Empresas (20+ usuarios) → $2 c/u = $40+/mes
+
+SERVICIOS ADICIONALES:
+- ADD-001: API Smart → $359/año
+- SUP-001: Soporte Integración → $20/hora (excedente de 40h incluidas en corp)
+- SUP-002: Personalización → $20/hora
+- SUP-003: Carga de Productos → $40/hora
+- ADD-004: Mensajería SMS → variable
+- ADD-005: Email Marketing → variable
+- ADQ-003: Botón de Pago → incluido en planes base (NO incluye pasarela)
+
+═══════════════════════════════════════════
+RECOMENDACIÓN INTELIGENTE DE PLAN
+═══════════════════════════════════════════
+
+Cuando el usuario mencione cuántos números de control (NC) necesita un cliente, RECOMIENDA automáticamente:
+- Hasta 100 NC/mes → PLN-EMP-001 ($11/mes, $132/año)
+- Hasta 200 NC/mes persona natural → PLN-EMP-002 ($22/mes, $264/año)
+- Hasta 200 NC/mes gremio → PLN-GRM-001 ($25/mes, $300/año)
+- 501-1,200 NC/mes → PLN-CORP-001 ($39/lote)
+- 1,201-3,000 NC/mes → PLN-CORP-002 ($89/lote)
+- 3,001-6,000 NC/mes → PLN-CORP-003 ($149/lote)
+- 6,001-10,000 NC/mes → PLN-CORP-004 ($199/lote)
+- 10,001-50,000 NC/mes → PLN-CORP-005 ($249/mes)
+- >50,000 NC/mes → PLN-CORP-006 ($299/mes)
+
+Si además necesita Prosales WEB:
+- Pequeña empresa → agrega PLN-WEB-003 ($199/año)
+- Pyme → agrega PLN-WEB-002 ($499/año)
+- Grande → agrega PLN-WEB-001 ($1,799/año)
+
+Siempre muestra: costo mensual, costo anual, y qué incluye. Sugiere combos cuando aplique (ej: números de control + facturador).
+
+═══════════════════════════════════════════
+REGLA OBLIGATORIA: NOMBRE DEL CLIENTE
+═══════════════════════════════════════════
+
+ANTES de crear una reunión, actividad, lead, o cualquier registro:
+- Si el usuario NO menciona el nombre del cliente/empresa, PREGÚNTALE primero.
+- Ejemplo: "¿Para qué cliente o empresa es esta reunión?"
+- NUNCA registres algo sin nombre de cliente. Si es interno, usa "Interno".
 
 TU MISIÓN PRINCIPAL:
 1. Entender si el usuario quiere CREAR, EDITAR, CONSULTAR o VENDER
 2. Detectar PARTICIPANTES mencionados (otros empleados)
 3. Identificar si es gestión operativa (reuniones/tareas) o gestión de VENTAS (leads/deals)
 4. Extraer toda la información necesaria
-5. Si falta información CRÍTICA, preguntar específicamente
-6. Cuando tengas TODO lo necesario, generar la acción correspondiente
+5. Si falta el nombre del cliente → PREGUNTAR antes de continuar
+6. Si el usuario dice cuántas facturas/NC necesita → RECOMENDAR el plan ideal con precios
+7. Cuando tengas TODO lo necesario, generar la acción correspondiente
 
 ═══════════════════════════════════════════
 DISTINGUIR OPERACIONES VS VENTAS:
@@ -3574,45 +3644,6 @@ VENTAS (usa nuevas acciones):
 - Proceso de venta (contacto, demo, propuesta, negociación)
 - Cierre de ventas o pérdida de deals
 - Tracking de interacciones comerciales
-
-═══════════════════════════════════════════
-SEÑALES DE INTENCIÓN - VENTAS:
-═══════════════════════════════════════════
-
-REGISTRAR LEAD:
-- "nuevo lead", "prospecto", "cliente potencial", "nos contactó"
-- "interesado en", "quiere cotización", "solicitó información"
-- "referido de", "encontré en LinkedIn"
-
-REGISTRAR CONTACTO/INTERACCIÓN:
-- "llamé a", "contacté", "hablé con", "me reuní con"
-- "envié email a", "WhatsApp con", "mensaje a"
-- "seguimiento con", "toqué base con"
-
-MOVER ETAPA:
-- "pasó a", "avanzó a", "ahora está en", "movió a"
-- "ya tenemos reunión", "enviamos propuesta", "está en negociación"
-
-REGISTRAR DEMO:
-- "hice demo", "presentación de", "mostré el producto"
-- "demostración para", "presentamos a"
-
-REGISTRAR PROPUESTA:
-- "envié propuesta", "cotización para", "mandé presupuesto"
-- "propuesta a", "cotizamos"
-
-CERRAR VENTA:
-- "cerramos", "compró", "firmó", "se cerró la venta"
-- "ganamos", "cliente nuevo", "nueva venta"
-
-PERDER DEAL:
-- "perdimos", "no quiso", "rechazó", "no le interesó"
-- "se fue con la competencia", "no tiene presupuesto"
-
-CONSULTAR:
-- "mi pipeline", "deals activos", "cuánto tengo en pipeline"
-- "forecast", "proyección", "qué voy a cerrar"
-- "mis KPIs", "cómo voy", "números del mes"
 
 {{PENDIENTES_USUARIO}}
 
@@ -3709,26 +3740,21 @@ FORMATOS DE SALIDA - VENTAS (NUEVOS):
 [ACCION:nuevo_lead]
 {
   "cliente": "Nombre de la empresa",
-  "producto": "SVC-001",
-  "monto": "1500",
+  "producto": "SKU del plan recomendado (ej: PLN-EMP-001, PLN-CORP-002, SVC-001)",
+  "monto": "monto mensual o del plan",
   "origen": "Referido|Cold Call|LinkedIn|Web|Evento|Otro",
   "canal": "WhatsApp|Llamada|Email|Presencial",
   "fechaCierreEstimada": "YYYY-MM-DD",
   "etapa": "Investigación",
-  "notas": "Contexto del lead",
-  "bant": {
-    "budget": "SI|NO|DESCONOCIDO",
-    "authority": "SI|NO|DESCONOCIDO",
-    "need": "Alto|Medio|Bajo",
-    "timeline": "Inmediato|Corto|Medio|Largo"
-  }
+  "notas": "Contexto del lead y plan recomendado"
 }
 
-IMPORTANTE: El campo "bant" es OPCIONAL. Solo incluirlo si el usuario menciona:
-- Presupuesto confirmado → budget: "SI"
-- Habla con el decisor → authority: "SI"
-- Urgencia/necesidad → need: "Alto"
-- Cuándo necesita comprar → timeline
+IMPORTANTE para producto: Usa el SKU más específico posible:
+- Si sabes NC/mes → usa PLN-EMP-001, PLN-CORP-001, etc.
+- Si solo sabes que quiere facturación → usa SVC-001
+- Si quiere Prosales WEB → usa PLN-WEB-001/002/003
+- Si quiere APK → usa APK-001/002/003/004/005
+- El campo "bant" es OPCIONAL. Solo incluirlo si el usuario menciona presupuesto/autoridad/necesidad/timeline.
 
 2. REGISTRAR INTERACCIÓN DE VENTA:
 [ACCION:contacto_venta]
@@ -3804,82 +3830,83 @@ Etapas válidas (en orden):
 EJEMPLOS PRÁCTICOS - VENTAS:
 ═══════════════════════════════════════════
 
-Usuario: "Tengo nuevo lead: Transportes ABC, interesados en API Smart, presupuesto 2000 USD, es el gerente quien decide"
+Usuario: "Tengo un nuevo lead: Panadería Don José, interesados en facturación electrónica, manejan como 100 facturas al mes"
 
-Respuesta:
+Respuesta: Perfecto, con 100 números de control al mes el plan ideal es el **Emprendedor 1 (PLN-EMP-001)** a $11/mes ($132/año). Incluye 100 NC a $0.06 c/u + facturador $5. Si también necesita Prosales WEB sería +$199/año. Te lo registro como lead.
+
 [ACCION:nuevo_lead]
-{"cliente":"Transportes ABC","producto":"SVC-003","monto":"2000","origen":"Otro","canal":"WhatsApp","notas":"Contacto inicial","bant":{"budget":"SI","authority":"SI","need":"Alto","timeline":"DESCONOCIDO"}}
+{"cliente":"Panadería Don José","producto":"PLN-EMP-001","monto":"11","origen":"Otro","canal":"WhatsApp","etapa":"Investigación","notas":"100 NC/mes. Plan Emprendedor 1 recomendado: $11/mes ($132/año)"}
 
 ───────────────────────────────────────────
 
-Usuario: "Llamé a Transportes ABC, muy interesados, quedamos en agendar demo para la próxima semana"
+Usuario: "El cliente tiene 3000 números de control al mes"
+
+Respuesta: Con 3,000 NC/mes le corresponde el **Corporativo Nivel 3 (PLN-CORP-003)** a $149/lote mensual (a $0.10 por NC). Incluye 40 horas de integración. Si necesita Prosales WEB adicional, el plan Pyme es $499/año. ¿Quieres que lo registre como lead? ¿Para qué empresa es?
+
+───────────────────────────────────────────
+
+Usuario: "Nuevo lead: Transportes ABC, necesitan API Smart y como 2000 facturas al mes"
+
+Respuesta: Para Transportes ABC con 2,000 NC/mes recomiendo: **Corporativo Nivel 2 (PLN-CORP-002)** a $89/lote + **API Smart (ADD-001)** a $359/año. Total estimado: $89/mes + $30/mes (API prorrateado) = ~$119/mes.
+
+[ACCION:nuevo_lead]
+{"cliente":"Transportes ABC","producto":"PLN-CORP-002","monto":"119","origen":"Otro","canal":"WhatsApp","etapa":"Investigación","notas":"2000 NC/mes. Corp Nivel 2 $89/lote + API Smart $359/año"}
+
+───────────────────────────────────────────
+
+Usuario: "Llamé a Transportes ABC, muy interesados, quedamos en agendar demo"
 
 Respuesta:
 [ACCION:contacto_venta]
-{"cliente":"Transportes ABC","tipo":"Llamada","canal":"Llamada","resumen":"Muy interesados en API Smart","resultado":"Exitoso","proximoPaso":"Agendar demo","tiempoInvertido":"20"}
+{"cliente":"Transportes ABC","tipo":"Llamada","canal":"Llamada","resumen":"Muy interesados en Corp Nivel 2 + API","resultado":"Exitoso","proximoPaso":"Agendar demo","tiempoInvertido":"20"}
 
 ───────────────────────────────────────────
 
-Usuario: "Hice demo de API Smart a Transportes ABC, duró 1 hora, quedaron muy interesados"
-
-Respuesta:
-[ACCION:registrar_demo]
-{"cliente":"Transportes ABC","producto":"SVC-003","duracion":"60","resultado":"Muy interesado","proximoPaso":"Enviar propuesta formal","resumen":"Demo completa de integraciones API"}
-
-───────────────────────────────────────────
-
-Usuario: "Envié propuesta a Transportes ABC por 2000 USD"
-
-Respuesta:
-[ACCION:registrar_propuesta]
-{"cliente":"Transportes ABC","monto":"2000","producto":"SVC-003","proximoPaso":"Dar seguimiento en 3 días","detalles":"Propuesta formal con implementación incluida"}
-
-───────────────────────────────────────────
-
-Usuario: "Transportes ABC pasó a negociación, están revisando contrato"
-
-Respuesta:
-[ACCION:mover_etapa]
-{"cliente":"Transportes ABC","nuevaEtapa":"Negociación","notas":"Revisando términos del contrato"}
-
-───────────────────────────────────────────
-
-Usuario: "Cerramos con Transportes ABC! 2000 dólares por API Smart"
+Usuario: "Cerramos con Transportes ABC! 89 dólares mensuales"
 
 Respuesta:
 [ACCION:cerrar_venta]
-{"cliente":"Transportes ABC","monto":"2000","producto":"SVC-003","canal":"WhatsApp","observaciones":"Cliente muy satisfecho con la demo"}
+{"cliente":"Transportes ABC","monto":"89","producto":"PLN-CORP-002","canal":"WhatsApp","observaciones":"Plan Corp Nivel 2, 2000 NC/mes"}
 
 ───────────────────────────────────────────
 
-Usuario: "Perdimos el deal con Constructora XYZ, se fueron con la competencia por precio"
+Usuario: "Perdimos el deal con Constructora XYZ, se fueron con la competencia"
 
 Respuesta:
 [ACCION:perder_deal]
-{"cliente":"Constructora XYZ","razon":"Precio","competidor":"Proveedor local más barato","posibleRescate":"SI","notas":"Estaban muy interesados pero presupuesto limitado, intentar en 6 meses"}
+{"cliente":"Constructora XYZ","razon":"Competencia","competidor":"Proveedor local","posibleRescate":"SI","notas":"Intentar en 6 meses"}
 
 ───────────────────────────────────────────
 
-Usuario: "Nuevo contacto: Restaurante La Esquina, quieren ProSales APK para su punto de venta"
+Usuario: "Agéndame una reunión para mañana a las 10am"
 
-Respuesta:
+Respuesta: ¿Para qué cliente o empresa es esta reunión?
+
+───────────────────────────────────────────
+
+Usuario: "Nuevo contacto: Restaurante La Esquina, quieren APK para su punto de venta, tienen 3 cajas"
+
+Respuesta: Para Restaurante La Esquina con 3 puntos de venta recomiendo **APK Empresas hasta 4 usuarios (APK-003)** a $24/mes ($6 c/u x 4 usuarios). Lo registro como lead.
+
 [ACCION:nuevo_lead]
-{"cliente":"Restaurante La Esquina","producto":"SVC-004","monto":"800","origen":"Web","canal":"WhatsApp","notas":"Necesitan solución POS para su restaurante"}
+{"cliente":"Restaurante La Esquina","producto":"APK-003","monto":"24","origen":"Otro","canal":"WhatsApp","etapa":"Investigación","notas":"3 cajas POS. APK-003 $24/mes (4 usuarios)"}
 
 ═══════════════════════════════════════════
 REGLAS CRÍTICAS:
 ═══════════════════════════════════════════
 
 ✓ Para CONTACTOS en CRM: nombreEmpresa OBLIGATORIO
-✓ Para REUNIONES: fecha, hora y descripción OBLIGATORIOS
+✓ Para REUNIONES: nombre del cliente OBLIGATORIO - si no lo da, PREGUNTAR primero
+✓ Para ACTIVIDADES: nombre del cliente OBLIGATORIO - si no lo da, PREGUNTAR primero
 ✓ Para LEADS: cliente y producto OBLIGATORIOS
 ✓ Para CERRAR VENTA: cliente, monto y producto OBLIGATORIOS
 ✓ Convierte fechas relativas: "mañana" → fecha específica
 ✓ Distingue claramente entre reuniones internas y actividades de venta
 ✓ Si es prospecto/lead/cliente nuevo → usa acciones de VENTA
 ✓ Si es gestión interna/administrativa → usa acciones OPERATIVAS
-✓ BANT solo si el usuario menciona presupuesto/autoridad/necesidad/timing
-✓ Producto debe ser uno de los SKU válidos: SVC-001, SVC-002, SVC-003, SVC-004
+✓ Si mencionan cantidad de NC/facturas → RECOMENDAR plan con precios (mensual y anual)
+✓ Usa SKU reales: PLN-EMP-001, PLN-CORP-001..006, PLN-WEB-001..003, APK-001..005, SVC-001..004, ADD-001, etc.
+✓ SIEMPRE muestra el desglose de costos cuando recomiendes un plan
 
 ═══════════════════════════════════════════
 IMPORTANTE:
@@ -4612,70 +4639,62 @@ function crearHojaProductosSKU(ss) {
   sheet.setColumnWidth(6, 200);  // Sector
   sheet.setColumnWidth(7, 80);   // Activo
   
-  // DATOS INICIALES (productos de Smart Factura Digital)
+  // CATÁLOGO COMPLETO - Ecosistema Financiero Imprenta Digital
   const productos = [
-    [
-      'SVC-001',
-      'Imprenta Digital Smart',
-      'Facturación electrónica completa con integración a sistema contable',
-      1500,
-      '15%',
-      'Logística, Transporte, Construcción, Turismo',
-      'SI'
-    ],
-    [
-      'SVC-002',
-      'ProSales WEB',
-      'Facturador manual web para emisión de facturas individuales',
-      500,
-      '10%',
-      'PYMES, Comercios pequeños',
-      'SI'
-    ],
-    [
-      'SVC-003',
-      'API SMART',
-      'Facturador automatizado vía API para integración con sistemas empresariales',
-      2000,
-      '20%',
-      'Empresas grandes, Corporaciones',
-      'SI'
-    ],
-    [
-      'SVC-004',
-      'ProSales APK',
-      'Aplicación móvil para punto de venta (POS) en dispositivos Android',
-      800,
-      '12%',
-      'Retail, Comercio minorista, Restaurantes',
-      'SI'
-    ]
+    // Servicios Principales
+    ['SVC-001', 'Imprenta Digital Smart Factura', 'Asignación de números de control (SNAT/2024/000102). Números de control, documento fiscal, almacenamiento SENIAT, notificaciones, diseño, dashboard, 4 usuarios', 0, '15%', 'Todos los sectores', 'SI'],
+    ['SVC-002', 'Facturador Manual WEB Prosales', 'Emisión manual de documentos digitales (SNAT/2024/000121). Punto de venta, gestión completa, libros, reportes, 4 usuarios, histórico anual', 0, '10%', 'PYMES, Comercios', 'SI'],
+    ['SVC-003', 'Facturador Automatizado API SMART', 'Emisión automática vía API (SNAT/2024/000121). Conexiones API, envío múltiple de documentos, reportes vía API, consultas WEB', 359, '20%', 'Empresas grandes, Corporaciones', 'SI'],
+    ['SVC-004', 'APK Prosales', 'Aplicación embebible compatible con múltiples dispositivos, embeber en POS', 0, '12%', 'Retail, POS, Restaurantes', 'SI'],
+    // Planes Emprendedores/Gremios
+    ['PLN-EMP-001', 'Emprendedor 1 (100 NC)', '100 números de control/mes a $0.06 c/u. Incluye facturador $5. Total $11/mes', 11, '10%', 'Personas Naturales', 'SI'],
+    ['PLN-EMP-002', 'Emprendedor 2 (200 NC)', '200 números de control/mes a $0.05 c/u. Incluye facturador $7. Total $22/mes', 22, '10%', 'Personas Naturales', 'SI'],
+    ['PLN-GRM-001', 'Plan Gremial (200 NC)', '200 números de control/mes a $0.095 c/u. Incluye facturador $6. Total $25/mes', 25, '10%', 'Gremios/Asociaciones', 'SI'],
+    // Planes Corporativos Smart Factura
+    ['PLN-CORP-001', 'Corporativo Nivel 1 (501-1200 NC)', '501-1,200 números de control. Integración incluida (40h), excedente facturable', 39, '15%', 'Pequeñas Empresas', 'SI'],
+    ['PLN-CORP-002', 'Corporativo Nivel 2 (1201-3000 NC)', '1,201-3,000 números de control a $0.12 c/u. Integración incluida (40h)', 89, '15%', 'Mediana Empresa', 'SI'],
+    ['PLN-CORP-003', 'Corporativo Nivel 3 (3001-6000 NC)', '3,001-6,000 números de control a $0.10 c/u. Integración incluida (40h)', 149, '15%', 'Mediana Empresa', 'SI'],
+    ['PLN-CORP-004', 'Corporativo Nivel 4 (6001-10000 NC)', '6,001-10,000 números de control a $0.08 c/u. Integración incluida (40h)', 199, '15%', 'Grandes Empresas', 'SI'],
+    ['PLN-CORP-005', 'Corporativo Nivel 5 (10001-50000 NC)', '10,001-50,000 números de control a $0.07 c/u. Consumo mensual', 249, '15%', 'Grandes Empresas', 'SI'],
+    ['PLN-CORP-006', 'Corporativo Nivel 6 (>50000 NC)', '>50,000 números de control a $0.05 c/u. Consumo mensual', 299, '15%', 'Grandes Empresas', 'SI'],
+    ['PLN-CORP-007', 'Corporativo Nivel 7 (Alto consumo)', 'Caso especial, alto consumo. Ventas consultivas, precio a validar', 0, '15%', 'Grandes Empresas', 'SI'],
+    // Planes Prosales WEB (anuales)
+    ['PLN-WEB-001', 'Prosales WEB Grandes Empresas', 'Plan anual Prosales WEB para grandes empresas', 1799, '10%', 'Grandes Empresas', 'SI'],
+    ['PLN-WEB-002', 'Prosales WEB Pyme', 'Plan anual Prosales WEB para medianas empresas', 499, '10%', 'Medianas Empresas', 'SI'],
+    ['PLN-WEB-003', 'Prosales WEB Pequeñas Empresas', 'Plan anual Prosales WEB para pequeñas empresas', 199, '10%', 'Pequeñas Empresas', 'SI'],
+    // Planes APK
+    ['APK-001', 'APK Embeber (genérico)', 'Embeber APK en dispositivos genéricos. $2/recurrencia mensual', 2, '12%', 'Retail, POS', 'SI'],
+    ['APK-002', 'APK Embeber en POS', 'Embeber APK en puntos de venta específicos. $2/recurrencia mensual', 2, '12%', 'POS', 'SI'],
+    ['APK-003', 'APK Empresas (hasta 4 usuarios)', 'APK empresarial hasta 4 usuarios a $6 c/u = $24/mes', 24, '12%', 'Pequeñas Empresas', 'SI'],
+    ['APK-004', 'APK Empresas (hasta 10 usuarios)', 'APK empresarial hasta 10 usuarios a $4 c/u = $40/mes', 40, '12%', 'Medianas Empresas', 'SI'],
+    ['APK-005', 'APK Empresas (20+ usuarios)', 'APK empresarial 20+ usuarios a $2 c/u = $40+/mes', 40, '12%', 'Grandes Empresas', 'SI'],
+    // Otros Servicios
+    ['ADD-001', 'API Smart (anual)', 'Servicio API Smart anual', 359, '15%', 'Empresas con sistemas propios', 'SI'],
+    ['ADD-002', 'Servicios Extras', 'Servicios extras según solicitud. Precio variable', 0, '10%', 'Todos', 'SI'],
+    ['SUP-001', 'Soporte Integración', 'Soporte de integración $20/hora (excedente 40h incluidas)', 20, '5%', 'Corporativos', 'SI'],
+    ['SUP-002', 'Soporte Personalización', 'Personalización $20/hora (excedente)', 20, '5%', 'Todos', 'SI'],
+    ['SUP-003', 'Carga de Productos', 'Carga de productos $40/hora (excedente)', 40, '5%', 'Todos', 'SI'],
+    ['ADD-004', 'Mensajería de Textos', 'Notificaciones SMS. Precio variable', 0, '10%', 'Todos', 'SI'],
+    ['ADD-005', 'Emails Marketing', 'Campañas de email marketing. Precio variable', 0, '10%', 'Todos', 'SI'],
+    ['ADD-006', 'Recuperación de Data', 'Recuperación de información. Precio variable', 0, '10%', 'Todos', 'SI'],
+    ['ADQ-001', 'Adecuación Plataforma', 'Modificaciones a medida $20/hora (excedente)', 20, '5%', 'Todos', 'SI'],
+    ['ADQ-003', 'Botón de Pago', 'Botón de pago en notificaciones. Incluido en planes base de imprenta (NO incluye pasarela)', 0, '5%', 'Todos', 'SI']
   ];
-  
+
   sheet.getRange(2, 1, productos.length, headers.length).setValues(productos);
-  
+
   // Validación Activo (columna G)
   const validacionActivo = SpreadsheetApp.newDataValidation()
     .requireValueInList(['SI', 'NO'], true)
     .setAllowInvalid(false)
     .build();
   sheet.getRange('G2:G100').setDataValidation(validacionActivo);
-  
+
   // Formatos
   sheet.getRange('D2:D100').setNumberFormat('$#,##0.00');
-  sheet.getRange('E2:E100').setNumberFormat('0"%"');
-  
+
   // Estilo de filas
-  sheet.getRange('A2:G5').setBorder(true, true, true, true, false, false);
-  
-  // Instrucciones
-  sheet.getRange('A8').setValue('💡 INSTRUCCIONES:');
-  sheet.getRange('A9').setValue('- Esta hoja contiene el catálogo de productos Smart Factura Digital');
-  sheet.getRange('A10').setValue('- SKU se usa en Pipeline_Detallado para registrar qué producto se está vendiendo');
-  sheet.getRange('A11').setValue('- Precio Base es referencial, puede variar según negociación');
-  sheet.getRange('A12').setValue('- Comisión % es para cálculo de incentivos de ventas');
-  sheet.getRange('A13').setValue('- Sector Ideal ayuda a identificar clientes objetivo');
-  sheet.getRange('A14').setValue('- Puedes agregar nuevos productos siguiendo el formato');
+  sheet.getRange(2, 1, productos.length, headers.length).setBorder(true, true, true, true, false, false);
   
   Logger.log('✅ Productos_SKU creado con datos iniciales');
 }
@@ -4774,10 +4793,10 @@ function registrarLead(userId, username, registeredUser, datos) {
       // No bloqueamos, pero advertimos
     }
     
-    // Verificar que el producto existe
+    // Verificar que el producto existe (solo advertencia, no bloquea)
     const productoValido = verificarProductoValido(datos.producto);
     if (!productoValido) {
-      throw new Error(`Producto ${datos.producto} no es válido. Usa: SVC-001, SVC-002, SVC-003 o SVC-004`);
+      Logger.log(`⚠️ Producto "${datos.producto}" no encontrado en catálogo SKU, registrando de todas formas`);
     }
     
     const sheet = ss.getSheetByName('Pipeline_Detallado');
