@@ -26,6 +26,7 @@ export default function DocumentsSection({ token }: Props) {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
   const [docs, setDocs] = useState<DocumentRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<DocType>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -37,6 +38,7 @@ export default function DocumentsSection({ token }: Props) {
 
   const loadDocs = async () => {
     setLoading(true);
+    setError("");
     try {
       const params = new URLSearchParams({ page: String(page), per_page: "20" });
       if (search) params.set("search", search);
@@ -50,10 +52,15 @@ export default function DocumentsSection({ token }: Props) {
       });
       if (res.ok) {
         const data = await res.json();
-        setDocs(data.items || data || []);
+        setDocs(data.items || []);
         setTotalPages(data.total_pages || 1);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setError(data.detail || `Error ${res.status} al cargar documentos`);
       }
-    } catch { /* silently fail */ }
+    } catch {
+      setError("Error de conexión al cargar documentos");
+    }
     setLoading(false);
   };
 
@@ -66,28 +73,38 @@ export default function DocumentsSection({ token }: Props) {
   };
 
   const handleVoid = async (docId: string, tipo: string) => {
-    if (!confirm("Anular este documento? Esta accion no se puede deshacer.")) return;
+    if (!confirm("¿Anular este documento? Esta acción no se puede deshacer.")) return;
     try {
-      await fetch(`${apiUrl}/fiscal/void`, {
+      const motivo = encodeURIComponent("Anulación solicitada por facturador");
+      const res = await fetch(`${apiUrl}/invoicing/invoices/${docId}/void?motivo=${motivo}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ document_id: docId, document_type: tipo, motivo: "Anulacion solicitada por facturador" }),
+        headers: { Authorization: `Bearer ${token}` },
       });
-      setActionMsg("Documento anulado exitosamente");
-      loadDocs();
-    } catch { setActionMsg("Error al anular"); }
-    setTimeout(() => setActionMsg(""), 3000);
+      if (res.ok) {
+        setActionMsg("Documento anulado exitosamente");
+        loadDocs();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setActionMsg(data.detail || "Error al anular documento");
+      }
+    } catch { setActionMsg("Error de conexión al anular"); }
+    setTimeout(() => setActionMsg(""), 4000);
   };
 
   const handleResendEmail = async (docId: string) => {
     try {
-      await fetch(`${apiUrl}/invoicing/invoices/${docId}/send-email`, {
+      const res = await fetch(`${apiUrl}/invoicing/invoices/${docId}/send-email`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
-      setActionMsg("Email reenviado");
-    } catch { setActionMsg("Error al reenviar"); }
-    setTimeout(() => setActionMsg(""), 3000);
+      if (res.ok) {
+        setActionMsg("Email reenviado exitosamente");
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setActionMsg(data.detail || "Error al reenviar email");
+      }
+    } catch { setActionMsg("Error de conexión al reenviar email"); }
+    setTimeout(() => setActionMsg(""), 4000);
   };
 
   const typeLabels: Record<string, string> = {
@@ -102,6 +119,9 @@ export default function DocumentsSection({ token }: Props) {
 
   return (
     <div className="space-y-4">
+      {error && (
+        <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-2 text-sm text-red-400">{error}</div>
+      )}
       {actionMsg && (
         <div className="rounded-lg bg-aida-accent/10 border border-aida-accent/20 px-4 py-2 text-sm text-aida-accent">
           {actionMsg}

@@ -37,6 +37,7 @@ export default function TemplateSelector({ token }: { token: string }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
   const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
@@ -55,7 +56,7 @@ export default function TemplateSelector({ token }: { token: string }) {
       if (tplRes.ok) setTemplates(await tplRes.json());
       if (prefRes.ok) setPreferences(await prefRes.json());
     } catch {
-      /* ignore */
+      setError("Error al cargar plantillas");
     }
     setLoading(false);
   };
@@ -110,6 +111,11 @@ export default function TemplateSelector({ token }: { token: string }) {
           Selecciona el diseno visual para cada tipo de documento fiscal. Puedes previsualizar antes de elegir.
         </p>
       </div>
+
+      {/* Error */}
+      {error && (
+        <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-2.5 text-sm text-red-400">{error}</div>
+      )}
 
       {/* Success message */}
       {message && (

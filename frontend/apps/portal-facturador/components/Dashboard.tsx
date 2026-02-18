@@ -6,6 +6,7 @@ interface Props { token: string }
 
 export default function Dashboard({ token }: Props) {
   const [data, setData] = useState<any>(null);
+  const [error, setError] = useState("");
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
   useEffect(() => {
@@ -13,11 +14,11 @@ export default function Dashboard({ token }: Props) {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        if (!r.ok) throw new Error(`Error ${r.status}: No se pudo cargar el dashboard`);
         return r.json();
       })
       .then(setData)
-      .catch(() => {});
+      .catch((err) => setError(err.message || "Error al cargar dashboard"));
   }, [token, apiUrl]);
 
   const fmt = (v: number | undefined) =>
@@ -32,6 +33,9 @@ export default function Dashboard({ token }: Props) {
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-400">{error}</div>
+      )}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((s) => (
           <div key={s.label} className="rounded-xl border border-white/10 bg-white/5 p-5">

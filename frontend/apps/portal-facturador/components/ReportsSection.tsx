@@ -21,14 +21,16 @@ export default function ReportsSection({ token }: Props) {
   const [selected, setSelected] = useState<ReportType | null>(null);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [format, setFormat] = useState<"pdf" | "excel" | "csv">("excel");
+  const [format, setFormat] = useState<"json" | "excel" | "csv">("excel");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [reportData, setReportData] = useState<any>(null);
 
   const generateReport = async () => {
     if (!selected || !dateFrom || !dateTo) return;
     setLoading(true);
     setReportData(null);
+    setError("");
     try {
       const params = new URLSearchParams({
         report_type: selected,
@@ -54,8 +56,13 @@ export default function ReportsSection({ token }: Props) {
           URL.revokeObjectURL(url);
           setReportData({ downloaded: true });
         }
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setError(data.detail || `Error ${res.status} al generar reporte`);
       }
-    } catch { /* silently fail */ }
+    } catch {
+      setError("Error de conexión al generar reporte");
+    }
     setLoading(false);
   };
 
@@ -114,11 +121,11 @@ export default function ReportsSection({ token }: Props) {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-500">Formato</label>
-            <select value={format} onChange={e => setFormat(e.target.value as "pdf" | "excel" | "csv")}
+            <select value={format} onChange={e => setFormat(e.target.value as "json" | "excel" | "csv")}
               className="rounded-lg bg-[#0a0f1a] border border-white/10 px-3 py-2 text-sm text-white focus:border-aida-accent focus:outline-none">
               <option value="excel">Excel (.xlsx)</option>
               <option value="csv">CSV</option>
-              <option value="pdf">PDF</option>
+              <option value="json">Ver en pantalla</option>
             </select>
           </div>
           <button onClick={generateReport} disabled={loading || !dateFrom || !dateTo}
@@ -127,6 +134,11 @@ export default function ReportsSection({ token }: Props) {
           </button>
         </div>
       </div>
+
+      {/* Error */}
+      {error && (
+        <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-400">{error}</div>
+      )}
 
       {/* Results */}
       {reportData && (

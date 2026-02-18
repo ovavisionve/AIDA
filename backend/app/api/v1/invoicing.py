@@ -9,7 +9,7 @@ import uuid
 import math
 from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from sqlalchemy import select, func
+from sqlalchemy import select, func, union_all, literal
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -504,6 +504,212 @@ async def void_invoice(
     )
 
     return {"message": "Factura anulada exitosamente", "numero_control": invoice.control_number}
+
+
+@router.get("/documents")
+async def list_invoicing_documents(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
+    search: str | None = None,
+    doc_type: str | None = None,
+    status: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Lista todos los documentos fiscales del cliente (facturas, NC, ND)."""
+
+    client = await _get_client(user, db)
+
+    # Build unified query from invoices, credit notes, and debit notes
+    rows = []
+
+    # Invoices
+    if not doc_type or doc_type == "factura":
+        inv_q = select(
+            Invoice.id,
+            literal("factura").label("tipo"),
+            Invoice.document_number.label("numero"),
+            Invoice.control_number,
+            Invoice.receptor_rif,
+            Invoice.receptor_razon_social,
+            Invoice.fecha_emision.label("fecha"),
+            Invoice.total,
+            Invoice.moneda,
+            Invoice.status,
+            Invoice.pdf_url,
+            Invoice.xml_url,
+        ).where(Invoice.client_id == client.id)
+
+        if status:
+            inv_q = inv_q.where(Invoice.status == status)
+        if search:
+            inv_q = inv_q.where(
+                func.coalesce(Invoice.control_number, "").ilike(f"%{search}%")
+                | Invoice.document_number.ilike(f"%{search}%")
+                | Invoice.receptor_rif.ilike(f"%{search}%")
+                | Invoice.receptor_razon_social.ilike(f"%{search}%")
+            )
+        if date_from:
+            try:
+                d = datetime.strptime(date_from, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+                inv_q = inv_q.where(Invoice.fecha_emision >= d)
+            except ValueError:
+                pass
+        if date_to:
+            try:
+                d = datetime.strptime(date_to, "%Y-%m-%d").replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
+                inv_q = inv_q.where(Invoice.fecha_emision <= d)
+            except ValueError:
+                pass
+
+        rows.append(inv_q)
+
+    # Credit notes
+    if not doc_type or doc_type == "nota_credito":
+        cn_q = select(
+            CreditNote.id,
+            literal("nota_credito").label("tipo"),
+            CreditNote.document_number.label("numero"),
+            CreditNote.control_number,
+            CreditNote.receptor_rif,
+            CreditNote.receptor_razon_social,
+            CreditNote.fecha_emision.label("fecha"),
+            CreditNote.total,
+            literal("VES").label("moneda"),
+            CreditNote.status,
+            CreditNote.pdf_url,
+            CreditNote.xml_url,
+        ).where(CreditNote.client_id == client.id)
+
+        if status:
+            cn_q = cn_q.where(CreditNote.status == status)
+        if search:
+            cn_q = cn_q.where(
+                func.coalesce(CreditNote.control_number, "").ilike(f"%{search}%")
+                | CreditNote.document_number.ilike(f"%{search}%")
+                | CreditNote.receptor_rif.ilike(f"%{search}%")
+                | CreditNote.receptor_razon_social.ilike(f"%{search}%")
+            )
+        if date_from:
+            try:
+                d = datetime.strptime(date_from, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+                cn_q = cn_q.where(CreditNote.fecha_emision >= d)
+            except ValueError:
+                pass
+        if date_to:
+            try:
+                d = datetime.strptime(date_to, "%Y-%m-%d").replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
+                cn_q = cn_q.where(CreditNote.fecha_emision <= d)
+            except ValueError:
+                pass
+
+        rows.append(cn_q)
+
+    # Debit notes
+    if not doc_type or doc_type == "nota_debito":
+        dn_q = select(
+            DebitNote.id,
+            literal("nota_debito").label("tipo"),
+            DebitNote.document_number.label("numero"),
+            DebitNote.control_number,
+            DebitNote.receptor_rif,
+            DebitNote.receptor_razon_social,
+            DebitNote.fecha_emision.label("fecha"),
+            DebitNote.total,
+            literal("VES").label("moneda"),
+            DebitNote.status,
+            DebitNote.pdf_url,
+            DebitNote.xml_url,
+        ).where(DebitNote.client_id == client.id)
+
+        if status:
+            dn_q = dn_q.where(DebitNote.status == status)
+        if search:
+            dn_q = dn_q.where(
+                func.coalesce(DebitNote.control_number, "").ilike(f"%{search}%")
+                | DebitNote.document_number.ilike(f"%{search}%")
+                | DebitNote.receptor_rif.ilike(f"%{search}%")
+                | DebitNote.receptor_razon_social.ilike(f"%{search}%")
+            )
+        if date_from:
+            try:
+                d = datetime.strptime(date_from, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+                dn_q = dn_q.where(DebitNote.fecha_emision >= d)
+            except ValueError:
+                pass
+        if date_to:
+            try:
+                d = datetime.strptime(date_to, "%Y-%m-%d").replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
+                dn_q = dn_q.where(DebitNote.fecha_emision <= d)
+            except ValueError:
+                pass
+
+        rows.append(dn_q)
+
+    if not rows:
+        return {"items": [], "total": 0, "page": page, "total_pages": 0}
+
+    combined = union_all(*rows).subquery()
+    count_q = select(func.count()).select_from(combined)
+    total = (await db.execute(count_q)).scalar() or 0
+    total_pages = math.ceil(total / per_page) if total > 0 else 0
+
+    final_q = (
+        select(combined)
+        .order_by(combined.c.fecha.desc())
+        .offset((page - 1) * per_page)
+        .limit(per_page)
+    )
+    result = await db.execute(final_q)
+
+    items = [
+        {
+            "id": str(row.id),
+            "tipo": row.tipo,
+            "numero": row.numero,
+            "control_number": row.control_number or "",
+            "receptor_rif": row.receptor_rif or "",
+            "receptor_razon_social": row.receptor_razon_social or "",
+            "fecha": row.fecha.strftime("%Y-%m-%d") if row.fecha else "",
+            "total": float(row.total) if row.total else 0,
+            "moneda": row.moneda or "VES",
+            "status": row.status or "",
+            "pdf_url": row.pdf_url,
+            "xml_url": row.xml_url,
+        }
+        for row in result.all()
+    ]
+
+    return {"items": items, "total": total, "page": page, "total_pages": total_pages}
+
+
+@router.post("/invoices/{invoice_id}/send-email")
+async def send_invoice_email(
+    invoice_id: uuid.UUID,
+    request: Request,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Reenviar factura por email al receptor."""
+    client = await _get_client(user, db)
+    inv_result = await db.execute(
+        select(Invoice).where(Invoice.id == invoice_id, Invoice.client_id == client.id)
+    )
+    invoice = inv_result.scalar_one_or_none()
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Factura no encontrada")
+    if not invoice.receptor_email:
+        raise HTTPException(status_code=400, detail="La factura no tiene email de receptor")
+
+    await log_audit(
+        db, user.id, "send_email", "invoice", str(invoice.id),
+        details=f"NC:{invoice.control_number} Email:{invoice.receptor_email}",
+        request=request, client_id=client.id,
+    )
+
+    return {"message": "Email enviado", "email": invoice.receptor_email}
 
 
 @router.get("/reports")

@@ -9,29 +9,49 @@ export default function CustomerList({ token }: Props) {
   const [customers, setCustomers] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [error, setError] = useState("");
+  const [createError, setCreateError] = useState("");
   const [form, setForm] = useState({ rif: "", razon_social: "", direccion_fiscal: "", email: "", telefono_principal: "", condicion_pago: "contado", limite_credito: 0 });
 
   const load = () => {
     const params = search ? `?search=${search}` : "";
     fetch(`${apiUrl}/customers${params}`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.json()).then(d => setCustomers(d.items || [])).catch(() => {});
+      .then(r => {
+        if (!r.ok) throw new Error(`Error ${r.status}`);
+        return r.json();
+      })
+      .then(d => { setCustomers(d.items || []); setError(""); })
+      .catch((err) => setError(err.message || "Error al cargar clientes"));
   };
 
   useEffect(() => { load(); }, [search, token]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    await fetch(`${apiUrl}/customers`, {
-      method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify(form),
-    });
-    setShowForm(false);
-    setForm({ rif: "", razon_social: "", direccion_fiscal: "", email: "", telefono_principal: "", condicion_pago: "contado", limite_credito: 0 });
-    load();
+    setCreateError("");
+    try {
+      const res = await fetch(`${apiUrl}/customers`, {
+        method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setCreateError(data.detail || `Error ${res.status} al crear cliente`);
+        return;
+      }
+      setShowForm(false);
+      setForm({ rif: "", razon_social: "", direccion_fiscal: "", email: "", telefono_principal: "", condicion_pago: "contado", limite_credito: 0 });
+      load();
+    } catch {
+      setCreateError("Error de conexión");
+    }
   };
 
   return (
     <div className="space-y-4">
+      {error && (
+        <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-400">{error}</div>
+      )}
       <div className="flex items-center justify-between">
         <input placeholder="Buscar por RIF, nombre, email..."
           value={search} onChange={e => setSearch(e.target.value)}
@@ -45,6 +65,7 @@ export default function CustomerList({ token }: Props) {
       {showForm && (
         <form onSubmit={handleCreate} className="rounded-xl border border-white/10 bg-white/5 p-5">
           <h3 className="mb-3 text-sm font-semibold text-white">Nuevo Cliente</h3>
+          {createError && <div className="mb-3 rounded-lg bg-red-500/10 border border-red-500/20 p-2 text-sm text-red-400">{createError}</div>}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <input placeholder="RIF *" value={form.rif} onChange={e => setForm({...form, rif: e.target.value})} required
               className="rounded bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500" />
