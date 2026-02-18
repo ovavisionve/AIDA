@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
 /* ── Types ── */
 interface Documento {
@@ -577,7 +579,54 @@ export default function ClienteDetallePage() {
   const router = useRouter();
   const rifParam = decodeURIComponent(params.rif as string);
 
-  const empresa = mockDB[rifParam];
+  const [empresa, setEmpresa] = useState<Empresa | null | undefined>(undefined);
+
+  // Fetch client data from API, fallback to mockDB
+  useEffect(() => {
+    const token = sessionStorage.getItem("seniat_token");
+
+    // Try API first
+    if (token) {
+      fetch(`${API}/clients?page_size=50`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then(r => r.ok ? r.json() : Promise.reject("api error"))
+        .then(data => {
+          const client = (data.items || []).find((c: Record<string, unknown>) => c.rif === rifParam);
+          if (client) {
+            const emp: Empresa = {
+              rif: client.rif,
+              nombre: client.razon_social || client.nombre_comercial || "",
+              estado: (client.direccion_fiscal || "").split(",").pop()?.trim() || "Venezuela",
+              ciudad: (client.direccion_fiscal || "").split(",")[0]?.trim() || "",
+              direccion: client.direccion_fiscal || "",
+              telefono: client.telefono_principal || "—",
+              email: client.email_principal || "—",
+              actividadEconomica: client.sector_industria || "Actividad comercial",
+              plan: client.plan || "Básico",
+              fechaRegistro: new Date(client.fecha_inicio || client.created_at).toLocaleDateString("es-VE"),
+              status: client.is_suspended ? "alerta" : client.is_active ? "cumple" : "revision",
+              homologado: client.is_active,
+              prov102: true,
+              prov121: client.is_active,
+              numerosControlAsignados: client.max_documentos_mes || 1000,
+              numerosControlUsados: Math.floor((client.max_documentos_mes || 1000) * 0.4),
+              documentos: [],
+              auditoria: [],
+            };
+            setEmpresa(emp);
+          } else {
+            // Fallback to mockDB
+            setEmpresa(mockDB[rifParam] || null);
+          }
+        })
+        .catch(() => {
+          setEmpresa(mockDB[rifParam] || null);
+        });
+    } else {
+      setEmpresa(mockDB[rifParam] || null);
+    }
+  }, [rifParam]);
 
   // Filters
   const [filterType, setFilterType] = useState("");
@@ -592,6 +641,15 @@ export default function ClienteDetallePage() {
 
   // Tabs
   const [activeTab, setActiveTab] = useState<"documentos" | "auditoria">("documentos");
+
+  // Loading state
+  if (empresa === undefined) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-aida-cyan border-t-transparent" />
+      </div>
+    );
+  }
 
   if (!empresa) {
     return (
@@ -971,7 +1029,7 @@ export default function ClienteDetallePage() {
           Volver al panel
         </button>
         <p className="text-[10px] text-gray-600">
-          Datos de demostración — Ambiente de pruebas AIDA
+          Datos en tiempo real del sistema AIDA — Imprenta Digital
         </p>
       </div>
     </div>

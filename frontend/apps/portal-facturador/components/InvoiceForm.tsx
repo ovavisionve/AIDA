@@ -118,7 +118,7 @@ export default function InvoiceForm({ token }: Props) {
           const data = await res.json();
           setExchangeRates(data);
         }
-      } catch { /* silent */ }
+      } catch (err) { console.error("InvoiceForm fetch error:", err); }
       finally { setRatesLoading(false); }
     };
     fetchRates();
@@ -137,7 +137,7 @@ export default function InvoiceForm({ token }: Props) {
           const data = await res.json();
           setProductsCatalog(data.items || []);
         }
-      } catch { /* silent */ }
+      } catch (err) { console.error("InvoiceForm fetch error:", err); }
     };
     loadProducts();
   }, [apiUrl, token]);

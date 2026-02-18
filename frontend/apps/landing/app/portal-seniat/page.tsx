@@ -3,9 +3,11 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+
 export default function PortalSeniatLogin() {
   const router = useRouter();
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -13,7 +15,6 @@ export default function PortalSeniatLogin() {
 
   useEffect(() => {
     setMounted(true);
-    // If already authenticated, redirect to dashboard
     if (typeof window !== "undefined" && sessionStorage.getItem("seniat_auth") === "true") {
       router.replace("/portal-seniat/dashboard");
     }
@@ -24,17 +25,31 @@ export default function PortalSeniatLogin() {
     setError("");
     setLoading(true);
 
-    // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-
-    if (username === "seniat.auditor" && password === "auditor2025") {
+    try {
+      const res = await fetch(`${API}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.detail || "Credenciales inválidas. Verifique su usuario y clave.");
+        setLoading(false);
+        return;
+      }
       sessionStorage.setItem("seniat_auth", "true");
-      sessionStorage.setItem("seniat_user", "seniat.auditor");
-      sessionStorage.setItem("seniat_name", "Auditor SENIAT");
+      sessionStorage.setItem("seniat_token", data.access_token);
+      if (data.refresh_token) sessionStorage.setItem("seniat_refresh_token", data.refresh_token);
+      const userName = data.user
+        ? `${data.user.first_name || ""} ${data.user.last_name || ""}`.trim()
+        : "Auditor SENIAT";
+      sessionStorage.setItem("seniat_user", data.user?.email || email);
+      sessionStorage.setItem("seniat_name", userName || "Auditor SENIAT");
       sessionStorage.setItem("seniat_login_time", new Date().toISOString());
       router.push("/portal-seniat/dashboard");
-    } else {
-      setError("Credenciales inválidas. Verifique su usuario y clave.");
+    } catch (err) {
+      console.error("SENIAT login error:", err);
+      setError("Error de conexión. Intente nuevamente.");
       setLoading(false);
     }
   };
@@ -83,13 +98,13 @@ export default function PortalSeniatLogin() {
         {/* Login Card */}
         <div className="glass-card p-8">
           <form onSubmit={handleLogin} className="space-y-5">
-            {/* Username */}
+            {/* Email */}
             <div>
               <label
-                htmlFor="username"
+                htmlFor="email"
                 className="block text-sm font-medium text-gray-300 mb-2"
               >
-                Usuario
+                Correo Institucional
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -108,14 +123,14 @@ export default function PortalSeniatLogin() {
                   </svg>
                 </div>
                 <input
-                  id="username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-aida-accent/50 focus:ring-1 focus:ring-aida-accent/30 transition-all duration-300"
-                  placeholder="Ingrese su usuario"
+                  placeholder="auditor@seniat.gob.ve"
                   required
-                  autoComplete="username"
+                  autoComplete="email"
                 />
               </div>
             </div>
@@ -227,9 +242,9 @@ export default function PortalSeniatLogin() {
             </button>
           </form>
 
-          {/* Demo Credentials Hint */}
+          {/* Info */}
           <div className="mt-6 p-4 bg-aida-accent/5 border border-aida-accent/10 rounded-xl">
-            <p className="text-xs text-gray-400 font-medium mb-2 flex items-center gap-1.5">
+            <p className="text-xs text-gray-400 font-medium flex items-center gap-1.5">
               <svg
                 className="w-3.5 h-3.5 text-aida-accent"
                 fill="none"
@@ -243,22 +258,8 @@ export default function PortalSeniatLogin() {
                   d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              Credenciales de demostración:
+              Use sus credenciales institucionales SENIAT para acceder al sistema de auditoría fiscal.
             </p>
-            <div className="space-y-1 text-xs text-gray-500">
-              <p>
-                Usuario:{" "}
-                <code className="text-aida-cyan bg-aida-cyan/10 px-1.5 py-0.5 rounded">
-                  seniat.auditor
-                </code>
-              </p>
-              <p>
-                Clave:{" "}
-                <code className="text-aida-cyan bg-aida-cyan/10 px-1.5 py-0.5 rounded">
-                  auditor2025
-                </code>
-              </p>
-            </div>
           </div>
         </div>
 

@@ -6,7 +6,7 @@ import AdminDashboard from "@/components/AdminDashboard";
 
 export default function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<{ first_name: string; last_name: string; email: string } | null>(null);
+  const [user, setUser] = useState<{ first_name: string; last_name: string; email: string; is_superadmin?: boolean; roles?: string[] } | null>(null);
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
@@ -17,7 +17,7 @@ export default function Home() {
     }
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
-    fetch(`${apiUrl}/users/me`, {
+    fetch(`${apiUrl}/users/me/profile`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(async (r) => {
@@ -25,10 +25,17 @@ export default function Home() {
         return r.json();
       })
       .then((data) => {
-        setUser({ first_name: data.first_name, last_name: data.last_name, email: data.email });
+        setUser({
+          first_name: data.first_name,
+          last_name: data.last_name,
+          email: data.email,
+          is_superadmin: data.is_superadmin,
+          roles: data.roles || [],
+        });
         setIsAuthenticated(true);
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error("Admin token validation failed:", err);
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
       })

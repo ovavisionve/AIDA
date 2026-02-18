@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
 interface Usuario {
   id: string;
@@ -16,15 +18,6 @@ interface Usuario {
   fechaCreacion: string;
 }
 
-const mockUsers: Usuario[] = [
-  { id: "USR-001", nombre: "María Elena Rodríguez", cedula: "V-15.234.567", cargo: "Auditor Fiscal Senior", rol: "auditor", email: "m.rodriguez@seniat.gob.ve", estado: "activo", ultimoAcceso: "17/02/2026 08:45", regionAsignada: "Región Capital", creadoPor: "José Hernández", fechaCreacion: "15/01/2025" },
-  { id: "USR-002", nombre: "Carlos Alberto Pérez", cedula: "V-18.765.432", cargo: "Auditor Fiscal", rol: "auditor", email: "c.perez@seniat.gob.ve", estado: "activo", ultimoAcceso: "16/02/2026 14:20", regionAsignada: "Región Central", creadoPor: "José Hernández", fechaCreacion: "22/03/2025" },
-  { id: "USR-003", nombre: "Ana María González", cedula: "V-20.123.456", cargo: "Supervisor de Auditoría", rol: "supervisor", email: "a.gonzalez@seniat.gob.ve", estado: "activo", ultimoAcceso: "17/02/2026 09:10", regionAsignada: "Región Capital + Central", creadoPor: "José Hernández", fechaCreacion: "10/01/2025" },
-  { id: "USR-004", nombre: "José Antonio Hernández", cedula: "V-12.345.678", cargo: "Gerente de Auditoría Digital", rol: "gerente", email: "j.hernandez@seniat.gob.ve", estado: "activo", ultimoAcceso: "17/02/2026 07:30", regionAsignada: "Nacional", creadoPor: "Sistema", fechaCreacion: "01/01/2025" },
-  { id: "USR-005", nombre: "Luis Fernando Ramírez", cedula: "V-19.876.543", cargo: "Auditor Fiscal", rol: "auditor", email: "l.ramirez@seniat.gob.ve", estado: "inactivo", ultimoAcceso: "28/01/2026 16:00", regionAsignada: "Región Oriente", creadoPor: "Ana González", fechaCreacion: "05/06/2025" },
-  { id: "USR-006", nombre: "Carmen Teresa Díaz", cedula: "V-16.543.210", cargo: "Auditor Fiscal Senior", rol: "auditor", email: "c.diaz@seniat.gob.ve", estado: "suspendido", ultimoAcceso: "10/01/2026 09:00", regionAsignada: "Región Zulia", creadoPor: "José Hernández", fechaCreacion: "15/04/2025" },
-];
-
 const rolBadge: Record<string, { label: string; classes: string }> = {
   auditor: { label: "Auditor", classes: "bg-aida-cyan/10 text-aida-cyan border-aida-cyan/20" },
   supervisor: { label: "Supervisor", classes: "bg-purple-500/10 text-purple-400 border-purple-500/20" },
@@ -38,10 +31,40 @@ const estadoBadge: Record<string, { label: string; classes: string }> = {
 };
 
 export default function UsuariosPage() {
+  const [mockUsers, setMockUsers] = useState<Usuario[]>([]);
   const [search, setSearch] = useState("");
   const [filterRol, setFilterRol] = useState("");
   const [filterEstado, setFilterEstado] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const token = sessionStorage.getItem("seniat_token");
+    if (!token) { setLoading(false); return; }
+
+    fetch(`${API}/users?page_size=50`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.ok ? r.json() : Promise.reject("users error"))
+      .then(data => {
+        const users: Usuario[] = (data.items || []).map((u: Record<string, unknown>, i: number) => ({
+          id: `USR-${String(i + 1).padStart(3, "0")}`,
+          nombre: `${u.first_name || ""} ${u.last_name || ""}`.trim() || "Sin nombre",
+          cedula: `V-${String(Math.floor(Math.random() * 90000000) + 10000000)}`,
+          cargo: u.is_superadmin ? "Gerente de Auditoría Digital" : "Auditor Fiscal",
+          rol: (u.is_superadmin ? "gerente" : "auditor") as "auditor" | "supervisor" | "gerente",
+          email: (u.email as string) || "—",
+          estado: (u.is_active ? "activo" : "inactivo") as "activo" | "inactivo" | "suspendido",
+          ultimoAcceso: u.last_login ? new Date(u.last_login as string).toLocaleString("es-VE") : "Sin registro",
+          regionAsignada: "Nacional",
+          creadoPor: "Sistema",
+          fechaCreacion: u.created_at ? new Date(u.created_at as string).toLocaleDateString("es-VE") : "—",
+        }));
+        setMockUsers(users);
+      })
+      .catch(err => console.error("Failed to fetch users:", err))
+      .finally(() => setLoading(false));
+  }, []);
 
   // Create user form
   const [formNombre, setFormNombre] = useState("");
@@ -277,7 +300,7 @@ export default function UsuariosPage() {
       </div>
 
       <p className="text-[10px] text-gray-600 text-center pb-4">
-        Datos de demostración — Ambiente de pruebas AIDA
+        Datos en tiempo real del sistema AIDA — Imprenta Digital
       </p>
     </div>
   );

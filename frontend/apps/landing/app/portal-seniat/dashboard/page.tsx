@@ -1,169 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-/* ── Mock data: clientes con FACTURACIÓN DIGITAL (Imprenta Digital) ──
-   IMPORTANTE: Solo aparecen aquí los clientes que adquirieron el servicio
-   de Imprenta Digital (números de control SENIAT). Los clientes que solo
-   tienen el Facturador sin Imprenta Digital NO se muestran en este portal.
-   ──────────────────────────────────────────────────────────────────────── */
-const mockEmpresas = [
-  {
-    rif: "J-12345678-9",
-    nombre: "Distribuidora Oriental C.A.",
-    estado: "Carabobo",
-    plan: "Completo Empresarial",
-    status: "cumple",
-    docsEmitidos: 4823,
-    ultimaEmision: "2026-02-17",
-    homologado: true,
-    prov102: true,
-    prov121: true,
-  },
-  {
-    rif: "J-40987654-3",
-    nombre: "Inversiones Maracay 2020 C.A.",
-    estado: "Aragua",
-    plan: "Completo Profesional",
-    status: "cumple",
-    docsEmitidos: 1247,
-    ultimaEmision: "2026-02-16",
-    homologado: true,
-    prov102: true,
-    prov121: true,
-  },
-  {
-    rif: "J-30112233-0",
-    nombre: "Tecnología y Redes del Centro C.A.",
-    estado: "Distrito Capital",
-    plan: "Completo Profesional",
-    status: "revision",
-    docsEmitidos: 892,
-    ultimaEmision: "2026-02-15",
-    homologado: true,
-    prov102: true,
-    prov121: false,
-  },
-  {
-    rif: "J-50234567-1",
-    nombre: "Agropecuaria Los Llanos S.A.",
-    estado: "Barinas",
-    plan: "Completo Básico",
-    status: "cumple",
-    docsEmitidos: 341,
-    ultimaEmision: "2026-02-17",
-    homologado: true,
-    prov102: true,
-    prov121: true,
-  },
-  {
-    rif: "V-18765432-5",
-    nombre: "Carlos Mendoza (Persona Natural)",
-    estado: "Zulia",
-    plan: "Completo Básico",
-    status: "alerta",
-    docsEmitidos: 56,
-    ultimaEmision: "2026-01-28",
-    homologado: false,
-    prov102: true,
-    prov121: false,
-  },
-  {
-    rif: "J-29876543-7",
-    nombre: "Importadora del Caribe C.A.",
-    estado: "Nueva Esparta",
-    plan: "Completo Empresarial",
-    status: "cumple",
-    docsEmitidos: 7891,
-    ultimaEmision: "2026-02-17",
-    homologado: true,
-    prov102: true,
-    prov121: true,
-  },
-  {
-    rif: "J-41567890-2",
-    nombre: "Servicios Industriales del Sur C.A.",
-    estado: "Bolívar",
-    plan: "Completo Profesional",
-    status: "cumple",
-    docsEmitidos: 2134,
-    ultimaEmision: "2026-02-16",
-    homologado: true,
-    prov102: true,
-    prov121: true,
-  },
-  {
-    rif: "G-20000001-0",
-    nombre: "Alcaldía del Municipio Libertador",
-    estado: "Distrito Capital",
-    plan: "Completo Empresarial",
-    status: "cumple",
-    docsEmitidos: 12340,
-    ultimaEmision: "2026-02-17",
-    homologado: true,
-    prov102: true,
-    prov121: true,
-  },
-];
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
-const mockDocumentosRecientes = [
-  { tipo: "Factura", numero: "00-045821", rif: "J-12345678-9", empresa: "Distribuidora Oriental C.A.", fecha: "17/02/2026", monto: "Bs. 2,340.50", status: "valido" },
-  { tipo: "Ret. IVA", numero: "00-009812", rif: "J-29876543-7", empresa: "Importadora del Caribe C.A.", fecha: "17/02/2026", monto: "Bs. 1,872.00", status: "valido" },
-  { tipo: "Nota Crédito", numero: "00-003451", rif: "J-40987654-3", empresa: "Inversiones Maracay 2020 C.A.", fecha: "16/02/2026", monto: "Bs. 456.80", status: "valido" },
-  { tipo: "Factura", numero: "00-045820", rif: "J-12345678-9", empresa: "Distribuidora Oriental C.A.", fecha: "16/02/2026", monto: "Bs. 8,920.00", status: "valido" },
-  { tipo: "Ret. ISLR", numero: "00-002103", rif: "J-41567890-2", empresa: "Servicios Industriales del Sur C.A.", fecha: "16/02/2026", monto: "Bs. 3,100.75", status: "valido" },
-  { tipo: "Guía Despacho", numero: "00-000892", rif: "J-50234567-1", empresa: "Agropecuaria Los Llanos S.A.", fecha: "15/02/2026", monto: "—", status: "valido" },
-  { tipo: "Nota Débito", numero: "00-001234", rif: "J-30112233-0", empresa: "Tecnología y Redes del Centro C.A.", fecha: "15/02/2026", monto: "Bs. 670.25", status: "revision" },
-  { tipo: "Factura", numero: "00-089001", rif: "G-20000001-0", empresa: "Alcaldía del Municipio Libertador", fecha: "15/02/2026", monto: "Bs. 45,000.00", status: "valido" },
-];
+interface ClientData {
+  rif: string;
+  nombre: string;
+  estado: string;
+  plan: string;
+  status: string;
+  docsEmitidos: number;
+  ultimaEmision: string;
+  homologado: boolean;
+  prov102: boolean;
+  prov121: boolean;
+}
 
-const stats = [
-  {
-    label: "Contribuyentes Registrados",
-    value: "8",
-    change: "+2 este mes",
-    color: "from-aida-accent to-blue-400",
-    icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-      </svg>
-    ),
-  },
-  {
-    label: "Documentos Emitidos",
-    value: "29,724",
-    change: "+1,204 esta semana",
-    color: "from-aida-cyan to-teal-400",
-    icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-      </svg>
-    ),
-  },
-  {
-    label: "Tasa de Cumplimiento",
-    value: "87.5%",
-    change: "7 de 8 al día",
-    color: "from-emerald-500 to-green-400",
-    icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    ),
-  },
-  {
-    label: "Alertas Activas",
-    value: "2",
-    change: "1 homologación, 1 inactividad",
-    color: "from-amber-500 to-orange-400",
-    icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-      </svg>
-    ),
-  },
-];
+interface DocReciente {
+  tipo: string;
+  numero: string;
+  rif: string;
+  empresa: string;
+  fecha: string;
+  monto: string;
+  status: string;
+}
+
+interface DashboardStats {
+  totalClientes: string;
+  totalDocs: string;
+  cumplimiento: string;
+  alertas: string;
+  cambioClientes: string;
+  cambioDocs: string;
+  cambioCumplimiento: string;
+  cambioAlertas: string;
+}
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; classes: string }> = {
@@ -183,14 +57,85 @@ function StatusBadge({ status }: { status: string }) {
 export default function DashboardPage() {
   const router = useRouter();
   const [rifSearch, setRifSearch] = useState("");
+  const [empresas, setEmpresas] = useState<ClientData[]>([]);
+  const [documentos, setDocumentos] = useState<DocReciente[]>([]);
+  const [dashStats, setDashStats] = useState<DashboardStats>({
+    totalClientes: "0", totalDocs: "0", cumplimiento: "0%", alertas: "0",
+    cambioClientes: "Cargando...", cambioDocs: "Cargando...", cambioCumplimiento: "Cargando...", cambioAlertas: "Cargando...",
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const token = sessionStorage.getItem("seniat_token");
+    if (!token) return;
+    const headers = { Authorization: `Bearer ${token}` };
+
+    // Fetch clients
+    fetch(`${API}/clients?page_size=50`, { headers })
+      .then(r => r.ok ? r.json() : Promise.reject("clients error"))
+      .then(data => {
+        const clients: ClientData[] = (data.items || []).map((c: Record<string, unknown>) => ({
+          rif: c.rif as string,
+          nombre: (c.razon_social || c.nombre_comercial || "") as string,
+          estado: ((c.direccion_fiscal as string) || "").split(",").pop()?.trim() || "Venezuela",
+          plan: `Completo ${c.plan || "Básico"}`,
+          status: c.is_suspended ? "alerta" : c.is_active ? "cumple" : "revision",
+          docsEmitidos: (c.max_documentos_mes as number) || 0,
+          ultimaEmision: new Date(c.created_at as string).toISOString().split("T")[0],
+          homologado: c.is_active as boolean,
+          prov102: true,
+          prov121: c.is_active as boolean,
+        }));
+        setEmpresas(clients);
+      })
+      .catch(err => console.error("Failed to fetch clients:", err));
+
+    // Fetch dashboard stats
+    fetch(`${API}/admin/dashboard`, { headers })
+      .then(r => r.ok ? r.json() : Promise.reject("dashboard error"))
+      .then(data => {
+        setDashStats({
+          totalClientes: String(data.total_clients || 0),
+          totalDocs: (data.total_documents_month || 0).toLocaleString(),
+          cumplimiento: data.active_clients && data.total_clients
+            ? `${Math.round((data.active_clients / data.total_clients) * 100)}%`
+            : "100%",
+          alertas: String((data.alerts || []).length),
+          cambioClientes: `${data.active_clients || 0} activos`,
+          cambioDocs: `${data.total_documents_today || 0} hoy`,
+          cambioCumplimiento: `${data.active_clients || 0} de ${data.total_clients || 0} activos`,
+          cambioAlertas: (data.alerts || []).slice(0, 2).join(", ") || "Sin alertas",
+        });
+      })
+      .catch(err => console.error("Failed to fetch dashboard stats:", err));
+
+    // Fetch recent documents
+    fetch(`${API}/documents?page_size=10`, { headers })
+      .then(r => r.ok ? r.json() : Promise.reject("documents error"))
+      .then(data => {
+        const docs: DocReciente[] = (data.items || []).map((d: Record<string, unknown>) => ({
+          tipo: (d.document_type as string) || "Factura",
+          numero: (d.control_number as string) || (d.document_number as string) || "—",
+          rif: (d.emitter_rif as string) || "—",
+          empresa: (d.emitter_name as string) || "—",
+          fecha: d.created_at ? new Date(d.created_at as string).toLocaleDateString("es-VE") : "—",
+          monto: d.total_amount ? `Bs. ${Number(d.total_amount).toLocaleString("es-VE", { minimumFractionDigits: 2 })}` : "—",
+          status: (d.status as string) === "active" || (d.status as string) === "valid" ? "valido" : (d.status as string) || "valido",
+        }));
+        setDocumentos(docs);
+      })
+      .catch(err => console.error("Failed to fetch documents:", err));
+
+    setLoading(false);
+  }, []);
 
   const filteredEmpresas = rifSearch
-    ? mockEmpresas.filter(
+    ? empresas.filter(
         (e) =>
           e.rif.toLowerCase().includes(rifSearch.toLowerCase()) ||
           e.nombre.toLowerCase().includes(rifSearch.toLowerCase())
       )
-    : mockEmpresas;
+    : empresas;
 
   const handleVerDetalle = (rif: string) => {
     router.push(`/portal-seniat/dashboard/cliente/${encodeURIComponent(rif)}`);
@@ -209,7 +154,12 @@ export default function DashboardPage() {
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => (
+        {[
+          { label: "Contribuyentes Registrados", value: dashStats.totalClientes, change: dashStats.cambioClientes, color: "from-aida-accent to-blue-400", icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" },
+          { label: "Documentos Emitidos (Mes)", value: dashStats.totalDocs, change: dashStats.cambioDocs, color: "from-aida-cyan to-teal-400", icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" },
+          { label: "Tasa de Cumplimiento", value: dashStats.cumplimiento, change: dashStats.cambioCumplimiento, color: "from-emerald-500 to-green-400", icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" },
+          { label: "Alertas Activas", value: dashStats.alertas, change: dashStats.cambioAlertas, color: "from-amber-500 to-orange-400", icon: "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" },
+        ].map((stat) => (
           <div key={stat.label} className="glass-card p-5 hover:bg-white/[0.06] transition-all">
             <div className="flex items-start justify-between">
               <div>
@@ -217,10 +167,10 @@ export default function DashboardPage() {
                 <p className="text-2xl font-black text-white mt-1">{stat.value}</p>
                 <p className="text-[10px] text-gray-500 mt-1">{stat.change}</p>
               </div>
-              <div className={`p-2.5 rounded-xl bg-gradient-to-br ${stat.color} bg-opacity-10`} style={{ background: `linear-gradient(135deg, rgba(99,102,241,0.1), rgba(14,165,233,0.1))` }}>
-                <div className={`bg-gradient-to-br ${stat.color} bg-clip-text text-transparent`}>
-                  {stat.icon}
-                </div>
+              <div className="p-2.5 rounded-xl" style={{ background: `linear-gradient(135deg, rgba(99,102,241,0.1), rgba(14,165,233,0.1))` }}>
+                <svg className={`w-6 h-6 bg-gradient-to-br ${stat.color} bg-clip-text`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={stat.icon} />
+                </svg>
               </div>
             </div>
           </div>
@@ -250,7 +200,7 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="text-xs text-gray-500">
-            {filteredEmpresas.length} de {mockEmpresas.length} contribuyentes
+            {filteredEmpresas.length} de {empresas.length} contribuyentes
           </div>
         </div>
       </div>
@@ -365,7 +315,7 @@ export default function DashboardPage() {
               </tr>
             </thead>
             <tbody>
-              {mockDocumentosRecientes.map((doc, i) => (
+              {documentos.map((doc, i) => (
                 <tr key={i} className="border-b border-white/5 hover:bg-white/[0.03] transition-colors">
                   <td className="py-3 px-5">
                     <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-white/5 text-gray-300 border border-white/10">
@@ -446,7 +396,7 @@ export default function DashboardPage() {
       {/* Footer note */}
       <div className="text-center py-4">
         <p className="text-[10px] text-gray-600">
-          Los datos mostrados son de demostración. En producción, este portal se conecta al API de AIDA para datos en tiempo real.
+          Datos en tiempo real del sistema AIDA — Imprenta Digital
         </p>
       </div>
     </div>

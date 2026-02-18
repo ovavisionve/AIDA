@@ -21,6 +21,8 @@ export default function LoginForm({ onLogin }: { onLogin: (token: string) => voi
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Error de autenticación");
+      localStorage.setItem("access_token", data.access_token);
+      if (data.refresh_token) localStorage.setItem("refresh_token", data.refresh_token);
       onLogin(data.access_token);
     } catch (err: any) {
       setError(err.message);

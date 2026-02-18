@@ -12,6 +12,7 @@ type Section = "quickstart" | "docs" | "keys" | "usage" | "sandbox";
 
 export default function PortalDevelopers() {
   const [isAuth, setIsAuth] = useState(false);
+  const [checking, setChecking] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
@@ -19,7 +20,21 @@ export default function PortalDevelopers() {
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
-    if (token) setIsAuth(true);
+    if (!token) { setChecking(false); return; }
+
+    fetch(`${API}/users/me/profile`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => {
+        if (!r.ok) throw new Error("Invalid token");
+        setIsAuth(true);
+      })
+      .catch((err) => {
+        console.error("Developers token validation failed:", err);
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+      })
+      .finally(() => setChecking(false));
   }, []);
 
   const login = async () => {
@@ -43,6 +58,14 @@ export default function PortalDevelopers() {
     localStorage.removeItem("refresh_token");
     setIsAuth(false);
   };
+
+  if (checking) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-aida-accent border-t-transparent" />
+      </div>
+    );
+  }
 
   if (!isAuth) {
     return (

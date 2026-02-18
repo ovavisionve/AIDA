@@ -1,34 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
-/* ── Consolidated audit data across all companies ── */
-const allAuditEntries = [
-  { fecha: "17/02/2026 09:15", accion: "Emisión de factura", rif: "J-12345678-9", empresa: "Distribuidora Oriental C.A.", detalle: "Factura 00-045821 emitida correctamente. Número de control válido.", tipo: "emision", severidad: "normal" },
-  { fecha: "17/02/2026 10:00", accion: "Retención IVA procesada", rif: "J-29876543-7", empresa: "Importadora del Caribe C.A.", detalle: "Comprobante 00-009812. Retención al 75% sobre factura de proveedor.", tipo: "retencion", severidad: "normal" },
-  { fecha: "17/02/2026 08:30", accion: "Emisión factura alto monto", rif: "J-29876543-7", empresa: "Importadora del Caribe C.A.", detalle: "Factura 00-078910 por Bs. 125,000.00. Verificación IA: aprobada.", tipo: "emision", severidad: "alto_monto" },
-  { fecha: "16/02/2026 15:00", accion: "Retención ISLR procesada", rif: "J-41567890-2", empresa: "Servicios Industriales del Sur C.A.", detalle: "Comprobante 00-002103 emitido correctamente.", tipo: "retencion", severidad: "normal" },
-  { fecha: "16/02/2026 14:30", accion: "Retención IVA procesada", rif: "J-12345678-9", empresa: "Distribuidora Oriental C.A.", detalle: "Comprobante de retención IVA 00-009810 generado al 75%.", tipo: "retencion", severidad: "normal" },
-  { fecha: "16/02/2026 11:00", accion: "Emisión de factura", rif: "J-40987654-3", empresa: "Inversiones Maracay 2020 C.A.", detalle: "Factura 00-012470 emitida. Monto alto verificado.", tipo: "emision", severidad: "normal" },
-  { fecha: "16/02/2026 10:20", accion: "Emisión de factura", rif: "J-12345678-9", empresa: "Distribuidora Oriental C.A.", detalle: "Factura 00-045820 emitida correctamente. Monto alto verificado por IA.", tipo: "emision", severidad: "normal" },
-  { fecha: "16/02/2026 09:00", accion: "Emisión de factura", rif: "J-41567890-2", empresa: "Servicios Industriales del Sur C.A.", detalle: "Factura 00-021340 emitida. Cliente industrial verificado.", tipo: "emision", severidad: "normal" },
-  { fecha: "15/02/2026 16:45", accion: "Nota de crédito emitida", rif: "J-12345678-9", empresa: "Distribuidora Oriental C.A.", detalle: "NC 00-003449 vinculada a factura 00-045800. Monto dentro del rango permitido.", tipo: "emision", severidad: "normal" },
-  { fecha: "15/02/2026 14:00", accion: "Alerta: Nota de débito en revisión", rif: "J-30112233-0", empresa: "Tecnología y Redes del Centro C.A.", detalle: "ND 00-001234 marcada para revisión. Monto de intereses requiere verificación.", tipo: "alerta", severidad: "alerta" },
-  { fecha: "15/02/2026 10:00", accion: "Emisión factura institucional", rif: "G-20000001-0", empresa: "Alcaldía del Municipio Libertador", detalle: "Factura 00-089001 emitida por servicio de obra pública.", tipo: "emision", severidad: "normal" },
-  { fecha: "15/02/2026 09:30", accion: "Emisión de factura", rif: "J-40987654-3", empresa: "Inversiones Maracay 2020 C.A.", detalle: "Factura 00-012469 emitida correctamente.", tipo: "emision", severidad: "normal" },
-  { fecha: "15/02/2026 09:00", accion: "Emisión de factura", rif: "J-12345678-9", empresa: "Distribuidora Oriental C.A.", detalle: "Factura 00-045819 emitida. Monto Bs. 15,400.00 verificado por IA.", tipo: "emision", severidad: "normal" },
-  { fecha: "15/02/2026 07:00", accion: "Guía de despacho emitida", rif: "J-50234567-1", empresa: "Agropecuaria Los Llanos S.A.", detalle: "GD 00-000892 para traslado de mercancía a Aragua.", tipo: "emision", severidad: "normal" },
-  { fecha: "14/02/2026 11:00", accion: "Retención ISLR procesada", rif: "J-12345678-9", empresa: "Distribuidora Oriental C.A.", detalle: "Comprobante ISLR 00-002100. Porcentaje aplicado según tabla de actividades.", tipo: "retencion", severidad: "normal" },
-  { fecha: "12/02/2026 08:00", accion: "Alerta: Homologación pendiente", rif: "J-30112233-0", empresa: "Tecnología y Redes del Centro C.A.", detalle: "Providencia 121 no cumplida. Sistema pendiente de homologación ante SENIAT.", tipo: "alerta", severidad: "alerta" },
-  { fecha: "10/02/2026 08:00", accion: "Verificación de cumplimiento", rif: "J-12345678-9", empresa: "Distribuidora Oriental C.A.", detalle: "Auditoría automática: Providencia 102 ✓, Providencia 121 ✓. Sin observaciones.", tipo: "verificacion", severidad: "normal" },
-  { fecha: "10/02/2026 08:00", accion: "Alerta: Inactividad detectada", rif: "V-18765432-5", empresa: "Carlos Mendoza (Persona Natural)", detalle: "Sin emisión de documentos en los últimos 20 días. Última factura: 28/01/2026.", tipo: "alerta", severidad: "alerta" },
-  { fecha: "09/02/2026 14:10", accion: "Alerta: Factura anulada", rif: "J-12345678-9", empresa: "Distribuidora Oriental C.A.", detalle: "Factura 00-045816 anulada. Motivo: error en datos del receptor.", tipo: "alerta", severidad: "alerta" },
-  { fecha: "05/02/2026 08:00", accion: "Alerta: Homologación pendiente", rif: "V-18765432-5", empresa: "Carlos Mendoza (Persona Natural)", detalle: "Sistema no homologado bajo Providencia 121. Riesgo de sanciones.", tipo: "alerta", severidad: "alerta" },
-  { fecha: "01/02/2026 08:00", accion: "Verificación mensual", rif: "J-29876543-7", empresa: "Importadora del Caribe C.A.", detalle: "Auditoría automática: cumplimiento total. Sin observaciones.", tipo: "verificacion", severidad: "normal" },
-  { fecha: "01/02/2026 08:00", accion: "Verificación mensual", rif: "J-40987654-3", empresa: "Inversiones Maracay 2020 C.A.", detalle: "Auditoría automática: todo en cumplimiento.", tipo: "verificacion", severidad: "normal" },
-  { fecha: "01/02/2026 08:00", accion: "Verificación mensual", rif: "G-20000001-0", empresa: "Alcaldía del Municipio Libertador", detalle: "Entidad gubernamental en cumplimiento total.", tipo: "verificacion", severidad: "normal" },
-];
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+
+interface AuditEntry {
+  fecha: string;
+  accion: string;
+  rif: string;
+  empresa: string;
+  detalle: string;
+  tipo: string;
+  severidad: string;
+}
+
+function mapActionToTipo(action: string): string {
+  const a = action.toLowerCase();
+  if (a.includes("alert") || a.includes("alerta")) return "alerta";
+  if (a.includes("verif") || a.includes("audit")) return "verificacion";
+  if (a.includes("reten")) return "retencion";
+  return "emision";
+}
 
 const tipoColors: Record<string, string> = {
   emision: "bg-aida-cyan/10 text-aida-cyan border-aida-cyan/20",
@@ -45,9 +38,38 @@ const tipoLabels: Record<string, string> = {
 };
 
 export default function AuditoriaPage() {
+  const [allAuditEntries, setAllAuditEntries] = useState<AuditEntry[]>([]);
   const [filterTipo, setFilterTipo] = useState("");
   const [filterEmpresa, setFilterEmpresa] = useState("");
   const [filterSearch, setFilterSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const token = sessionStorage.getItem("seniat_token");
+    if (!token) { setLoading(false); return; }
+
+    fetch(`${API}/admin/audit-logs?page_size=100`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.ok ? r.json() : Promise.reject("audit error"))
+      .then(data => {
+        const entries: AuditEntry[] = (data.items || []).map((log: Record<string, unknown>) => {
+          const tipo = mapActionToTipo(log.action as string || "");
+          return {
+            fecha: log.created_at ? new Date(log.created_at as string).toLocaleString("es-VE") : "—",
+            accion: (log.action as string) || "Acción registrada",
+            rif: (log.resource_type as string) || "—",
+            empresa: (log.details as string) || (log.resource_id as string) || "Sistema",
+            detalle: `${log.action || ""} — ${log.details || log.resource_type || ""} ${log.resource_id || ""}`.trim(),
+            tipo,
+            severidad: tipo === "alerta" ? "alerta" : "normal",
+          };
+        });
+        setAllAuditEntries(entries);
+      })
+      .catch(err => console.error("Failed to fetch audit logs:", err))
+      .finally(() => setLoading(false));
+  }, []);
 
   const empresas = Array.from(new Set(allAuditEntries.map((e) => e.empresa)));
 
@@ -204,7 +226,7 @@ export default function AuditoriaPage() {
       </div>
 
       <p className="text-[10px] text-gray-600 text-center pb-4">
-        Datos de demostración — Ambiente de pruebas AIDA
+        Datos en tiempo real del sistema AIDA — Imprenta Digital
       </p>
     </div>
   );
