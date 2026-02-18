@@ -3412,6 +3412,58 @@ function actualizarPromptsV31() {
   }
 }
 
+// ============================================
+// ACTUALIZAR SOLO SKUs Y TOKENS (sin borrar datos)
+// ============================================
+function actualizarSKUsYTokens() {
+  Logger.log('🔄 Actualizando catálogo de SKUs y configuración de tokens...');
+  try {
+    var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+
+    // Actualizar Productos_SKU con catálogo real
+    crearHojaProductosSKU(ss);
+
+    // Actualizar MAX_TOKENS_IA a 2500 en Configuracion
+    var configSheet = ss.getSheetByName('Configuracion');
+    var configData = configSheet.getDataRange().getValues();
+    for (var i = 1; i < configData.length; i++) {
+      if (configData[i][0] === 'MAX_TOKENS_IA') {
+        configSheet.getRange(i + 1, 2).setValue('2500');
+        Logger.log('✅ MAX_TOKENS_IA actualizado a 2500');
+        break;
+      }
+    }
+
+    Logger.log('✅ SKUs y tokens actualizados correctamente');
+  } catch (error) {
+    Logger.log('❌ Error: ' + error);
+  }
+}
+
+// ============================================
+// DESPLEGAR TODO (Prompts + SKUs + Tokens) SIN borrar datos de CRM
+// ============================================
+function desplegarActualizacionVentas() {
+  Logger.log('🚀 === DESPLEGANDO ACTUALIZACIÓN DE VENTAS ===');
+
+  // 1. Actualizar prompts (le enseña a la IA los planes reales)
+  actualizarPromptsV31();
+
+  // 2. Actualizar catálogo SKU y tokens
+  actualizarSKUsYTokens();
+
+  Logger.log('🚀 === DESPLIEGUE COMPLETADO ===');
+  Logger.log('');
+  Logger.log('📋 Lo que se actualizó:');
+  Logger.log('  ✅ Prompt del sistema con catálogo real de planes');
+  Logger.log('  ✅ Recomendación inteligente por número de controles');
+  Logger.log('  ✅ Bot pregunta nombre del cliente antes de agendar');
+  Logger.log('  ✅ 30+ SKUs reales (PLN-EMP, PLN-CORP, PLN-WEB, APK, etc.)');
+  Logger.log('  ✅ MAX_TOKENS_IA subido a 2500');
+  Logger.log('');
+  Logger.log('🧪 Prueba con: "Tengo un nuevo lead, manejan 100 facturas al mes"');
+}
+
 function simularMensajeReal() {
   Logger.log('=== SIMULANDO MENSAJE REAL ===');
   
