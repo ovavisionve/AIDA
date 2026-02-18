@@ -1,6 +1,7 @@
 """Portal 6 Admin - Configuración Global, Roles, Auditoría."""
 import uuid
 import math
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -208,7 +209,7 @@ class AuditLogResponse(BaseModel):
     resource_id: str | None
     details: str | None
     ip_address: str | None
-    timestamp: str
+    timestamp: datetime
 
     model_config = {"from_attributes": True}
 

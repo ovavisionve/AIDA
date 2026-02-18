@@ -1,6 +1,6 @@
 import uuid
 from datetime import date, datetime
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 
 class ClientCreate(BaseModel):
@@ -15,7 +15,7 @@ class ClientCreate(BaseModel):
     representante_legal: str | None = None
     sector_industria: str | None = None
     plan: str = "basico"
-    fecha_inicio: date
+    fecha_inicio: date = Field(default_factory=date.today)
     moneda_principal: str = "VES"
     max_documentos_mes: int = 100
     max_usuarios: int = 1

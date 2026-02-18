@@ -15,6 +15,14 @@ from app.schemas.users import UserCreate, UserUpdate, UserResponse, UserListResp
 router = APIRouter()
 
 
+@router.get("/me", response_model=UserResponse)
+async def get_current_user_profile(
+    user: User = Depends(get_current_user),
+):
+    """Retorna el perfil del usuario autenticado."""
+    return UserResponse.model_validate(user)
+
+
 @router.get("", response_model=UserListResponse)
 async def list_users(
     page: int = Query(1, ge=1),

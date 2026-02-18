@@ -8,6 +8,7 @@ export default function AuditSection() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [filterAction, setFilterAction] = useState("");
   const [filterResource, setFilterResource] = useState("");
 
@@ -15,14 +16,28 @@ export default function AuditSection() {
 
   const load = useCallback((p = 1) => {
     setLoading(true);
+    setError("");
     const params = new URLSearchParams({ page: String(p), page_size: String(pageSize) });
     if (filterAction) params.set("action", filterAction);
     if (filterResource) params.set("resource_type", filterResource);
-    api(`/admin/audit-logs?${params}`).then(r => r.json()).then(d => {
-      setLogs(d.items || []);
-      setTotal(d.total || 0);
-      setPage(d.page || 1);
-    }).catch(() => {}).finally(() => setLoading(false));
+    api(`/admin/audit-logs?${params}`)
+      .then(async (r) => {
+        if (!r.ok) {
+          const err = await r.json().catch(() => null);
+          throw new Error(err?.detail || `Error ${r.status}`);
+        }
+        return r.json();
+      })
+      .then((d) => {
+        setLogs(d.items || []);
+        setTotal(d.total || 0);
+        setPage(d.page || 1);
+      })
+      .catch((e) => {
+        setError(e.message || "Error al cargar registros de auditoría");
+        setLogs([]);
+      })
+      .finally(() => setLoading(false));
   }, [filterAction, filterResource]);
 
   useEffect(() => { load(); }, [load]);
@@ -64,16 +79,22 @@ export default function AuditSection() {
         <span className="text-sm text-gray-500">{total} registros</span>
       </div>
 
+      {error && (
+        <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400">
+          {error}
+        </div>
+      )}
+
       <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm">
         {loading ? (
           <div className="flex justify-center py-12"><div className="h-6 w-6 animate-spin rounded-full border-4 border-aida-accent border-t-transparent" /></div>
-        ) : logs.length === 0 ? (
-          <div className="py-12 text-center text-sm text-gray-500">No se encontraron registros de auditoria</div>
-        ) : (
+        ) : logs.length === 0 && !error ? (
+          <div className="py-12 text-center text-sm text-gray-500">No se encontraron registros de auditoría</div>
+        ) : logs.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead><tr className="border-b border-white/5 bg-white/[0.03] text-left text-xs font-medium uppercase text-gray-500">
-                <th className="px-4 py-3">Fecha</th><th className="px-4 py-3">Accion</th>
+                <th className="px-4 py-3">Fecha</th><th className="px-4 py-3">Acción</th>
                 <th className="px-4 py-3">Recurso</th><th className="px-4 py-3">ID Recurso</th>
                 <th className="px-4 py-3">Detalles</th><th className="px-4 py-3">IP</th>
               </tr></thead>
@@ -97,10 +118,10 @@ export default function AuditSection() {
               </tbody>
             </table>
           </div>
-        )}
+        ) : null}
         {totalPages > 1 && (
           <div className="flex items-center justify-between border-t border-white/5 px-4 py-3">
-            <span className="text-xs text-gray-500">Pagina {page} de {totalPages}</span>
+            <span className="text-xs text-gray-500">Página {page} de {totalPages}</span>
             <div className="flex gap-1">
               <button disabled={page <= 1} onClick={() => load(page - 1)} className="rounded border border-white/10 px-3 py-1 text-xs text-gray-400 disabled:opacity-40">Anterior</button>
               <button disabled={page >= totalPages} onClick={() => load(page + 1)} className="rounded border border-white/10 px-3 py-1 text-xs text-gray-400 disabled:opacity-40">Siguiente</button>

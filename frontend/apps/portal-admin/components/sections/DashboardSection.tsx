@@ -6,9 +6,20 @@ import { api } from "../../lib/api";
 export default function DashboardSection() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    api("/admin/dashboard").then(r => r.json()).then(setData).catch(() => {}).finally(() => setLoading(false));
+    api("/admin/dashboard")
+      .then(async (r) => {
+        if (!r.ok) {
+          const err = await r.json().catch(() => null);
+          throw new Error(err?.detail || `Error ${r.status}`);
+        }
+        return r.json();
+      })
+      .then(setData)
+      .catch((e) => setError(e.message || "Error al cargar el dashboard"))
+      .finally(() => setLoading(false));
   }, []);
 
   const stats = [
@@ -21,9 +32,9 @@ export default function DashboardSection() {
   const portals = [
     { name: "Portal 1 - Cliente", port: 3000, status: "active" },
     { name: "Portal 2 - Facturador", port: 3002, status: "active" },
-    { name: "Portal 3 - Validacion", port: 3003, status: "active" },
+    { name: "Portal 3 - Validación", port: 3003, status: "active" },
     { name: "Portal 4 - Developers", port: 3004, status: "active" },
-    { name: "Portal 5 - Gestion", port: 3005, status: "active" },
+    { name: "Portal 5 - Gestión", port: 3005, status: "active" },
     { name: "Portal 6 - Admin", port: 3001, status: "active" },
   ];
 
@@ -31,6 +42,10 @@ export default function DashboardSection() {
     <div className="space-y-6">
       {loading ? (
         <div className="flex justify-center py-12"><div className="h-8 w-8 animate-spin rounded-full border-4 border-aida-accent border-t-transparent" /></div>
+      ) : error ? (
+        <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
+          {error}
+        </div>
       ) : (
         <>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
