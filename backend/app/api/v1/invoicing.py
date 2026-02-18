@@ -37,11 +37,53 @@ router = APIRouter()
 
 # ─── BCV Exchange Rate Cache ───────────────────────────────────────
 _bcv_cache: dict = {"rates": None, "fetched_at": None}
-BCV_CACHE_TTL = timedelta(minutes=30)
+BCV_CACHE_TTL = timedelta(hours=4)
+
+_BCV_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "es-VE,es;q=0.9,en;q=0.5",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Connection": "keep-alive",
+}
+
+
+def _parse_bcv_rate(html: str, currency_id: str) -> float | None:
+    """Parse a rate from BCV HTML. Handles multiple HTML structures."""
+    import re
+
+    patterns = [
+        # Pattern 1: id="dolar" ... <strong>73,52740000</strong>
+        rf'id="{currency_id}"[^>]*>.*?<strong>\s*([\d.,]+)\s*</strong>',
+        # Pattern 2: class containing currency name ... <strong>
+        rf'class="[^"]*{currency_id}[^"]*"[^>]*>.*?<strong>\s*([\d.,]+)\s*</strong>',
+        # Pattern 3: data attribute
+        rf'data-moneda="{currency_id}"[^>]*>.*?<strong>\s*([\d.,]+)\s*</strong>',
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, html, re.DOTALL | re.IGNORECASE)
+        if match:
+            raw = match.group(1).strip()
+            # BCV uses Venezuelan format: 73.527,40 or 73,52740000
+            if "," in raw and "." in raw:
+                # Has both: determine which is decimal separator
+                if raw.rindex(",") > raw.rindex("."):
+                    # Format: 1.234,56 (dot=thousands, comma=decimal)
+                    return float(raw.replace(".", "").replace(",", "."))
+                else:
+                    # Format: 1,234.56 (comma=thousands, dot=decimal)
+                    return float(raw.replace(",", ""))
+            elif "," in raw:
+                # Only comma: 73,52740000 (comma=decimal)
+                return float(raw.replace(",", "."))
+            else:
+                return float(raw)
+    return None
 
 
 async def _fetch_bcv_rates() -> dict:
-    """Fetch BCV exchange rates. Uses cache to avoid excessive requests."""
+    """Fetch BCV exchange rates with cache (4 hours TTL)."""
     now = datetime.now(timezone.utc)
 
     if (
@@ -52,36 +94,19 @@ async def _fetch_bcv_rates() -> dict:
         return _bcv_cache["rates"]
 
     try:
-        async with httpx.AsyncClient(timeout=10, verify=False) as client:
+        async with httpx.AsyncClient(
+            timeout=15, verify=False, follow_redirects=True,
+            headers=_BCV_HEADERS,
+        ) as client:
             resp = await client.get("https://www.bcv.org.ve/")
+            resp.raise_for_status()
             html = resp.text
 
-        import re
         rates = {}
-
-        # Parse USD rate
-        usd_match = re.search(
-            r'id="dolar"[^>]*>.*?<strong>([\d,.]+)</strong>',
-            html, re.DOTALL,
-        )
-        if usd_match:
-            rates["USD"] = float(usd_match.group(1).replace(".", "").replace(",", "."))
-
-        # Parse EUR rate
-        eur_match = re.search(
-            r'id="euro"[^>]*>.*?<strong>([\d,.]+)</strong>',
-            html, re.DOTALL,
-        )
-        if eur_match:
-            rates["EUR"] = float(eur_match.group(1).replace(".", "").replace(",", "."))
-
-        # Parse CNY rate
-        cny_match = re.search(
-            r'id="yuan"[^>]*>.*?<strong>([\d,.]+)</strong>',
-            html, re.DOTALL,
-        )
-        if cny_match:
-            rates["CNY"] = float(cny_match.group(1).replace(".", "").replace(",", "."))
+        for currency_id, key in [("dolar", "USD"), ("euro", "EUR"), ("yuan", "CNY"), ("lira", "TRY"), ("rublo", "RUB")]:
+            rate = _parse_bcv_rate(html, currency_id)
+            if rate and rate > 0:
+                rates[key] = round(rate, 4)
 
         if rates:
             _bcv_cache["rates"] = {
@@ -91,7 +116,10 @@ async def _fetch_bcv_rates() -> dict:
                 "timestamp": now.isoformat(),
             }
             _bcv_cache["fetched_at"] = now
+            logger.info(f"BCV rates updated: {rates}")
             return _bcv_cache["rates"]
+        else:
+            logger.warning("BCV page fetched but no rates parsed")
     except Exception as e:
         logger.warning(f"Error fetching BCV rates: {e}")
 
@@ -320,7 +348,10 @@ async def create_invoice(
             user_id=user.id, ip_address=request.client.host if request.client else None,
         )
     except DocumentEmissionError as e:
-        raise HTTPException(status_code=400, detail=e.message)
+        detail = e.message
+        if e.details:
+            detail += ": " + "; ".join(e.details)
+        raise HTTPException(status_code=400, detail=detail)
     except ControlNumberError as e:
         raise HTTPException(
             status_code=400,
@@ -472,7 +503,8 @@ async def create_credit_note(
             user_id=user.id, ip_address=request.client.host if request.client else None,
         )
     except DocumentEmissionError as e:
-        raise HTTPException(status_code=400, detail=e.message)
+        detail = e.message + (": " + "; ".join(e.details) if e.details else "")
+        raise HTTPException(status_code=400, detail=detail)
     except ControlNumberError as e:
         raise HTTPException(status_code=400, detail=f"Error de numeración de control: {e}")
     except Exception as e:
@@ -545,7 +577,8 @@ async def create_debit_note(
             user_id=user.id, ip_address=request.client.host if request.client else None,
         )
     except DocumentEmissionError as e:
-        raise HTTPException(status_code=400, detail=e.message)
+        detail = e.message + (": " + "; ".join(e.details) if e.details else "")
+        raise HTTPException(status_code=400, detail=detail)
     except ControlNumberError as e:
         raise HTTPException(status_code=400, detail=f"Error de numeración de control: {e}")
     except Exception as e:

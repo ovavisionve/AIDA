@@ -89,7 +89,7 @@ export default function InvoiceForm({ token }: Props) {
   // ── Payment / Config ──
   const [formaPago, setFormaPago] = useState("efectivo");
   const [condicionPago, setCondicionPago] = useState("contado");
-  const [moneda, setMoneda] = useState("VES");
+  const [moneda, setMoneda] = useState("USD");
   const [observaciones, setObservaciones] = useState("");
 
   // ── Exchange rates ──
@@ -341,6 +341,28 @@ export default function InvoiceForm({ token }: Props) {
     return amount * rate;
   };
 
+  /** Convert a VES amount to the foreign currency using BCV rate */
+  const calcForeignEquivalent = (amountVes: number): number | null => {
+    if (moneda !== "VES") return null;
+    const rate = getRate("USD");
+    if (!rate) return null;
+    return amountVes / rate;
+  };
+
+  /** Get the BCV USD rate (or the selected currency rate) */
+  const bcvRate = exchangeRates?.rates?.USD || null;
+  const bcvDate = exchangeRates?.date || "";
+
+  /** Format money in the "other" currency for dual display */
+  const dualAmount = (amount: number): string | null => {
+    if (moneda === "VES") {
+      const foreign = calcForeignEquivalent(amount);
+      return foreign !== null ? `$ ${fmtMoney(foreign)}` : null;
+    }
+    const ves = calcVesEquivalent(amount);
+    return ves !== null ? `Bs. ${fmtMoney(ves)}` : null;
+  };
+
   // ══════════════════════════════════════════════════════════════
   // SUBMIT
   // ══════════════════════════════════════════════════════════════
@@ -423,6 +445,22 @@ export default function InvoiceForm({ token }: Props) {
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+
+    // Validate required fields
+    if (!receptor.rif || !receptor.razon_social) {
+      setError("Datos del receptor incompletos: RIF y razon social son requeridos.");
+      return;
+    }
+    if (items.some((it) => !it.description || it.quantity <= 0)) {
+      setError("Todos los items deben tener descripcion y cantidad mayor a 0.");
+      return;
+    }
+    if (isForeignCurrency && !getRate(moneda)) {
+      setError(`No se pudo obtener la tasa de cambio del BCV para ${moneda}. Intente recargar la pagina o seleccione VES.`);
+      return;
+    }
+
     setShowPreview(true);
   };
 
@@ -535,69 +573,64 @@ export default function InvoiceForm({ token }: Props) {
             </tbody>
           </table>
 
-          {/* Totals */}
-          <div className="space-y-1 text-sm">
-            <div className="flex justify-between text-gray-400">
-              <span>Subtotal bruto:</span>
-              <span>{moneda} {fmtMoney(calcGrossSubtotal())}</span>
-            </div>
-            {calcDiscount() > 0 && (
-              <div className="flex justify-between text-gray-400">
-                <span>Descuento:</span>
-                <span>- {moneda} {fmtMoney(calcDiscount())}</span>
-              </div>
-            )}
-            {calcBaseImponible16() > 0 && (
-              <div className="flex justify-between text-gray-400">
-                <span>Base imponible (16%):</span>
-                <span>{moneda} {fmtMoney(calcBaseImponible16())}</span>
-              </div>
-            )}
-            {calcBaseImponible8() > 0 && (
-              <div className="flex justify-between text-gray-400">
-                <span>Base imponible (8%):</span>
-                <span>{moneda} {fmtMoney(calcBaseImponible8())}</span>
-              </div>
-            )}
-            {calcBaseExenta() > 0 && (
-              <div className="flex justify-between text-gray-400">
-                <span>Exento:</span>
-                <span>{moneda} {fmtMoney(calcBaseExenta())}</span>
-              </div>
-            )}
-            {calcIva16() > 0 && (
-              <div className="flex justify-between text-gray-400">
-                <span>IVA 16%:</span>
-                <span>{moneda} {fmtMoney(calcIva16())}</span>
-              </div>
-            )}
-            {calcIva8() > 0 && (
-              <div className="flex justify-between text-gray-400">
-                <span>IVA 8%:</span>
-                <span>{moneda} {fmtMoney(calcIva8())}</span>
-              </div>
-            )}
-            <div className="flex justify-between border-t border-white/10 pt-1 font-medium text-white">
-              <span>Total factura:</span>
-              <span>{moneda} {fmtMoney(calcTotalFactura())}</span>
-            </div>
-            {isForeignCurrency && (
-              <>
-                <div className="flex justify-between text-amber-400">
-                  <span>IGTF 3% (pago en divisas):</span>
-                  <span>{moneda} {fmtMoney(calcIgtf())}</span>
-                </div>
-                <div className="flex justify-between border-t border-white/10 pt-1 text-lg font-bold text-white">
-                  <span>Total a pagar:</span>
-                  <span>{moneda} {fmtMoney(calcTotalPagar())}</span>
-                </div>
-              </>
-            )}
-            {isForeignCurrency && rate && (
+          {/* Totals with dual currency */}
+          <div className="space-y-1.5 text-sm">
+            {(() => {
+              const PrevRow = ({ label, amount, sign, bold }: { label: string; amount: number; sign?: string; bold?: boolean }) => {
+                const dual = dualAmount(amount);
+                const pre = sign || "";
+                return (
+                  <div>
+                    <div className={`flex justify-between ${bold ? "font-semibold text-white" : "text-gray-400"}`}>
+                      <span>{label}</span>
+                      <span>{pre}{moneda} {fmtMoney(amount)}</span>
+                    </div>
+                    {dual && <div className="flex justify-end"><span className="text-[11px] text-gray-500">{pre}{dual}</span></div>}
+                  </div>
+                );
+              };
+              return (
+                <>
+                  <PrevRow label="Subtotal bruto:" amount={calcGrossSubtotal()} />
+                  {calcDiscount() > 0 && <PrevRow label="Descuento:" amount={calcDiscount()} sign="- " />}
+                  {calcIva16() > 0 && <PrevRow label="IVA 16%:" amount={calcIva16()} />}
+                  {calcIva8() > 0 && <PrevRow label="IVA 8%:" amount={calcIva8()} />}
+                  <div className="border-t border-white/10 pt-1">
+                    <PrevRow label="Total factura:" amount={calcTotalFactura()} bold />
+                  </div>
+                  {isForeignCurrency && (
+                    <>
+                      <PrevRow label="IGTF 3%:" amount={calcIgtf()} />
+                      <div className="border-t border-white/10 pt-1">
+                        <div className="flex justify-between text-lg font-bold text-white">
+                          <span>Total a pagar:</span>
+                          <span>{moneda} {fmtMoney(calcTotalPagar())}</span>
+                        </div>
+                        {dualAmount(calcTotalPagar()) && (
+                          <div className="flex justify-end">
+                            <span className="text-sm font-medium text-gray-400">{dualAmount(calcTotalPagar())}</span>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                  {!isForeignCurrency && bcvRate && (
+                    <div className="border-t border-white/10 pt-1">
+                      <div className="flex justify-between text-lg font-bold text-white">
+                        <span>Total a pagar:</span>
+                        <span>Bs. {fmtMoney(calcTotalFactura())}</span>
+                      </div>
+                      <div className="flex justify-end">
+                        <span className="text-sm font-medium text-gray-400">$ {fmtMoney(calcTotalFactura() / bcvRate)}</span>
+                      </div>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
+            {bcvRate && (
               <div className="mt-2 rounded-lg bg-blue-500/10 border border-blue-500/20 px-3 py-2 text-xs text-blue-300">
-                Tasa BCV: Bs. {fmtMoney(rate)} / 1 {moneda} ({exchangeRates?.date})
-                <br />
-                Equivalente en Bs.: <span className="font-medium">Bs. {fmtMoney(vesEq || 0)}</span>
+                Tasa BCV: <span className="font-bold">Bs. {fmtMoney(bcvRate)} / $ 1</span> ({bcvDate})
               </div>
             )}
           </div>
@@ -632,28 +665,24 @@ export default function InvoiceForm({ token }: Props) {
       <form onSubmit={handleFormSubmit} className="mx-auto max-w-4xl space-y-6">
         {error && <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-400">{error}</div>}
 
-        {/* ── BCV Exchange Rates Banner ── */}
-        {exchangeRates && exchangeRates.rates && Object.keys(exchangeRates.rates).length > 0 && (
-          <div className="flex flex-wrap items-center gap-4 rounded-xl border border-blue-500/20 bg-blue-500/5 px-4 py-3">
+        {/* ── BCV Exchange Rate Compact Banner ── */}
+        {bcvRate && (
+          <div className="flex items-center justify-between rounded-xl border border-blue-500/20 bg-blue-500/5 px-4 py-2.5">
             <div className="flex items-center gap-2">
-              <svg className="h-4 w-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-              </svg>
-              <span className="text-xs font-semibold text-blue-400">Tasas BCV ({exchangeRates.date})</span>
+              <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-xs font-semibold text-blue-400">Tasa BCV</span>
+              <span className="text-[10px] text-blue-400/50">({bcvDate})</span>
             </div>
-            {exchangeRates.rates.USD && (
-              <span className="rounded bg-blue-500/10 px-2 py-1 text-xs font-medium text-blue-300">
-                USD: Bs. {fmtMoney(exchangeRates.rates.USD)}
+            <div className="flex items-center gap-3">
+              <span className="rounded bg-blue-500/10 px-2.5 py-1 text-sm font-bold text-blue-200">
+                $ 1 = Bs. {fmtMoney(bcvRate)}
               </span>
-            )}
-            {exchangeRates.rates.EUR && (
-              <span className="rounded bg-blue-500/10 px-2 py-1 text-xs font-medium text-blue-300">
-                EUR: Bs. {fmtMoney(exchangeRates.rates.EUR)}
-              </span>
-            )}
-            {ratesLoading && (
-              <div className="h-3 w-3 animate-spin rounded-full border-2 border-blue-400/30 border-t-blue-400" />
-            )}
+              {exchangeRates?.rates?.EUR && (
+                <span className="rounded bg-blue-500/10 px-2 py-1 text-xs font-medium text-blue-300">
+                  EUR: Bs. {fmtMoney(exchangeRates.rates.EUR)}
+                </span>
+              )}
+            </div>
           </div>
         )}
 
@@ -809,7 +838,7 @@ export default function InvoiceForm({ token }: Props) {
                       className="w-full rounded bg-white/5 border border-white/10 px-2 py-1.5 text-sm text-white focus:border-aida-accent focus:outline-none" />
                   </div>
                   <div className="col-span-2">
-                    {i === 0 && <label className="mb-1 block text-[11px] text-gray-500">Precio unit.</label>}
+                    {i === 0 && <label className="mb-1 block text-[11px] text-gray-500">Precio ({moneda === "VES" ? "Bs." : "$"})</label>}
                     <input type="text" inputMode="decimal"
                       value={item.unit_price_text}
                       onChange={(e) => handlePriceChange(i, e.target.value)}
@@ -836,7 +865,12 @@ export default function InvoiceForm({ token }: Props) {
                       className="w-full rounded bg-white/5 border border-white/10 px-2 py-1.5 text-sm text-white" />
                   </div>
                   <div className="col-span-1 flex items-center justify-between">
-                    <span className="text-xs text-gray-500">{fmtMoney(item.quantity * item.unit_price * (1 - item.discount_percent / 100))}</span>
+                    <div className="min-w-0">
+                      <span className="text-xs text-gray-400 font-medium block">{moneda === "VES" ? "Bs." : "$"} {fmtMoney(item.quantity * item.unit_price * (1 - item.discount_percent / 100))}</span>
+                      {dualAmount(item.quantity * item.unit_price * (1 - item.discount_percent / 100)) && (
+                        <span className="text-[10px] text-gray-600 block">{dualAmount(item.quantity * item.unit_price * (1 - item.discount_percent / 100))}</span>
+                      )}
+                    </div>
                     {items.length > 1 && (
                       <button type="button" onClick={() => removeItem(i)} className="ml-1 text-red-400 hover:text-red-300">
                         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -900,79 +934,102 @@ export default function InvoiceForm({ token }: Props) {
           <div className="rounded-xl border border-white/10 bg-white/5 p-5">
             <h3 className="mb-3 text-sm font-semibold text-gray-300">Totales</h3>
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Subtotal bruto:</span>
-                <span className="text-gray-300">{moneda} {fmtMoney(calcGrossSubtotal())}</span>
-              </div>
-              {calcDiscount() > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Descuento:</span>
-                  <span className="text-red-400">- {moneda} {fmtMoney(calcDiscount())}</span>
-                </div>
-              )}
+              {/* Dual-line total helper */}
+              {(() => {
+                const DualRow = ({ label, amount, sign, bold, color }: { label: string; amount: number; sign?: string; bold?: boolean; color?: string }) => {
+                  const dual = dualAmount(amount);
+                  const prefix = sign || "";
+                  const textColor = color || "text-gray-300";
+                  return (
+                    <div>
+                      <div className={`flex justify-between ${bold ? "font-semibold" : ""}`}>
+                        <span className={bold ? "text-white" : "text-gray-500"}>{label}</span>
+                        <span className={bold ? "text-white" : textColor}>{prefix}{moneda} {fmtMoney(amount)}</span>
+                      </div>
+                      {dual && (
+                        <div className="flex justify-end">
+                          <span className="text-[11px] text-gray-500">{prefix}{dual}</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                };
+                return (
+                  <>
+                    <DualRow label="Subtotal bruto:" amount={calcGrossSubtotal()} />
+                    {calcDiscount() > 0 && <DualRow label="Descuento:" amount={calcDiscount()} sign="- " color="text-red-400" />}
+                    {calcBaseImponible16() > 0 && <DualRow label="Base imponible 16%:" amount={calcBaseImponible16()} />}
+                    {calcIva16() > 0 && <DualRow label="IVA 16%:" amount={calcIva16()} />}
+                    {calcBaseImponible8() > 0 && <DualRow label="Base imponible 8%:" amount={calcBaseImponible8()} />}
+                    {calcIva8() > 0 && <DualRow label="IVA 8%:" amount={calcIva8()} />}
+                    {calcBaseExenta() > 0 && <DualRow label="Exento:" amount={calcBaseExenta()} />}
 
-              {/* Tax breakdown */}
-              {calcBaseImponible16() > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Base imponible 16%:</span>
-                  <span className="text-gray-300">{moneda} {fmtMoney(calcBaseImponible16())}</span>
-                </div>
-              )}
-              {calcIva16() > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-gray-500">IVA 16%:</span>
-                  <span className="text-gray-300">{moneda} {fmtMoney(calcIva16())}</span>
-                </div>
-              )}
-              {calcBaseImponible8() > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Base imponible 8%:</span>
-                  <span className="text-gray-300">{moneda} {fmtMoney(calcBaseImponible8())}</span>
-                </div>
-              )}
-              {calcIva8() > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-gray-500">IVA 8%:</span>
-                  <span className="text-gray-300">{moneda} {fmtMoney(calcIva8())}</span>
-                </div>
-              )}
-              {calcBaseExenta() > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Exento:</span>
-                  <span className="text-gray-300">{moneda} {fmtMoney(calcBaseExenta())}</span>
-                </div>
-              )}
+                    <div className="border-t border-white/5 pt-2">
+                      <DualRow label="Total factura:" amount={calcTotalFactura()} bold />
+                    </div>
 
-              <div className="flex justify-between border-t border-white/5 pt-2 font-semibold">
-                <span className="text-white">Total factura:</span>
-                <span className="text-white">{moneda} {fmtMoney(calcTotalFactura())}</span>
-              </div>
+                    {isForeignCurrency && (
+                      <>
+                        <DualRow label="IGTF 3% (pago en divisas):" amount={calcIgtf()} color="text-amber-400" />
+                        <div className="border-t border-white/5 pt-2">
+                          <div className="flex justify-between text-lg font-bold">
+                            <span className="text-white">Total a pagar:</span>
+                            <span className="text-white">{moneda} {fmtMoney(calcTotalPagar())}</span>
+                          </div>
+                          {dualAmount(calcTotalPagar()) && (
+                            <div className="flex justify-end">
+                              <span className="text-sm font-medium text-gray-400">{dualAmount(calcTotalPagar())}</span>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
 
-              {/* IGTF for foreign currency */}
-              {isForeignCurrency && (
-                <>
-                  <div className="flex justify-between text-amber-400">
-                    <span>IGTF 3%:</span>
-                    <span>{moneda} {fmtMoney(calcIgtf())}</span>
+                    {!isForeignCurrency && moneda === "VES" && bcvRate && (
+                      <div className="border-t border-white/5 pt-2">
+                        <div className="flex justify-between text-lg font-bold">
+                          <span className="text-white">Total a pagar:</span>
+                          <span className="text-white">Bs. {fmtMoney(calcTotalFactura())}</span>
+                        </div>
+                        <div className="flex justify-end">
+                          <span className="text-sm font-medium text-gray-400">$ {fmtMoney(calcTotalFactura() / bcvRate)}</span>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+
+              {/* BCV Rate indicator - always visible */}
+              {bcvRate && (
+                <div className="mt-2 rounded-lg bg-blue-500/10 border border-blue-500/20 px-3 py-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                      <span className="text-xs font-semibold text-blue-300">Tasa BCV</span>
+                    </div>
+                    <span className="text-sm font-bold text-blue-200">Bs. {fmtMoney(bcvRate)} / $ 1</span>
                   </div>
-                  <div className="flex justify-between border-t border-white/5 pt-2 text-lg font-bold">
-                    <span className="text-white">Total a pagar:</span>
-                    <span className="text-white">{moneda} {fmtMoney(calcTotalPagar())}</span>
-                  </div>
-                </>
+                  {bcvDate && (
+                    <p className="mt-0.5 text-right text-[10px] text-blue-400/60">Actualizado: {bcvDate}</p>
+                  )}
+                  {exchangeRates?.rates?.EUR && (
+                    <div className="flex items-center justify-between mt-1 pt-1 border-t border-blue-500/10">
+                      <span className="text-[11px] text-blue-400/80">EUR</span>
+                      <span className="text-xs text-blue-300">Bs. {fmtMoney(exchangeRates.rates.EUR)} / 1 EUR</span>
+                    </div>
+                  )}
+                </div>
               )}
-
-              {/* VES equivalent for foreign currency */}
-              {isForeignCurrency && getRate(moneda) && (
-                <div className="mt-1 rounded-lg bg-blue-500/10 border border-blue-500/20 px-3 py-2">
-                  <div className="flex justify-between text-xs text-blue-300">
-                    <span>Tasa BCV:</span>
-                    <span>Bs. {fmtMoney(getRate(moneda)!)} / 1 {moneda}</span>
-                  </div>
-                  <div className="flex justify-between text-xs font-medium text-blue-200 mt-1">
-                    <span>Equivalente en Bs.:</span>
-                    <span>Bs. {fmtMoney(calcVesEquivalent(calcTotalPagar()) || 0)}</span>
-                  </div>
+              {!bcvRate && !ratesLoading && (
+                <div className="mt-2 rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-xs text-amber-300">
+                  No se pudo obtener la tasa BCV. Los montos en la moneda alterna no estan disponibles.
+                </div>
+              )}
+              {ratesLoading && (
+                <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
+                  <div className="h-3 w-3 animate-spin rounded-full border-2 border-blue-400/30 border-t-blue-400" />
+                  Consultando tasa BCV...
                 </div>
               )}
             </div>
