@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 interface Props { token: string }
 
@@ -12,18 +12,135 @@ interface LineItem {
   discount_percent: number;
 }
 
+interface CustomerResult {
+  id: string;
+  rif: string;
+  razon_social: string;
+  nombre_comercial: string | null;
+  direccion_fiscal: string;
+  email: string | null;
+  telefono_principal: string | null;
+  condicion_pago: string;
+}
+
 export default function InvoiceForm({ token }: Props) {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
   const [receptor, setReceptor] = useState({ rif: "", razon_social: "", direccion: "", email: "" });
+  const [customerId, setCustomerId] = useState<string | null>(null);
   const [items, setItems] = useState<LineItem[]>([
     { description: "", quantity: 1, unit_price: 0, tax_type: "G", discount_percent: 0 },
   ]);
   const [formaPago, setFormaPago] = useState("efectivo");
+  const [condicionPago, setCondicionPago] = useState("contado");
   const [moneda, setMoneda] = useState("VES");
   const [observaciones, setObservaciones] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState("");
+
+  // --- Customer search/autocomplete state ---
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [customerResults, setCustomerResults] = useState<CustomerResult[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedCustomerLabel, setSelectedCustomerLabel] = useState("");
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Debounced customer search
+  const searchCustomers = useCallback(async (query: string) => {
+    if (query.length < 2) {
+      setCustomerResults([]);
+      setShowDropdown(false);
+      return;
+    }
+    setSearchLoading(true);
+    try {
+      const res = await fetch(
+        `${apiUrl}/customers?search=${encodeURIComponent(query)}&page_size=10`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setCustomerResults(data.items || []);
+        setShowDropdown(true);
+      } else {
+        setCustomerResults([]);
+      }
+    } catch {
+      setCustomerResults([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  }, [apiUrl, token]);
+
+  const handleSearchChange = (value: string) => {
+    setCustomerSearch(value);
+    // Clear selection if user modifies search
+    if (selectedCustomerLabel && value !== selectedCustomerLabel) {
+      setCustomerId(null);
+      setSelectedCustomerLabel("");
+      setReceptor({ rif: "", razon_social: "", direccion: "", email: "" });
+      setCondicionPago("contado");
+    }
+    // Debounce search
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => searchCustomers(value), 300);
+  };
+
+  const selectCustomer = (customer: CustomerResult) => {
+    setCustomerId(customer.id);
+    setReceptor({
+      rif: customer.rif,
+      razon_social: customer.razon_social,
+      direccion: customer.direccion_fiscal,
+      email: customer.email || "",
+    });
+    if (customer.condicion_pago) {
+      setCondicionPago(customer.condicion_pago);
+    }
+    const label = `${customer.rif} — ${customer.razon_social}`;
+    setSelectedCustomerLabel(label);
+    setCustomerSearch(label);
+    setShowDropdown(false);
+    setCustomerResults([]);
+  };
+
+  const clearCustomer = () => {
+    setCustomerId(null);
+    setSelectedCustomerLabel("");
+    setCustomerSearch("");
+    setReceptor({ rif: "", razon_social: "", direccion: "", email: "" });
+    setCondicionPago("contado");
+  };
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Load customers on mount (preload)
+  useEffect(() => {
+    const preload = async () => {
+      try {
+        const res = await fetch(
+          `${apiUrl}/customers?page_size=10`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setCustomerResults(data.items || []);
+        }
+      } catch { /* silently ignore preload errors */ }
+    };
+    preload();
+  }, [apiUrl, token]);
 
   const addItem = () => {
     setItems([...items, { description: "", quantity: 1, unit_price: 0, tax_type: "G", discount_percent: 0 }]);
@@ -39,13 +156,19 @@ export default function InvoiceForm({ token }: Props) {
     setItems(updated);
   };
 
-  const calcTotal = () => {
+  const calcSubtotal = () => {
+    return items.reduce((acc, item) => acc + item.quantity * item.unit_price * (1 - item.discount_percent / 100), 0);
+  };
+
+  const calcIva = () => {
     return items.reduce((acc, item) => {
       const sub = item.quantity * item.unit_price * (1 - item.discount_percent / 100);
       const taxRate = item.tax_type === "G" ? 0.16 : item.tax_type === "R" ? 0.08 : 0;
-      return acc + sub + sub * taxRate;
+      return acc + sub * taxRate;
     }, 0);
   };
+
+  const calcTotal = () => calcSubtotal() + calcIva();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,11 +181,12 @@ export default function InvoiceForm({ token }: Props) {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
+          customer_id: customerId || undefined,
           receptor_rif: receptor.rif,
           receptor_razon_social: receptor.razon_social,
           receptor_direccion: receptor.direccion || "N/A",
           receptor_email: receptor.email || undefined,
-          items: items.map((item, i) => ({
+          items: items.map((item) => ({
             description: item.description,
             quantity: item.quantity,
             unit_price: item.unit_price,
@@ -71,6 +195,7 @@ export default function InvoiceForm({ token }: Props) {
             unit_of_measure: "UND",
           })),
           forma_pago: formaPago,
+          condicion_pago: condicionPago,
           moneda,
           observaciones: observaciones || undefined,
         }),
@@ -116,7 +241,7 @@ export default function InvoiceForm({ token }: Props) {
               Descargar PDF
             </a>
           )}
-          <button onClick={() => { setResult(null); setItems([{ description: "", quantity: 1, unit_price: 0, tax_type: "G", discount_percent: 0 }]); setReceptor({ rif: "", razon_social: "", direccion: "", email: "" }); }}
+          <button onClick={() => { setResult(null); setItems([{ description: "", quantity: 1, unit_price: 0, tax_type: "G", discount_percent: 0 }]); clearCustomer(); }}
             className="rounded-lg border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5">
             Nueva Factura
           </button>
@@ -129,22 +254,97 @@ export default function InvoiceForm({ token }: Props) {
     <form onSubmit={handleSubmit} className="mx-auto max-w-4xl space-y-6">
       {error && <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-400">{error}</div>}
 
-      {/* Receptor */}
+      {/* Receptor — Customer search + autocomplete */}
       <div className="rounded-xl border border-white/10 bg-white/5 p-5">
         <h3 className="mb-3 text-sm font-semibold text-gray-300">Datos del Cliente</h3>
+
+        {/* Search bar */}
+        <div className="relative mb-3" ref={dropdownRef}>
+          <div className="relative">
+            <svg className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              placeholder="Buscar cliente por RIF o nombre..."
+              value={customerSearch}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              onFocus={() => { if (customerResults.length > 0 && !customerId) setShowDropdown(true); }}
+              className="w-full rounded-lg bg-white/5 border border-white/10 pl-10 pr-10 py-2 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none"
+            />
+            {searchLoading && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-aida-accent" />
+              </div>
+            )}
+            {customerId && !searchLoading && (
+              <button type="button" onClick={clearCustomer}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white">
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+
+          {/* Dropdown results */}
+          {showDropdown && customerResults.length > 0 && (
+            <div className="absolute z-50 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-white/10 bg-[#0d1321] shadow-xl">
+              {customerResults.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => selectCustomer(c)}
+                  className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-white/5 transition-colors"
+                >
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-aida-accent/10 text-xs font-bold text-aida-accent">
+                    {c.razon_social.charAt(0)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-white">{c.razon_social}</p>
+                    <p className="truncate text-xs text-gray-500">
+                      {c.rif}{c.email ? ` · ${c.email}` : ""}{c.telefono_principal ? ` · ${c.telefono_principal}` : ""}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {showDropdown && customerSearch.length >= 2 && customerResults.length === 0 && !searchLoading && (
+            <div className="absolute z-50 mt-1 w-full rounded-lg border border-white/10 bg-[#0d1321] px-4 py-3 text-sm text-gray-500 shadow-xl">
+              No se encontraron clientes. Ingrese los datos manualmente.
+            </div>
+          )}
+        </div>
+
+        {/* Selected customer badge */}
+        {customerId && (
+          <div className="mb-3 flex items-center gap-2 rounded-lg bg-aida-accent/5 border border-aida-accent/20 px-3 py-2">
+            <svg className="h-4 w-4 text-aida-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <span className="text-sm text-aida-accent">Cliente seleccionado: {receptor.rif} — {receptor.razon_social}</span>
+          </div>
+        )}
+
+        {/* Receptor fields (auto-filled or manual) */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <input placeholder="RIF (ej: J-12345678-9)" value={receptor.rif}
             onChange={(e) => setReceptor({ ...receptor, rif: e.target.value })} required
-            className="rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none" />
+            readOnly={!!customerId}
+            className={`rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none ${customerId ? "opacity-70 cursor-not-allowed" : ""}`} />
           <input placeholder="Razón Social" value={receptor.razon_social}
             onChange={(e) => setReceptor({ ...receptor, razon_social: e.target.value })} required
-            className="rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none" />
+            readOnly={!!customerId}
+            className={`rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none ${customerId ? "opacity-70 cursor-not-allowed" : ""}`} />
           <input placeholder="Dirección fiscal" value={receptor.direccion}
             onChange={(e) => setReceptor({ ...receptor, direccion: e.target.value })}
-            className="rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none" />
+            readOnly={!!customerId}
+            className={`rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none ${customerId ? "opacity-70 cursor-not-allowed" : ""}`} />
           <input placeholder="Email (opcional)" type="email" value={receptor.email}
             onChange={(e) => setReceptor({ ...receptor, email: e.target.value })}
-            className="rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none" />
+            readOnly={!!customerId}
+            className={`rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none ${customerId ? "opacity-70 cursor-not-allowed" : ""}`} />
         </div>
       </div>
 
@@ -221,6 +421,14 @@ export default function InvoiceForm({ token }: Props) {
             <option value="cheque">Cheque</option>
             <option value="mixto">Mixto</option>
           </select>
+          <label className="mt-3 mb-1 block text-[11px] text-gray-500">Condición de Pago</label>
+          <select value={condicionPago} onChange={(e) => setCondicionPago(e.target.value)}
+            className="w-full rounded-lg bg-[#0a0f1a] border border-white/10 px-3 py-2 text-sm text-white">
+            <option value="contado">Contado</option>
+            <option value="credito_15">Crédito 15 días</option>
+            <option value="credito_30">Crédito 30 días</option>
+            <option value="credito_60">Crédito 60 días</option>
+          </select>
           <select value={moneda} onChange={(e) => setMoneda(e.target.value)}
             className="mt-3 w-full rounded-lg bg-[#0a0f1a] border border-white/10 px-3 py-2 text-sm text-white">
             <option value="VES">Bolívares (VES)</option>
@@ -240,8 +448,16 @@ export default function InvoiceForm({ token }: Props) {
               <span className="text-gray-300">{moneda} {items.reduce((a, i) => a + i.quantity * i.unit_price, 0).toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">IVA estimado:</span>
-              <span className="text-gray-300">{moneda} {(calcTotal() - items.reduce((a, i) => a + i.quantity * i.unit_price * (1 - i.discount_percent / 100), 0)).toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span>
+              <span className="text-gray-500">Descuento:</span>
+              <span className="text-gray-300">- {moneda} {(items.reduce((a, i) => a + i.quantity * i.unit_price, 0) - calcSubtotal()).toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Base Imponible:</span>
+              <span className="text-gray-300">{moneda} {calcSubtotal().toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">IVA:</span>
+              <span className="text-gray-300">{moneda} {calcIva().toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span>
             </div>
             <div className="flex justify-between border-t border-white/5 pt-2 text-lg font-bold">
               <span className="text-white">Total:</span>
