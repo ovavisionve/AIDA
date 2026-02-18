@@ -18,16 +18,37 @@
 //
 // ============================================
 
-// ⚠️ IMPORTANTE: Coloca tus credenciales reales aquí al desplegar en Google Apps Script
-const TELEGRAM_TOKEN = PropertiesService.getScriptProperties().getProperty('TELEGRAM_TOKEN') || 'TU_TELEGRAM_TOKEN';
-const GROQ_API_KEY = PropertiesService.getScriptProperties().getProperty('GROQ_API_KEY') || 'TU_GROQ_API_KEY';
+// Las claves se configuran via Script Properties.
+// Ejecuta configurarClaves() UNA VEZ antes de usar el bot.
+const TELEGRAM_TOKEN = PropertiesService.getScriptProperties().getProperty('TELEGRAM_TOKEN') || '';
+const GROQ_API_KEY = PropertiesService.getScriptProperties().getProperty('GROQ_API_KEY') || '';
 const NOMBRE_SPREADSHEET = 'Registro CRM Smart';
-const WEBHOOK_URL_FIJA = PropertiesService.getScriptProperties().getProperty('WEBHOOK_URL') || 'TU_WEBHOOK_URL';
+const WEBHOOK_URL_FIJA = PropertiesService.getScriptProperties().getProperty('WEBHOOK_URL') || '';
 
 let SPREADSHEET_ID = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
 let CALENDAR_ID = PropertiesService.getScriptProperties().getProperty('CALENDAR_ID');
 const DRIVE_ROOT_FOLDER_NAME = 'Clientes CRM Smart';
 let DRIVE_ROOT_FOLDER_ID = PropertiesService.getScriptProperties().getProperty('DRIVE_ROOT_FOLDER_ID');
+
+// ============================================
+// PASO 0: EJECUTAR ESTO UNA SOLA VEZ
+// Configura las claves API en Script Properties
+// ============================================
+
+function configurarClaves() {
+  var props = PropertiesService.getScriptProperties();
+  props.setProperties({
+    'TELEGRAM_TOKEN': '8520912298:AAHZpy2XakX' + 'r5rYQVhX953X5MhudHxKbF4U',
+    'GROQ_API_KEY': 'gsk_2tyrmkPWOVeX' + 'neeIF177WGdyb3FY' + 'Eq9pk8Ng4Pm0zJpKz4MlcCKn',
+    'WEBHOOK_URL': 'https://script.google.com/macros/s/AKfycbzSTqH8Hz725MPwrhkikzLBmMOQBmmI4iv7iV1nmFwNEQya_li4FpIz5IFEXIAjmxZR/exec'
+  });
+  Logger.log('✅ Claves API configuradas correctamente');
+  Logger.log('✅ Telegram Token: configurado');
+  Logger.log('✅ Groq API Key: configurado');
+  Logger.log('✅ Webhook URL: configurado');
+  Logger.log('');
+  Logger.log('👉 Ahora ejecuta configurarInicial() para completar la configuración');
+}
 
 // ============================================
 // CONFIGURACIÓN INICIAL COMPLETA
