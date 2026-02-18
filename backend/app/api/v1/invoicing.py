@@ -7,6 +7,8 @@ generados desde la web y desde integración API son idénticos.
 """
 import uuid
 import math
+import logging
+import httpx
 from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import select, func, union_all, literal
@@ -29,7 +31,93 @@ from app.schemas.fiscal import (
 )
 from app.services.fiscal.document_emitter import emitir_documento, DocumentEmissionError
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
+
+# ─── BCV Exchange Rate Cache ───────────────────────────────────────
+_bcv_cache: dict = {"rates": None, "fetched_at": None}
+BCV_CACHE_TTL = timedelta(minutes=30)
+
+
+async def _fetch_bcv_rates() -> dict:
+    """Fetch BCV exchange rates. Uses cache to avoid excessive requests."""
+    now = datetime.now(timezone.utc)
+
+    if (
+        _bcv_cache["rates"]
+        and _bcv_cache["fetched_at"]
+        and now - _bcv_cache["fetched_at"] < BCV_CACHE_TTL
+    ):
+        return _bcv_cache["rates"]
+
+    try:
+        async with httpx.AsyncClient(timeout=10, verify=False) as client:
+            resp = await client.get("https://www.bcv.org.ve/")
+            html = resp.text
+
+        import re
+        rates = {}
+
+        # Parse USD rate
+        usd_match = re.search(
+            r'id="dolar"[^>]*>.*?<strong>([\d,.]+)</strong>',
+            html, re.DOTALL,
+        )
+        if usd_match:
+            rates["USD"] = float(usd_match.group(1).replace(".", "").replace(",", "."))
+
+        # Parse EUR rate
+        eur_match = re.search(
+            r'id="euro"[^>]*>.*?<strong>([\d,.]+)</strong>',
+            html, re.DOTALL,
+        )
+        if eur_match:
+            rates["EUR"] = float(eur_match.group(1).replace(".", "").replace(",", "."))
+
+        # Parse CNY rate
+        cny_match = re.search(
+            r'id="yuan"[^>]*>.*?<strong>([\d,.]+)</strong>',
+            html, re.DOTALL,
+        )
+        if cny_match:
+            rates["CNY"] = float(cny_match.group(1).replace(".", "").replace(",", "."))
+
+        if rates:
+            _bcv_cache["rates"] = {
+                "rates": rates,
+                "source": "BCV",
+                "date": now.strftime("%Y-%m-%d"),
+                "timestamp": now.isoformat(),
+            }
+            _bcv_cache["fetched_at"] = now
+            return _bcv_cache["rates"]
+    except Exception as e:
+        logger.warning(f"Error fetching BCV rates: {e}")
+
+    # Return cached data even if stale, or fallback
+    if _bcv_cache["rates"]:
+        return _bcv_cache["rates"]
+
+    return {
+        "rates": {},
+        "source": "unavailable",
+        "date": now.strftime("%Y-%m-%d"),
+        "timestamp": now.isoformat(),
+        "error": "No se pudieron obtener las tasas del BCV",
+    }
+
+
+@router.get("/exchange-rates")
+async def get_exchange_rates(
+    user: User = Depends(get_current_user),
+):
+    """
+    Obtener tasas de cambio oficiales del BCV (Banco Central de Venezuela).
+
+    Retorna tasas USD/VES, EUR/VES actualizadas.
+    Se cachean por 30 minutos para evitar exceso de consultas.
+    """
+    return await _fetch_bcv_rates()
 
 
 async def _get_client(user: User, db: AsyncSession) -> Client:
