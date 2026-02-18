@@ -379,11 +379,35 @@ export default function InvoiceForm({ token }: Props) {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(buildPayload()),
       });
+
+      if (!res.ok) {
+        let detail = `Error ${res.status}`;
+        try {
+          const data = await res.json();
+          if (data.detail) {
+            detail = typeof data.detail === "string"
+              ? data.detail
+              : Array.isArray(data.detail)
+                ? data.detail.map((d: any) => d.msg || d).join("; ")
+                : JSON.stringify(data.detail);
+          }
+        } catch {
+          const text = await res.text().catch(() => "");
+          if (text) detail += `: ${text.slice(0, 200)}`;
+        }
+        setError(detail);
+        return;
+      }
+
       const data = await res.json();
-      if (!res.ok) setError(data.detail || "Error al crear factura");
-      else setResult(data);
-    } catch {
-      setError("Error de conexion");
+      setResult(data);
+    } catch (err: any) {
+      const msg = err?.message || String(err);
+      if (msg.includes("Failed to fetch") || msg.includes("NetworkError")) {
+        setError(`Error de conexión: el servidor no respondió. Verifique que el backend esté activo (${apiUrl})`);
+      } else {
+        setError(`Error inesperado: ${msg}`);
+      }
     } finally {
       setLoading(false);
     }
