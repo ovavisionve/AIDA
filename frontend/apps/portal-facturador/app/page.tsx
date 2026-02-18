@@ -12,6 +12,23 @@ import TemplateSelector from "@/components/TemplateSelector";
 
 type Section = "dashboard" | "nueva-factura" | "productos" | "clientes" | "documentos" | "reportes" | "plantillas";
 
+interface UserProfile {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  is_superadmin: boolean;
+  roles: string[];
+  client: {
+    id: string;
+    rif: string;
+    razon_social: string;
+    nombre_comercial: string | null;
+    plan: string;
+    is_active: boolean;
+  } | null;
+}
+
 export default function Home() {
   const [isAuth, setIsAuth] = useState(false);
   const [checking, setChecking] = useState(true);
@@ -20,26 +37,37 @@ export default function Home() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [token, setToken] = useState("");
+  const [profile, setProfile] = useState<UserProfile | null>(null);
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+
+  const loadProfile = async (t: string) => {
+    try {
+      const res = await fetch(`${apiUrl}/users/me/profile`, {
+        headers: { Authorization: `Bearer ${t}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setProfile(data);
+        return true;
+      }
+    } catch { /* network error */ }
+    return false;
+  };
 
   // Check auth on mount
   useEffect(() => {
     const stored = localStorage.getItem("access_token");
     if (stored) {
-      fetch(`${apiUrl}/users/me`, { headers: { Authorization: `Bearer ${stored}` } })
-        .then((r) => {
-          if (r.ok) {
-            setToken(stored);
-            setIsAuth(true);
-          } else {
-            localStorage.removeItem("access_token");
-          }
-        })
-        .catch(() => {
+      loadProfile(stored).then((ok) => {
+        if (ok) {
+          setToken(stored);
+          setIsAuth(true);
+        } else {
           localStorage.removeItem("access_token");
-        })
-        .finally(() => setChecking(false));
+        }
+        setChecking(false);
+      });
     } else {
       setChecking(false);
     }
@@ -56,8 +84,10 @@ export default function Home() {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.detail || "Error al iniciar sesión"); return; }
-      setToken(data.access_token);
-      localStorage.setItem("access_token", data.access_token);
+      const t = data.access_token;
+      setToken(t);
+      localStorage.setItem("access_token", t);
+      await loadProfile(t);
       setIsAuth(true);
     } catch { setError("Error de conexión"); }
   };
@@ -65,6 +95,7 @@ export default function Home() {
   const logout = () => {
     localStorage.removeItem("access_token");
     setToken("");
+    setProfile(null);
     setIsAuth(false);
     setSection("dashboard");
   };
@@ -109,16 +140,32 @@ export default function Home() {
     plantillas: "Plantillas",
   };
 
+  const primaryRole = profile?.roles?.[0] || (profile?.is_superadmin ? "Super Admin" : "Usuario");
+  const planLabels: Record<string, string> = { empresarial: "Empresarial", profesional: "Profesional", basico: "Básico" };
+  const planColors: Record<string, string> = {
+    empresarial: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+    profesional: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+    basico: "bg-gray-500/10 text-gray-400 border-gray-500/20",
+  };
+
   return (
     <div className="flex h-screen bg-transparent">
-      <Sidebar active={section} onNavigate={setSection} />
+      <Sidebar active={section} onNavigate={setSection} profile={profile} onLogout={logout} />
       <main className="flex-1 overflow-auto">
         <header className="flex h-14 items-center justify-between bg-[#0a0f1a]/80 backdrop-blur-lg border-b border-white/5 px-6">
           <h2 className="font-semibold text-white">{sectionLabels[section]}</h2>
-          <div className="flex items-center gap-4">
-            <span className="text-xs text-gray-500">Portal 2 — Facturador</span>
-            <button onClick={logout} className="text-xs text-gray-500 hover:text-red-400 transition">
-              Cerrar sesión
+          <div className="flex items-center gap-3">
+            {profile?.client && (
+              <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-medium ${planColors[profile.client.plan] || planColors.basico}`}>
+                {planLabels[profile.client.plan] || profile.client.plan}
+              </span>
+            )}
+            <div className="text-right">
+              <p className="text-xs text-gray-300">{profile?.first_name} {profile?.last_name}</p>
+              <p className="text-[10px] text-gray-500">{primaryRole}</p>
+            </div>
+            <button onClick={logout} className="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-gray-400 hover:text-red-400 hover:border-red-500/20 transition">
+              Salir
             </button>
           </div>
         </header>

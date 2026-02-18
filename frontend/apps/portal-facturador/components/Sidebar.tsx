@@ -2,9 +2,28 @@
 
 type Section = "dashboard" | "nueva-factura" | "productos" | "clientes" | "documentos" | "reportes" | "plantillas";
 
+interface UserProfile {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  is_superadmin: boolean;
+  roles: string[];
+  client: {
+    id: string;
+    rif: string;
+    razon_social: string;
+    nombre_comercial: string | null;
+    plan: string;
+    is_active: boolean;
+  } | null;
+}
+
 interface SidebarProps {
   active: Section;
   onNavigate: (s: Section) => void;
+  profile: UserProfile | null;
+  onLogout: () => void;
 }
 
 const navItems: { id: Section; label: string; icon: string }[] = [
@@ -17,13 +36,33 @@ const navItems: { id: Section; label: string; icon: string }[] = [
   { id: "plantillas", label: "Plantillas", icon: "M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" },
 ];
 
-export default function Sidebar({ active, onNavigate }: SidebarProps) {
+export default function Sidebar({ active, onNavigate, profile, onLogout }: SidebarProps) {
+  const initials = profile
+    ? `${profile.first_name.charAt(0)}${profile.last_name.charAt(0)}`.toUpperCase()
+    : "??";
+  const primaryRole = profile?.roles?.[0] || (profile?.is_superadmin ? "Super Admin" : "Usuario");
+
   return (
     <aside className="flex w-56 flex-col aida-sidebar text-white">
+      {/* Logo */}
       <div className="flex h-14 items-center gap-2 px-4 border-b border-white/5">
         <span className="text-lg font-bold tracking-tight">AIDA</span>
         <span className="rounded-full bg-aida-cyan/20 px-2 py-0.5 text-[10px] font-medium text-aida-cyan">Facturador</span>
       </div>
+
+      {/* Company info */}
+      {profile?.client && (
+        <div className="px-4 py-3 border-b border-white/5">
+          <p className="text-xs font-semibold text-white truncate">{profile.client.nombre_comercial || profile.client.razon_social}</p>
+          <p className="text-[10px] text-gray-500 mt-0.5">RIF: {profile.client.rif}</p>
+          <div className="flex items-center gap-1.5 mt-1.5">
+            <span className={`inline-block h-1.5 w-1.5 rounded-full ${profile.client.is_active ? "bg-emerald-400" : "bg-red-400"}`} />
+            <span className="text-[10px] text-gray-500">{profile.client.is_active ? "Activo" : "Inactivo"}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Navigation */}
       <nav className="mt-3 flex-1 space-y-0.5 px-2">
         {navItems.map((item) => (
           <button
@@ -42,11 +81,31 @@ export default function Sidebar({ active, onNavigate }: SidebarProps) {
           </button>
         ))}
       </nav>
+
+      {/* User profile footer */}
       <div className="p-3 border-t border-white/5">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-[11px] text-gray-500">Conectado</span>
-        </div>
+        {profile ? (
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-aida-accent/20 text-[11px] font-bold text-aida-cyan">
+              {initials}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium text-gray-300 truncate">{profile.first_name} {profile.last_name}</p>
+              <p className="text-[10px] text-gray-500 truncate">{primaryRole}</p>
+            </div>
+            <button onClick={onLogout} title="Cerrar sesión"
+              className="rounded p-1 text-gray-600 hover:text-red-400 hover:bg-white/5 transition">
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+              </svg>
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-[11px] text-gray-500">Conectado</span>
+          </div>
+        )}
       </div>
     </aside>
   );
