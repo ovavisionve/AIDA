@@ -4,15 +4,46 @@ import math
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
+from pydantic import BaseModel
 from app.database import get_db
 from app.core.security import hash_password
 from app.core.deps import get_current_user, log_audit, require_permissions
 from app.core.permissions import P6_USERS_VIEW, P6_USERS_CREATE, P6_USERS_EDIT, P6_USERS_DELETE
 from app.models.security import User, Role, UserRole
-from app.models.clients import ClientUser
+from app.models.clients import Client, ClientUser
 from app.schemas.users import UserCreate, UserUpdate, UserResponse, UserListResponse, AssignRoleRequest
 
 router = APIRouter()
+
+
+class ClientInfo(BaseModel):
+    id: uuid.UUID
+    rif: str
+    razon_social: str
+    nombre_comercial: str | None
+    plan: str
+    is_active: bool
+
+    model_config = {"from_attributes": True}
+
+
+class UserProfileResponse(BaseModel):
+    id: uuid.UUID
+    email: str
+    first_name: str
+    last_name: str
+    phone: str | None
+    is_active: bool
+    is_superadmin: bool
+    is_verified: bool
+    totp_enabled: bool
+    language: str
+    timezone: str
+    theme: str
+    roles: list[str]
+    client: ClientInfo | None
+
+    model_config = {"from_attributes": True}
 
 
 @router.get("/me", response_model=UserResponse)
@@ -21,6 +52,48 @@ async def get_current_user_profile(
 ):
     """Retorna el perfil del usuario autenticado."""
     return UserResponse.model_validate(user)
+
+
+@router.get("/me/profile", response_model=UserProfileResponse)
+async def get_current_user_full_profile(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Retorna el perfil completo del usuario con info de cliente y roles."""
+    # Get user roles
+    role_result = await db.execute(
+        select(Role.display_name)
+        .join(UserRole, UserRole.role_id == Role.id)
+        .where(UserRole.user_id == user.id)
+    )
+    roles = [row[0] for row in role_result.all()]
+
+    # Get primary client
+    cu_result = await db.execute(
+        select(Client)
+        .join(ClientUser, ClientUser.client_id == Client.id)
+        .where(ClientUser.user_id == user.id, ClientUser.is_active == True)
+        .order_by(ClientUser.is_primary.desc())
+        .limit(1)
+    )
+    client = cu_result.scalar_one_or_none()
+
+    return UserProfileResponse(
+        id=user.id,
+        email=user.email,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        phone=user.phone,
+        is_active=user.is_active,
+        is_superadmin=user.is_superadmin,
+        is_verified=user.is_verified,
+        totp_enabled=user.totp_enabled,
+        language=user.language,
+        timezone=user.timezone,
+        theme=user.theme,
+        roles=roles,
+        client=ClientInfo.model_validate(client) if client else None,
+    )
 
 
 @router.get("", response_model=UserListResponse)
