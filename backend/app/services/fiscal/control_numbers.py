@@ -80,6 +80,7 @@ async def assign_control_number(
         ip_asignacion=ip_address,
     )
     db.add(control_number)
+    await db.flush()  # Generate control_number.id before audit reference
 
     # Auditoría
     audit = ControlNumberAudit(
