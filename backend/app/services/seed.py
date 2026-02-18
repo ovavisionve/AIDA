@@ -269,10 +269,10 @@ async def _seed_test_clients(session, admin_user, role_map):
 
         session.add(ClientUser(client_id=client1.id, user_id=user1b.id, is_primary=False))
 
-        if "client_user" in role_map:
+        if "client_accountant" in role_map:
             session.add(UserRole(
                 user_id=user1b.id,
-                role_id=role_map["client_user"].id,
+                role_id=role_map["client_accountant"].id,
                 client_id=client1.id,
                 assigned_by=admin_user.id,
             ))
@@ -384,10 +384,10 @@ async def _seed_test_clients(session, admin_user, role_map):
 
         session.add(ClientUser(client_id=client2.id, user_id=user2b.id, is_primary=False))
 
-        if "client_user" in role_map:
+        if "client_salesperson" in role_map:
             session.add(UserRole(
                 user_id=user2b.id,
-                role_id=role_map["client_user"].id,
+                role_id=role_map["client_salesperson"].id,
                 client_id=client2.id,
                 assigned_by=admin_user.id,
             ))
@@ -397,6 +397,51 @@ async def _seed_test_clients(session, admin_user, role_map):
         print(f"    Vendedora: ana.garcia@electrocaribe.com.ve / Electro2025!")
         print(f"    API Key: {api_key_2}")
         print(f"    API Secret: {api_secret_2}")
+
+    # ── Fix missing role assignments for already-seeded databases ──────
+    await _fix_missing_roles(session, role_map, admin_user)
+
+
+async def _fix_missing_roles(session, role_map, admin_user):
+    """Assign correct roles to test users that may be missing them."""
+    role_fixes = [
+        ("carlos.santoni@arrozsantoni.com.ve", "J-31245678-3", "client_admin"),
+        ("maria.rodriguez@arrozsantoni.com.ve", "J-31245678-3", "client_accountant"),
+        ("luis.perez@electrocaribe.com.ve", "J-40987654-1", "client_admin"),
+        ("ana.garcia@electrocaribe.com.ve", "J-40987654-1", "client_salesperson"),
+    ]
+    fixed = 0
+    for email, rif, role_name in role_fixes:
+        if role_name not in role_map:
+            continue
+        user_result = await session.execute(select(User).where(User.email == email))
+        user = user_result.scalar_one_or_none()
+        if not user:
+            continue
+        client_result = await session.execute(select(Client).where(Client.rif == rif))
+        client = client_result.scalar_one_or_none()
+        if not client:
+            continue
+        # Check if role already assigned
+        existing = await session.execute(
+            select(UserRole).where(
+                UserRole.user_id == user.id,
+                UserRole.role_id == role_map[role_name].id,
+                UserRole.client_id == client.id,
+            )
+        )
+        if not existing.scalar_one_or_none():
+            session.add(UserRole(
+                user_id=user.id,
+                role_id=role_map[role_name].id,
+                client_id=client.id,
+                assigned_by=admin_user.id,
+            ))
+            fixed += 1
+            print(f"  Rol '{role_name}' asignado a {email}")
+    if fixed:
+        await session.flush()
+        print(f"  {fixed} roles corregidos")
 
 
 async def _seed_audit_logs(session, admin_user):
@@ -422,11 +467,11 @@ async def _seed_audit_logs(session, admin_user):
     clients_config = [
         ("J-31245678-3", "Alimentos Santoni C.A.", [
             ("carlos.santoni@arrozsantoni.com.ve", "client_admin"),
-            ("maria.rodriguez@arrozsantoni.com.ve", "client_user"),
+            ("maria.rodriguez@arrozsantoni.com.ve", "client_accountant"),
         ]),
         ("J-40987654-1", "Distribuidora Electro Caribe C.A.", [
             ("luis.perez@electrocaribe.com.ve", "client_admin"),
-            ("ana.garcia@electrocaribe.com.ve", "client_user"),
+            ("ana.garcia@electrocaribe.com.ve", "client_salesperson"),
         ]),
     ]
 
