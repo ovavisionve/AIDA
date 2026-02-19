@@ -16,6 +16,7 @@ from app.models.security import User, Role, Permission, RolePermission, AuditLog
 from app.models.config import SystemSetting
 from app.models.control_numbers import ControlNumberRange, ControlNumber
 from app.models.clients import Client
+from app.models.integrations import IntegrationAgent, AgentChatSession
 from pydantic import BaseModel, Field
 
 router = APIRouter()
@@ -603,3 +604,252 @@ async def control_numbers_stats(
         "total_numbers_voided": total_voided,
         "low_stock_ranges": low_stock,
     }
+
+
+# --- Integration Agents (Agentes IA por cliente) ---
+
+ERP_TYPES = {
+    "sap_b1": "SAP Business One",
+    "sap_hana": "SAP S/4HANA",
+    "odoo": "Odoo",
+    "profit_plus": "Profit Plus",
+    "saint": "Saint",
+    "a2": "A2 Softway",
+    "valery": "Valery",
+    "woocommerce": "WooCommerce",
+    "prestashop": "PrestaShop",
+    "shopify": "Shopify",
+    "api_directa": "API Directa",
+    "custom": "Personalizado",
+}
+
+
+class IntegrationAgentResponse(BaseModel):
+    id: uuid.UUID
+    client_id: uuid.UUID
+    client_name: str | None = None
+    client_rif: str | None = None
+    agent_name: str
+    erp_type: str
+    erp_display: str | None = None
+    status: str
+    can_read_code: bool
+    can_write_code: bool
+    can_test_connection: bool
+    can_modify_mapping: bool
+    integration_notes: str | None
+    custom_instructions: str | None
+    total_sessions: int
+    total_messages: int
+    total_tokens_used: int
+    created_at: datetime
+
+
+class CreateIntegrationAgentRequest(BaseModel):
+    client_id: uuid.UUID
+    agent_name: str = Field(max_length=100)
+    erp_type: str = Field(max_length=50)
+    integration_notes: str | None = None
+    custom_instructions: str | None = None
+    can_read_code: bool = True
+    can_write_code: bool = False
+    can_test_connection: bool = True
+    can_modify_mapping: bool = True
+
+
+class UpdateIntegrationAgentRequest(BaseModel):
+    agent_name: str | None = None
+    erp_type: str | None = None
+    status: str | None = None
+    integration_notes: str | None = None
+    custom_instructions: str | None = None
+    can_read_code: bool | None = None
+    can_write_code: bool | None = None
+    can_test_connection: bool | None = None
+    can_modify_mapping: bool | None = None
+
+
+def _agent_response(agent: IntegrationAgent, client: Client | None) -> IntegrationAgentResponse:
+    return IntegrationAgentResponse(
+        id=agent.id,
+        client_id=agent.client_id,
+        client_name=client.razon_social if client else None,
+        client_rif=client.rif if client else None,
+        agent_name=agent.agent_name,
+        erp_type=agent.erp_type,
+        erp_display=ERP_TYPES.get(agent.erp_type, agent.erp_type),
+        status=agent.status,
+        can_read_code=agent.can_read_code,
+        can_write_code=agent.can_write_code,
+        can_test_connection=agent.can_test_connection,
+        can_modify_mapping=agent.can_modify_mapping,
+        integration_notes=agent.integration_notes,
+        custom_instructions=agent.custom_instructions,
+        total_sessions=agent.total_sessions,
+        total_messages=agent.total_messages,
+        total_tokens_used=agent.total_tokens_used,
+        created_at=agent.created_at,
+    )
+
+
+@router.get("/integration-agents")
+async def list_integration_agents(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(15, ge=1, le=100),
+    client_id: uuid.UUID | None = None,
+    status: str | None = None,
+    user: User = require_permissions(P6_CONTROL_NUMBERS_GLOBAL),
+    db: AsyncSession = Depends(get_db),
+):
+    """List all integration agents."""
+    query = select(IntegrationAgent)
+    if client_id:
+        query = query.where(IntegrationAgent.client_id == client_id)
+    if status:
+        query = query.where(IntegrationAgent.status == status)
+
+    count_query = select(func.count()).select_from(query.subquery())
+    total = (await db.execute(count_query)).scalar() or 0
+    total_pages = math.ceil(total / page_size) if total > 0 else 0
+
+    query = query.order_by(IntegrationAgent.created_at.desc())
+    query = query.offset((page - 1) * page_size).limit(page_size)
+    result = await db.execute(query)
+    agents = result.scalars().all()
+
+    client_ids = {a.client_id for a in agents}
+    clients_map: dict[uuid.UUID, Client] = {}
+    if client_ids:
+        cr = await db.execute(select(Client).where(Client.id.in_(client_ids)))
+        for c in cr.scalars().all():
+            clients_map[c.id] = c
+
+    items = [_agent_response(a, clients_map.get(a.client_id)) for a in agents]
+    return {"items": items, "total": total, "page": page, "pages": total_pages}
+
+
+@router.post("/integration-agents", status_code=201)
+async def create_integration_agent(
+    data: CreateIntegrationAgentRequest,
+    request: Request,
+    user: User = require_permissions(P6_CONTROL_NUMBERS_GLOBAL),
+    db: AsyncSession = Depends(get_db),
+):
+    """Create an integration agent for a client."""
+    client_result = await db.execute(select(Client).where(Client.id == data.client_id))
+    client = client_result.scalar_one_or_none()
+    if not client:
+        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+
+    # Auto-build client_context JSON
+    import json
+    client_context = json.dumps({
+        "razon_social": client.razon_social,
+        "rif": client.rif,
+        "nombre_comercial": client.nombre_comercial,
+        "plan": client.plan,
+        "erp_type": data.erp_type,
+        "erp_display": ERP_TYPES.get(data.erp_type, data.erp_type),
+    }, ensure_ascii=False)
+
+    agent = IntegrationAgent(
+        client_id=data.client_id,
+        agent_name=data.agent_name,
+        erp_type=data.erp_type,
+        client_context=client_context,
+        integration_notes=data.integration_notes,
+        custom_instructions=data.custom_instructions,
+        can_read_code=data.can_read_code,
+        can_write_code=data.can_write_code,
+        can_test_connection=data.can_test_connection,
+        can_modify_mapping=data.can_modify_mapping,
+        status="active",
+    )
+    db.add(agent)
+    await db.flush()
+
+    await log_audit(
+        db, user.id, "create", "integration_agent", str(agent.id),
+        details=f"Agente '{data.agent_name}' para {client.razon_social} ({data.erp_type})",
+        request=request,
+    )
+
+    return _agent_response(agent, client)
+
+
+@router.put("/integration-agents/{agent_id}")
+async def update_integration_agent(
+    agent_id: uuid.UUID,
+    data: UpdateIntegrationAgentRequest,
+    request: Request,
+    user: User = require_permissions(P6_CONTROL_NUMBERS_GLOBAL),
+    db: AsyncSession = Depends(get_db),
+):
+    """Update an integration agent."""
+    result = await db.execute(select(IntegrationAgent).where(IntegrationAgent.id == agent_id))
+    agent = result.scalar_one_or_none()
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agente no encontrado")
+
+    changes = []
+    for field in ["agent_name", "erp_type", "status", "integration_notes", "custom_instructions",
+                   "can_read_code", "can_write_code", "can_test_connection", "can_modify_mapping"]:
+        val = getattr(data, field, None)
+        if val is not None:
+            setattr(agent, field, val)
+            changes.append(field)
+
+    if changes:
+        await db.flush()
+        await log_audit(
+            db, user.id, "update", "integration_agent", str(agent_id),
+            details=f"Campos: {', '.join(changes)}",
+            request=request,
+        )
+
+    client_result = await db.execute(select(Client).where(Client.id == agent.client_id))
+    client = client_result.scalar_one_or_none()
+    return _agent_response(agent, client)
+
+
+@router.get("/integration-agents/{agent_id}/sessions")
+async def list_agent_sessions(
+    agent_id: uuid.UUID,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    user: User = require_permissions(P6_CONTROL_NUMBERS_GLOBAL),
+    db: AsyncSession = Depends(get_db),
+):
+    """View chat sessions for an agent (admin monitoring)."""
+    query = select(AgentChatSession).where(AgentChatSession.agent_id == agent_id)
+    count_query = select(func.count()).select_from(query.subquery())
+    total = (await db.execute(count_query)).scalar() or 0
+
+    query = query.order_by(AgentChatSession.last_activity.desc())
+    query = query.offset((page - 1) * page_size).limit(page_size)
+    result = await db.execute(query)
+    sessions = result.scalars().all()
+
+    return {
+        "items": [
+            {
+                "id": str(s.id),
+                "user_id": str(s.user_id),
+                "title": s.title,
+                "status": s.status,
+                "message_count": s.message_count,
+                "tokens_used": s.tokens_used,
+                "started_at": s.started_at.isoformat(),
+                "last_activity": s.last_activity.isoformat(),
+            }
+            for s in sessions
+        ],
+        "total": total,
+        "page": page,
+    }
+
+
+@router.get("/erp-types")
+async def list_erp_types(user: User = Depends(get_current_user)):
+    """List available ERP types for integration agents."""
+    return [{"code": k, "name": v} for k, v in ERP_TYPES.items()]

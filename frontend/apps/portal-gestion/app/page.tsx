@@ -9,13 +9,14 @@ import ErrorManager from "@/components/ErrorManager";
 import TemplateGallery from "@/components/TemplateGallery";
 import ProjectList from "@/components/ProjectList";
 import AIChat from "@/components/AIChat";
+import AgentChat from "@/components/AgentChat";
 import AnalyticsDashboard from "@/components/AnalyticsDashboard";
 import ReportsPanel from "@/components/ReportsPanel";
 import LoginForm from "@/components/LoginForm";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
-type Section = "dashboard" | "wizard" | "connections" | "webhooks" | "errors" | "templates" | "projects" | "ai-chat" | "analytics" | "reports";
+type Section = "dashboard" | "wizard" | "connections" | "webhooks" | "errors" | "templates" | "projects" | "ai-chat" | "agent-chat" | "analytics" | "reports";
 
 export default function Home() {
   const [token, setToken] = useState<string | null>(null);
@@ -67,6 +68,7 @@ export default function Home() {
   const renderSection = () => {
     switch (section) {
       case "ai-chat": return <AIChat token={token} />;
+      case "agent-chat": return <AgentChat token={token} />;
       case "analytics": return <AnalyticsDashboard token={token} />;
       case "reports": return <ReportsPanel token={token} />;
       case "dashboard": return <MonitoringDashboard token={token} />;

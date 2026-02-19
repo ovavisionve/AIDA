@@ -284,3 +284,94 @@ class MonitoringMetric(Base, UUIDMixin):
     )
 
     connection: Mapped["IntegrationConnection | None"] = relationship(back_populates="metrics")
+
+
+# ---------------------------------------------------------------------------
+# Integration Agents - Agentes IA por cliente para asistencia en integración
+# ---------------------------------------------------------------------------
+class IntegrationAgent(Base, UUIDMixin, TimestampMixin):
+    """Agente IA asignado a un cliente para asistir su integración."""
+    __tablename__ = "integration_agents"
+
+    client_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("clients.id"), nullable=False, index=True)
+    project_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("projects.id"))
+    connection_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("integration_connections.id"))
+
+    # Agent identity
+    agent_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    erp_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    # sap_b1, sap_hana, odoo, woocommerce, prestashop, shopify, profit_plus, saint, a2, valery, custom
+
+    # Pre-loaded context for the agent
+    client_context: Mapped[str | None] = mapped_column(Text)
+    # JSON: {"razon_social": "...", "rif": "...", "erp_version": "...", "contact": "...", ...}
+    integration_notes: Mapped[str | None] = mapped_column(Text)
+    # Free text notes from admin about the client's integration needs
+    custom_instructions: Mapped[str | None] = mapped_column(Text)
+    # Extra instructions for the agent beyond the default system prompt
+
+    # Agent capabilities
+    can_read_code: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    can_write_code: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    can_test_connection: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    can_modify_mapping: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    # Status
+    status: Mapped[str] = mapped_column(String(20), default="active", nullable=False)
+    # active, paused, archived
+
+    # Usage tracking
+    total_sessions: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    total_messages: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    total_tokens_used: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+    # Relationships
+    sessions: Mapped[list["AgentChatSession"]] = relationship(back_populates="agent", cascade="all, delete-orphan")
+
+
+class AgentChatSession(Base, UUIDMixin):
+    """Sesión de chat entre un usuario del cliente y su agente."""
+    __tablename__ = "agent_chat_sessions"
+
+    agent_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("integration_agents.id"), nullable=False, index=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+
+    title: Mapped[str | None] = mapped_column(String(200))
+    status: Mapped[str] = mapped_column(String(20), default="active", nullable=False)
+    # active, closed
+
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    last_activity: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    message_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    tokens_used: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+    # Relationships
+    agent: Mapped["IntegrationAgent"] = relationship(back_populates="sessions")
+    messages: Mapped[list["AgentChatMessage"]] = relationship(back_populates="session", cascade="all, delete-orphan")
+
+
+class AgentChatMessage(Base, UUIDMixin):
+    """Mensaje individual en una sesión de chat con el agente."""
+    __tablename__ = "agent_chat_messages"
+
+    session_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("agent_chat_sessions.id"), nullable=False, index=True)
+    role: Mapped[str] = mapped_column(String(20), nullable=False)
+    # user, assistant, system, tool_call, tool_result
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+
+    # For tool use (future: when agent executes code/tests)
+    tool_name: Mapped[str | None] = mapped_column(String(50))
+    tool_input: Mapped[str | None] = mapped_column(Text)
+    tool_output: Mapped[str | None] = mapped_column(Text)
+
+    tokens_used: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    # Relationships
+    session: Mapped["AgentChatSession"] = relationship(back_populates="messages")
