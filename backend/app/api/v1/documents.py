@@ -3,6 +3,7 @@ import uuid
 import math
 from datetime import datetime, date, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import Response
 from sqlalchemy import select, func, or_, and_, extract
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -193,3 +194,115 @@ async def get_document(
     await log_audit(db, user.id, "view", "invoice", str(doc.id), request=request, client_id=doc.client_id)
 
     return InvoiceResponse.model_validate(doc)
+
+
+@router.get("/{doc_id}/pdf")
+async def download_document_pdf(
+    doc_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Download PDF for a document (Portal 1 - JWT authenticated)."""
+    from app.models.clients import Client
+    from app.services.fiscal.pdf_generator import generate_invoice_pdf
+    from app.api.v1.fiscal.downloads import _find_document, _resolve_template_config, _resolve_banner_path
+
+    if not user.is_superadmin:
+        client_ids = await _get_user_client_ids(user, db)
+    else:
+        client_ids = None
+
+    # Try each client the user belongs to
+    doc = None
+    doc_type = None
+    items = None
+    client_id = None
+
+    if client_ids:
+        for cid in client_ids:
+            doc, doc_type, items = await _find_document(db, doc_id, cid)
+            if doc:
+                client_id = cid
+                break
+    else:
+        # Superadmin: search all models
+        for Model, dtype in [(Invoice, "factura"), (CreditNote, "nota_credito"), (DebitNote, "nota_debito")]:
+            result = await db.execute(
+                select(Model).options(selectinload(Model.items)).where(Model.id == doc_id)
+            )
+            doc = result.scalar_one_or_none()
+            if doc:
+                doc_type = dtype
+                items = doc.items
+                client_id = doc.client_id
+                break
+
+    if not doc:
+        raise HTTPException(status_code=404, detail="Documento no encontrado")
+
+    client_result = await db.execute(select(Client).where(Client.id == client_id))
+    client = client_result.scalar_one_or_none()
+
+    layout_config = await _resolve_template_config(db, client_id, doc_type)
+    banner_path, banner_position = await _resolve_banner_path(db, client_id, doc_type)
+
+    pdf_bytes = generate_invoice_pdf(
+        doc, items, doc_type,
+        layout_config=layout_config,
+        logo_path=client.logo_url if client else None,
+        banner_path=banner_path,
+        banner_position=banner_position,
+    )
+    filename = f"{doc_type}_{doc.control_number or doc.document_number}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="{filename}"'},
+    )
+
+
+@router.get("/{doc_id}/xml")
+async def download_document_xml(
+    doc_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Download XML for a document (Portal 1 - JWT authenticated)."""
+    from app.services.fiscal.xml_generator import generate_document_xml
+    from app.api.v1.fiscal.downloads import _find_document
+
+    if not user.is_superadmin:
+        client_ids = await _get_user_client_ids(user, db)
+    else:
+        client_ids = None
+
+    doc = None
+    doc_type = None
+    items = None
+
+    if client_ids:
+        for cid in client_ids:
+            doc, doc_type, items = await _find_document(db, doc_id, cid)
+            if doc:
+                break
+    else:
+        for Model, dtype in [(Invoice, "factura"), (CreditNote, "nota_credito"), (DebitNote, "nota_debito")]:
+            result = await db.execute(
+                select(Model).options(selectinload(Model.items)).where(Model.id == doc_id)
+            )
+            doc = result.scalar_one_or_none()
+            if doc:
+                doc_type = dtype
+                items = doc.items
+                break
+
+    if not doc:
+        raise HTTPException(status_code=404, detail="Documento no encontrado")
+
+    xml_bytes = generate_document_xml(doc, items, doc_type)
+    filename = f"{doc_type}_{doc.control_number or doc.document_number}.xml"
+    return Response(
+        content=xml_bytes,
+        media_type="application/xml",
+        headers={"Content-Disposition": f'inline; filename="{filename}"'},
+    )

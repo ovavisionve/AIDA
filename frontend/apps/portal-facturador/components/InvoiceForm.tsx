@@ -291,6 +291,23 @@ export default function InvoiceForm({ token }: Props) {
     setItems(updated);
   };
 
+  // Handle USD reference input → auto-calculate Bs price using BCV rate
+  const handleUsdRefChange = (idx: number, raw: string) => {
+    const cleaned = raw.replace(/[^0-9.,]/g, "").replace(",", ".");
+    const parts = cleaned.split(".");
+    const safe = parts.length > 2 ? parts[0] + "." + parts.slice(1).join("") : cleaned;
+    const usdAmount = parseFloat(safe) || 0;
+
+    const rate = exchangeRates?.rates?.["USD"];
+    if (rate && usdAmount > 0) {
+      const bsPrice = Math.round(usdAmount * rate * 100) / 100;
+      const updated = [...items];
+      updated[idx].unit_price = bsPrice;
+      updated[idx].unit_price_text = fmtMoney(bsPrice);
+      setItems(updated);
+    }
+  };
+
   // ══════════════════════════════════════════════════════════════
   // CALCULATIONS
   // ══════════════════════════════════════════════════════════════
@@ -839,6 +856,15 @@ export default function InvoiceForm({ token }: Props) {
                   </div>
                   <div className="col-span-2">
                     {i === 0 && <label className="mb-1 block text-[11px] text-gray-500">Precio ({moneda === "VES" ? "Bs." : "$"})</label>}
+                    {moneda === "VES" && exchangeRates?.rates?.["USD"] && (
+                      <div className="relative mb-1">
+                        <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-emerald-500">$</span>
+                        <input type="text" inputMode="decimal"
+                          placeholder="Ref. USD"
+                          onChange={(e) => handleUsdRefChange(i, e.target.value)}
+                          className="w-full rounded bg-emerald-500/5 border border-emerald-500/20 pl-6 pr-2 py-1 text-xs text-emerald-400 placeholder-emerald-800 focus:border-emerald-500/40 focus:outline-none" />
+                      </div>
+                    )}
                     <input type="text" inputMode="decimal"
                       value={item.unit_price_text}
                       onChange={(e) => handlePriceChange(i, e.target.value)}

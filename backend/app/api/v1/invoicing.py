@@ -14,6 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import select, func, union_all, literal
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from fastapi.responses import Response
 
 from app.database import get_db
 from app.core.deps import get_current_user, log_audit
@@ -823,6 +824,63 @@ async def list_invoicing_documents(
     ]
 
     return {"items": items, "total": total, "page": page, "total_pages": total_pages}
+
+
+@router.get("/documents/{doc_id}/pdf")
+async def download_document_pdf(
+    doc_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Download PDF for a document (JWT-authenticated for portal users)."""
+    client = await _get_client(user, db)
+    from app.services.fiscal.pdf_generator import generate_invoice_pdf
+    from app.api.v1.fiscal.downloads import _find_document, _resolve_template_config, _resolve_banner_path
+
+    doc, doc_type, items = await _find_document(db, doc_id, client.id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Documento no encontrado")
+
+    layout_config = await _resolve_template_config(db, client.id, doc_type)
+    banner_path, banner_position = await _resolve_banner_path(db, client.id, doc_type)
+
+    pdf_bytes = generate_invoice_pdf(
+        doc, items, doc_type,
+        layout_config=layout_config,
+        logo_path=client.logo_url,
+        banner_path=banner_path,
+        banner_position=banner_position,
+    )
+    filename = f"{doc_type}_{doc.control_number or doc.document_number}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="{filename}"'},
+    )
+
+
+@router.get("/documents/{doc_id}/xml")
+async def download_document_xml(
+    doc_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Download XML for a document (JWT-authenticated for portal users)."""
+    client = await _get_client(user, db)
+    from app.services.fiscal.xml_generator import generate_document_xml
+    from app.api.v1.fiscal.downloads import _find_document
+
+    doc, doc_type, items = await _find_document(db, doc_id, client.id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Documento no encontrado")
+
+    xml_bytes = generate_document_xml(doc, items, doc_type)
+    filename = f"{doc_type}_{doc.control_number or doc.document_number}.xml"
+    return Response(
+        content=xml_bytes,
+        media_type="application/xml",
+        headers={"Content-Disposition": f'inline; filename="{filename}"'},
+    )
 
 
 @router.post("/invoices/{invoice_id}/send-email")
