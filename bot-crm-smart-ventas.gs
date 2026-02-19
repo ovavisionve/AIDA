@@ -249,12 +249,20 @@ function configurarPromptsInicialesV31(ss) {
   // Generar el prompt base con ventas integradas
   const promptSistema = generarPromptSistemaConVentas();
   
-  // Configurar prompts
+  // Configurar TODOS los prompts (CRM + Ventas)
+  var msgBienvenida = '👋 ¡Bienvenido al CRM de Smart!\n\nPara comenzar, necesito que inicies sesión.\n\n🔐 Envía tus credenciales:\n/login usuario contraseña\n\nEjemplo: /login luisila comercial123';
+
+  var msgLoginExitoso = '✅ ¡Login exitoso, {{USUARIO}}!\n\nBienvenido al CRM de Smart. Estoy listo para ayudarte a:\n\n📅 Reuniones y Tareas\n💰 Pipeline de Ventas (leads, demos, propuestas)\n👥 Contactos y Documentos\n📊 KPIs y Reportes\n\n💡 Ejemplos:\n- "Nuevo lead: Empresa ABC, manejan 500 facturas/mes"\n- "Agenda reunión mañana 3pm con Sayyan y Diana"\n- "¿Cómo va el pipeline?"\n- "Dame el forecast del mes"\n\nComandos: /pendientes /resumen /clear /logout /help\n\n¿Qué deseas hacer?';
+
+  var msgRecordatorio = '🔔 RECORDATORIO Smart: Tienes una {{TIPO}} pendiente:\n📋 {{DESCRIPCION}}\n⏰ {{FECHA_HORA}}\n\n¡No olvides prepararte!';
+
   const prompts = [
     ['sistema_base', 'system', 'SI', promptSistema],
-    ['bienvenida', 'system', 'SI', 'Bienvenido a Smart CRM + Ventas. Soy tu asistente inteligente para gestión operativa y fuerza de ventas. ¿En qué puedo ayudarte?'],
-    ['mensaje_error_nombre_vacio', 'system', 'SI', '❌ Necesito el nombre de la empresa. ¿Cuál es?'],
-    ['mensaje_error_reunion_incompleta', 'system', 'SI', '❌ Para agendar una reunión necesito: fecha, hora y descripción. ¿Puedes completar esos datos?']
+    ['mensaje_bienvenida', 'message', 'SI', msgBienvenida],
+    ['mensaje_login_exitoso', 'message', 'SI', msgLoginExitoso],
+    ['mensaje_error_nombre_vacio', 'message', 'SI', '❌ Para registrar un contacto necesito el nombre de la empresa.\n\n¿Cuál es el nombre de la empresa que deseas registrar?'],
+    ['mensaje_error_reunion_incompleta', 'message', 'SI', '❌ Para agendar la reunión necesito:\n- Fecha (día específico)\n- Hora\n- Descripción o tema de la reunión\n\n¿Puedes proporcionar esta información?'],
+    ['mensaje_recordatorio', 'message', 'SI', msgRecordatorio]
   ];
   
   // Limpiar prompts existentes
@@ -1342,11 +1350,33 @@ function obtenerPendientesParaContexto(userId) {
         texto += `${i + 1}. ${a}\n`;
       });
     }
-    
+
+    // Deals activos en pipeline
+    var pipeSheet = ss.getSheetByName('Pipeline_Detallado');
+    if (pipeSheet) {
+      var pipeData = pipeSheet.getDataRange().getValues();
+      var deals = [];
+      for (var p = pipeData.length - 1; p >= 1 && deals.length < 5; p--) {
+        if (String(pipeData[p][1]) == String(userId) && pipeData[p][15] === 'Activo') {
+          var cli = pipeData[p][4];
+          var prod = pipeData[p][5];
+          var etapa = pipeData[p][6];
+          var monto = pipeData[p][7];
+          deals.push('"' + cli + '" - ' + prod + ' $' + monto + ' (' + etapa + ')');
+        }
+      }
+      if (deals.length > 0) {
+        texto += '\n💰 DEALS ACTIVOS EN PIPELINE:\n';
+        deals.forEach(function(d, i) {
+          texto += (i + 1) + '. ' + d + '\n';
+        });
+      }
+    }
+
   } catch (error) {
     Logger.log('⚠️ Error obteniendo pendientes: ' + error);
   }
-  
+
   return texto || '\n\n(El usuario no tiene pendientes registrados)';
 }
 
@@ -1832,11 +1862,78 @@ function procesarRespuestaIA(chatId, userId, username, registeredUser, respuesta
   }
   
   // ═══════════════════════════════════════════
-  // TERCERO: RESPUESTA CONVERSACIONAL
+  // TERCERO: CONSULTAS DE VENTAS
   // ═══════════════════════════════════════════
-  
-  var textoLimpio = respuestaIA.replace(/\[ACCION:.*?\][\s\S]*?\}/g, '').trim();
-  
+
+  if (respuestaIA.includes('[CONSULTA:pipeline]')) {
+    var resultado = consultarPipeline(userId);
+    enviarMensajeTelegram(chatId, resultado);
+    guardarConversacion(userId, username, registeredUser, 'assistant', resultado);
+    return;
+  }
+
+  if (respuestaIA.includes('[CONSULTA:forecast]')) {
+    var resultado = consultarForecast(userId);
+    enviarMensajeTelegram(chatId, resultado);
+    guardarConversacion(userId, username, registeredUser, 'assistant', resultado);
+    return;
+  }
+
+  if (respuestaIA.includes('[CONSULTA:kpis]')) {
+    var resultado = consultarKPIs(userId);
+    enviarMensajeTelegram(chatId, resultado);
+    guardarConversacion(userId, username, registeredUser, 'assistant', resultado);
+    return;
+  }
+
+  if (respuestaIA.includes('[CONSULTA:reporte_semanal]')) {
+    var resultado = generarReporteSemanal(userId, registeredUser);
+    enviarMensajeTelegram(chatId, resultado);
+    guardarConversacion(userId, username, registeredUser, 'assistant', resultado);
+    return;
+  }
+
+  if (respuestaIA.includes('[CONSULTA:leads_frios]')) {
+    var resultado = consultarLeadsFrios(userId);
+    enviarMensajeTelegram(chatId, resultado);
+    guardarConversacion(userId, username, registeredUser, 'assistant', resultado);
+    return;
+  }
+
+  if (respuestaIA.includes('[CONSULTA:top_clientes]')) {
+    var resultado = consultarTopClientes();
+    enviarMensajeTelegram(chatId, resultado);
+    guardarConversacion(userId, username, registeredUser, 'assistant', resultado);
+    return;
+  }
+
+  if (respuestaIA.includes('[CONSULTA:patrones_perdida]')) {
+    var resultado = analizarPatronesPerdida();
+    enviarMensajeTelegram(chatId, resultado);
+    guardarConversacion(userId, username, registeredUser, 'assistant', resultado);
+    return;
+  }
+
+  if (respuestaIA.includes('[CONSULTA:ciclo_venta]')) {
+    var resultado = consultarCicloVenta();
+    enviarMensajeTelegram(chatId, resultado);
+    guardarConversacion(userId, username, registeredUser, 'assistant', resultado);
+    return;
+  }
+
+  if (respuestaIA.includes('[CONSULTA:sugerencias]')) {
+    var resultado = generarSugerenciasInteligentes(userId, registeredUser);
+    enviarMensajeTelegram(chatId, resultado);
+    guardarConversacion(userId, username, registeredUser, 'assistant', resultado);
+    return;
+  }
+
+  // ═══════════════════════════════════════════
+  // CUARTO: RESPUESTA CONVERSACIONAL
+  // ═══════════════════════════════════════════
+
+  var textoLimpio = respuestaIA.replace(/\[ACCION:.*?\][\s\S]*?\}/g, '').replace(/\[CONSULTA:.*?\]/g, '').trim();
+
   if (textoLimpio) {
     enviarMensajeTelegram(chatId, textoLimpio);
     guardarConversacion(userId, username, registeredUser, 'assistant', textoLimpio);
@@ -3386,82 +3483,141 @@ function pruebaNotificacionParticipantes() {
 }
 
 // ============================================
-// ACTUALIZACIÓN DE PROMPTS (SOLO PARA MIGRACIÓN)
+// DESPLIEGUE SEGURO: NO BORRA DATOS EXISTENTES
 // ============================================
 
-function actualizarPromptsV31() {
-  Logger.log('🔄 Actualizando prompts a V3.1...');
-  
-  try {
-    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-    const sheet = ss.getSheetByName('Prompts');
-    
-    // Limpiar prompts existentes (excepto encabezado)
-    const lastRow = sheet.getLastRow();
-    if (lastRow > 1) {
-      sheet.deleteRows(2, lastRow - 1);
-    }
-    
-    // Configurar nuevos prompts
-    configurarPromptsInicialesV31(ss);
-    
-    Logger.log('✅ Prompts V3.1 actualizados correctamente');
-    
-  } catch (error) {
-    Logger.log('❌ Error actualizando prompts: ' + error);
-  }
-}
+function desplegarActualizacionVentas() {
+  Logger.log('🚀 === DESPLEGANDO ACTUALIZACIÓN VENTAS ===');
+  Logger.log('');
 
-// ============================================
-// ACTUALIZAR SOLO SKUs Y TOKENS (sin borrar datos)
-// ============================================
-function actualizarSKUsYTokens() {
-  Logger.log('🔄 Actualizando catálogo de SKUs y configuración de tokens...');
   try {
     var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
 
-    // Actualizar Productos_SKU con catálogo real
-    crearHojaProductosSKU(ss);
+    // ─── PASO 1: Crear hojas de ventas si no existen ───
+    Logger.log('📊 Paso 1: Verificando hojas de ventas...');
+    var hojasCreadas = [];
 
-    // Actualizar MAX_TOKENS_IA a 2500 en Configuracion
+    if (!ss.getSheetByName('Pipeline_Detallado')) {
+      crearHojaPipelineDetallado(ss);
+      hojasCreadas.push('Pipeline_Detallado');
+    } else {
+      Logger.log('  ✅ Pipeline_Detallado ya existe (no se toca)');
+    }
+
+    if (!ss.getSheetByName('Interacciones_Cliente')) {
+      crearHojaInteraccionesCliente(ss);
+      hojasCreadas.push('Interacciones_Cliente');
+    } else {
+      Logger.log('  ✅ Interacciones_Cliente ya existe (no se toca)');
+    }
+
+    if (!ss.getSheetByName('Ventas_Cerradas')) {
+      crearHojaVentasCerradas(ss);
+      hojasCreadas.push('Ventas_Cerradas');
+    } else {
+      Logger.log('  ✅ Ventas_Cerradas ya existe (no se toca)');
+    }
+
+    if (!ss.getSheetByName('Lost_Deals')) {
+      crearHojaLostDeals(ss);
+      hojasCreadas.push('Lost_Deals');
+    } else {
+      Logger.log('  ✅ Lost_Deals ya existe (no se toca)');
+    }
+
+    if (!ss.getSheetByName('KPIs_Auto')) {
+      crearHojaKPIsAuto(ss);
+      hojasCreadas.push('KPIs_Auto');
+    } else {
+      Logger.log('  ✅ KPIs_Auto ya existe (no se toca)');
+    }
+
+    // Productos_SKU se recrea siempre (es catálogo, no data de usuario)
+    crearHojaProductosSKU(ss);
+    Logger.log('  ✅ Productos_SKU actualizado con 30+ SKUs');
+
+    // ─── PASO 2: Actualizar prompts ───
+    Logger.log('');
+    Logger.log('🤖 Paso 2: Actualizando prompts (IA aprende ventas)...');
+    var promptSheet = ss.getSheetByName('Prompts');
+    var lastRow = promptSheet.getLastRow();
+    if (lastRow > 1) {
+      promptSheet.deleteRows(2, lastRow - 1);
+    }
+    configurarPromptsInicialesV31(ss);
+    Logger.log('  ✅ Prompt incluye catálogo, recomendaciones y consultas');
+
+    // ─── PASO 3: Actualizar MAX_TOKENS ───
+    Logger.log('');
+    Logger.log('⚙️ Paso 3: Configuración...');
     var configSheet = ss.getSheetByName('Configuracion');
     var configData = configSheet.getDataRange().getValues();
     for (var i = 1; i < configData.length; i++) {
       if (configData[i][0] === 'MAX_TOKENS_IA') {
         configSheet.getRange(i + 1, 2).setValue('2500');
-        Logger.log('✅ MAX_TOKENS_IA actualizado a 2500');
+        Logger.log('  ✅ MAX_TOKENS_IA subido a 2500');
         break;
       }
     }
 
-    Logger.log('✅ SKUs y tokens actualizados correctamente');
+    // ─── PASO 4: Actualizar Dashboard con ventas ───
+    Logger.log('');
+    Logger.log('📊 Paso 4: Dashboard...');
+    actualizarDashboardVentas(ss);
+
+    // ─── RESULTADO ───
+    Logger.log('');
+    Logger.log('═══════════════════════════════════════════');
+    Logger.log('🚀 DESPLIEGUE COMPLETADO');
+    Logger.log('═══════════════════════════════════════════');
+    Logger.log('');
+    if (hojasCreadas.length > 0) {
+      Logger.log('📋 Hojas CREADAS: ' + hojasCreadas.join(', '));
+    }
+    Logger.log('📋 Lo que se actualizó:');
+    Logger.log('  ✅ Prompt con catálogo real (30+ SKUs)');
+    Logger.log('  ✅ Recomendación inteligente por NC/mes');
+    Logger.log('  ✅ 9 consultas de ventas (pipeline, forecast, KPIs, etc.)');
+    Logger.log('  ✅ 7 acciones de ventas (lead, demo, propuesta, cierre, etc.)');
+    Logger.log('  ✅ MAX_TOKENS subido a 2500');
+    Logger.log('  ✅ Dashboard con sección de ventas');
+    Logger.log('');
+    Logger.log('📋 Lo que NO se tocó:');
+    Logger.log('  ✅ Reuniones, Actividades, Contactos');
+    Logger.log('  ✅ Conversaciones, Usuarios');
+    Logger.log('  ✅ Datos existentes en pipeline (si los hay)');
+    Logger.log('');
+    Logger.log('🧪 PRUEBA EN TELEGRAM:');
+    Logger.log('  1. "Nuevo lead: Panadería ABC, manejan 100 facturas al mes"');
+    Logger.log('  2. "¿Cómo va el pipeline?"');
+    Logger.log('  3. "Dame el forecast del mes"');
+
   } catch (error) {
-    Logger.log('❌ Error: ' + error);
+    Logger.log('❌ ERROR EN DESPLIEGUE: ' + error.message);
+    Logger.log('Stack: ' + error.stack);
   }
 }
 
-// ============================================
-// DESPLEGAR TODO (Prompts + SKUs + Tokens) SIN borrar datos de CRM
-// ============================================
-function desplegarActualizacionVentas() {
-  Logger.log('🚀 === DESPLEGANDO ACTUALIZACIÓN DE VENTAS ===');
+// Función auxiliar para recrear hojas de ventas con validaciones corregidas
+function recrearHojasVentas() {
+  Logger.log('🔄 Recreando hojas de ventas (corrige validaciones)...');
+  Logger.log('⚠️ ADVERTENCIA: Esto borra datos en las hojas de ventas');
 
-  // 1. Actualizar prompts (le enseña a la IA los planes reales)
-  actualizarPromptsV31();
+  try {
+    var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
 
-  // 2. Actualizar catálogo SKU y tokens
-  actualizarSKUsYTokens();
+    crearHojaPipelineDetallado(ss);
+    crearHojaInteraccionesCliente(ss);
+    crearHojaVentasCerradas(ss);
+    crearHojaLostDeals(ss);
+    crearHojaKPIsAuto(ss);
+    crearHojaProductosSKU(ss);
 
-  Logger.log('🚀 === DESPLIEGUE COMPLETADO ===');
-  Logger.log('');
-  Logger.log('📋 Lo que se actualizó:');
-  Logger.log('  ✅ Prompt del sistema con catálogo real de planes');
-  Logger.log('  ✅ Recomendación inteligente por número de controles');
-  Logger.log('  ✅ Bot pregunta nombre del cliente antes de agendar');
-  Logger.log('  ✅ 30+ SKUs reales (PLN-EMP, PLN-CORP, PLN-WEB, APK, etc.)');
-  Logger.log('  ✅ MAX_TOKENS_IA subido a 2500');
-  Logger.log('');
-  Logger.log('🧪 Prueba con: "Tengo un nuevo lead, manejan 100 facturas al mes"');
+    Logger.log('✅ Todas las hojas de ventas recreadas con validaciones corregidas');
+    Logger.log('✅ Ahora aceptan todos los SKUs (30+)');
+  } catch (error) {
+    Logger.log('❌ Error: ' + error.message);
+  }
 }
 
 function simularMensajeReal() {
@@ -3944,6 +4100,32 @@ Respuesta: Para Restaurante La Esquina con 3 puntos de venta recomiendo **APK Em
 {"cliente":"Restaurante La Esquina","producto":"APK-003","monto":"24","origen":"Otro","canal":"WhatsApp","etapa":"Investigación","notas":"3 cajas POS. APK-003 $24/mes (4 usuarios)"}
 
 ═══════════════════════════════════════════
+FORMATOS DE SALIDA - CONSULTAS:
+═══════════════════════════════════════════
+
+Cuando el usuario pida información sobre ventas, reportes o métricas, genera el tag correspondiente:
+
+[CONSULTA:pipeline] → "muéstrame el pipeline", "¿cómo va el pipeline?", "deals activos"
+[CONSULTA:forecast] → "¿cuál es el forecast?", "¿cuánto esperamos vender?", "proyección"
+[CONSULTA:kpis] → "muéstrame los KPIs", "¿cómo van las métricas?", "dashboard de ventas"
+[CONSULTA:reporte_semanal] → "reporte semanal", "¿qué hicimos esta semana?", "resumen de la semana"
+[CONSULTA:leads_frios] → "leads fríos", "¿qué deals están parados?", "deals sin actividad"
+[CONSULTA:top_clientes] → "mejores clientes", "top clientes", "¿quiénes compran más?"
+[CONSULTA:patrones_perdida] → "¿por qué perdemos ventas?", "análisis de pérdidas", "deals perdidos"
+[CONSULTA:ciclo_venta] → "ciclo de venta", "¿cuánto tardamos en cerrar?", "tiempo promedio"
+[CONSULTA:sugerencias] → "dame sugerencias", "¿qué debería hacer?", "recomendaciones"
+
+Ejemplo:
+Usuario: "¿Cómo va el pipeline?"
+Respuesta: [CONSULTA:pipeline]
+
+Usuario: "¿Cuál es el forecast del mes?"
+Respuesta: [CONSULTA:forecast]
+
+Usuario: "¿Tengo leads que se están enfriando?"
+Respuesta: [CONSULTA:leads_frios]
+
+═══════════════════════════════════════════
 REGLAS CRÍTICAS:
 ═══════════════════════════════════════════
 
@@ -3959,6 +4141,7 @@ REGLAS CRÍTICAS:
 ✓ Si mencionan cantidad de NC/facturas → RECOMENDAR plan con precios (mensual y anual)
 ✓ Usa SKU reales: PLN-EMP-001, PLN-CORP-001..006, PLN-WEB-001..003, APK-001..005, SVC-001..004, ADD-001, etc.
 ✓ SIEMPRE muestra el desglose de costos cuando recomiendes un plan
+✓ Para CONSULTAS de ventas, usa los tags [CONSULTA:...] para que el sistema genere la data automáticamente
 
 ═══════════════════════════════════════════
 IMPORTANTE:
@@ -4180,23 +4363,25 @@ function crearHojaPipelineDetallado(ss) {
   ];
   const validacionEtapa = SpreadsheetApp.newDataValidation()
     .requireValueInList(etapasValidas, true)
-    .setAllowInvalid(false)
+    .setAllowInvalid(true)
     .build();
   sheet.getRange('G2:G1000').setDataValidation(validacionEtapa);
   
-  // Validación de Producto (columna F)
-  const productosValidos = ['SVC-001', 'SVC-002', 'SVC-003', 'SVC-004'];
-  const validacionProducto = SpreadsheetApp.newDataValidation()
-    .requireValueInList(productosValidos, true)
-    .setAllowInvalid(false)
-    .build();
-  sheet.getRange('F2:F1000').setDataValidation(validacionProducto);
-  
+  // Validación de Producto (columna F) - Todos los SKUs del catálogo
+  var skusPipeline = obtenerListaSKUs_();
+  if (skusPipeline.length > 0) {
+    var validacionProducto = SpreadsheetApp.newDataValidation()
+      .requireValueInList(skusPipeline, true)
+      .setAllowInvalid(true)
+      .build();
+    sheet.getRange('F2:F1000').setDataValidation(validacionProducto);
+  }
+
   // Validación de Origen Lead (columna K)
   const origenesValidos = ['Referido', 'Cold Call', 'LinkedIn', 'Web', 'Evento', 'Otro'];
   const validacionOrigen = SpreadsheetApp.newDataValidation()
     .requireValueInList(origenesValidos, true)
-    .setAllowInvalid(false)
+    .setAllowInvalid(true)
     .build();
   sheet.getRange('K2:K1000').setDataValidation(validacionOrigen);
   
@@ -4204,7 +4389,7 @@ function crearHojaPipelineDetallado(ss) {
   const canalesValidos = ['WhatsApp', 'Llamada', 'Email', 'Presencial'];
   const validacionCanal = SpreadsheetApp.newDataValidation()
     .requireValueInList(canalesValidos, true)
-    .setAllowInvalid(false)
+    .setAllowInvalid(true)
     .build();
   sheet.getRange('L2:L1000').setDataValidation(validacionCanal);
   
@@ -4212,7 +4397,7 @@ function crearHojaPipelineDetallado(ss) {
   const estadosValidos = ['Activo', 'Ganado', 'Perdido'];
   const validacionEstado = SpreadsheetApp.newDataValidation()
     .requireValueInList(estadosValidos, true)
-    .setAllowInvalid(false)
+    .setAllowInvalid(true)
     .build();
   sheet.getRange('P2:P1000').setDataValidation(validacionEstado);
   
@@ -4290,7 +4475,7 @@ function crearHojaInteraccionesCliente(ss) {
   const tiposValidos = ['Llamada', 'WhatsApp', 'Email', 'Reunión', 'Demo', 'Otro'];
   const validacionTipo = SpreadsheetApp.newDataValidation()
     .requireValueInList(tiposValidos, true)
-    .setAllowInvalid(false)
+    .setAllowInvalid(true)
     .build();
   sheet.getRange('F2:F1000').setDataValidation(validacionTipo);
   
@@ -4298,7 +4483,7 @@ function crearHojaInteraccionesCliente(ss) {
   const canalesValidos = ['WhatsApp', 'Llamada', 'Email', 'Presencial', 'Video'];
   const validacionCanal = SpreadsheetApp.newDataValidation()
     .requireValueInList(canalesValidos, true)
-    .setAllowInvalid(false)
+    .setAllowInvalid(true)
     .build();
   sheet.getRange('G2:G1000').setDataValidation(validacionCanal);
   
@@ -4306,7 +4491,7 @@ function crearHojaInteraccionesCliente(ss) {
   const resultadosValidos = ['Exitoso', 'Pendiente Follow-up', 'No contactado', 'No interesado'];
   const validacionResultado = SpreadsheetApp.newDataValidation()
     .requireValueInList(resultadosValidos, true)
-    .setAllowInvalid(false)
+    .setAllowInvalid(true)
     .build();
   sheet.getRange('I2:I1000').setDataValidation(validacionResultado);
   
@@ -4375,19 +4560,21 @@ function crearHojaVentasCerradas(ss) {
   
   // Validaciones
   
-  // Producto (columna F)
-  const productosValidos = ['SVC-001', 'SVC-002', 'SVC-003', 'SVC-004'];
-  const validacionProducto = SpreadsheetApp.newDataValidation()
-    .requireValueInList(productosValidos, true)
-    .setAllowInvalid(false)
-    .build();
-  sheet.getRange('F2:F1000').setDataValidation(validacionProducto);
-  
+  // Producto (columna F) - Todos los SKUs
+  var skusVentas = obtenerListaSKUs_();
+  if (skusVentas.length > 0) {
+    var validacionProducto = SpreadsheetApp.newDataValidation()
+      .requireValueInList(skusVentas, true)
+      .setAllowInvalid(true)
+      .build();
+    sheet.getRange('F2:F1000').setDataValidation(validacionProducto);
+  }
+
   // Canal Cierre (columna K)
   const canalesValidos = ['WhatsApp', 'Llamada', 'Email', 'Presencial'];
   const validacionCanal = SpreadsheetApp.newDataValidation()
     .requireValueInList(canalesValidos, true)
-    .setAllowInvalid(false)
+    .setAllowInvalid(true)
     .build();
   sheet.getRange('K2:K1000').setDataValidation(validacionCanal);
   
@@ -4395,7 +4582,7 @@ function crearHojaVentasCerradas(ss) {
   const tiposValidos = ['Nuevo', 'Recurrente'];
   const validacionTipo = SpreadsheetApp.newDataValidation()
     .requireValueInList(tiposValidos, true)
-    .setAllowInvalid(false)
+    .setAllowInvalid(true)
     .build();
   sheet.getRange('L2:L1000').setDataValidation(validacionTipo);
   
@@ -4467,14 +4654,16 @@ function crearHojaLostDeals(ss) {
   
   // Validaciones
   
-  // Producto (columna F)
-  const productosValidos = ['SVC-001', 'SVC-002', 'SVC-003', 'SVC-004'];
-  const validacionProducto = SpreadsheetApp.newDataValidation()
-    .requireValueInList(productosValidos, true)
-    .setAllowInvalid(false)
-    .build();
-  sheet.getRange('F2:F1000').setDataValidation(validacionProducto);
-  
+  // Producto (columna F) - Todos los SKUs
+  var skusLost = obtenerListaSKUs_();
+  if (skusLost.length > 0) {
+    var validacionProducto = SpreadsheetApp.newDataValidation()
+      .requireValueInList(skusLost, true)
+      .setAllowInvalid(true)
+      .build();
+    sheet.getRange('F2:F1000').setDataValidation(validacionProducto);
+  }
+
   // Etapa Perdida (columna H)
   const etapasValidas = [
     'Investigación',
@@ -4485,7 +4674,7 @@ function crearHojaLostDeals(ss) {
   ];
   const validacionEtapa = SpreadsheetApp.newDataValidation()
     .requireValueInList(etapasValidas, true)
-    .setAllowInvalid(false)
+    .setAllowInvalid(true)
     .build();
   sheet.getRange('H2:H1000').setDataValidation(validacionEtapa);
   
@@ -4493,7 +4682,7 @@ function crearHojaLostDeals(ss) {
   const razonesValidas = ['Precio', 'Competencia', 'Timing', 'No hay presupuesto', 'Sin interés', 'Otro'];
   const validacionRazon = SpreadsheetApp.newDataValidation()
     .requireValueInList(razonesValidas, true)
-    .setAllowInvalid(false)
+    .setAllowInvalid(true)
     .build();
   sheet.getRange('I2:I1000').setDataValidation(validacionRazon);
   
@@ -4501,7 +4690,7 @@ function crearHojaLostDeals(ss) {
   const rescateValidos = ['SI', 'NO'];
   const validacionRescate = SpreadsheetApp.newDataValidation()
     .requireValueInList(rescateValidos, true)
-    .setAllowInvalid(false)
+    .setAllowInvalid(true)
     .build();
   sheet.getRange('K2:K1000').setDataValidation(validacionRescate);
   
@@ -4738,7 +4927,7 @@ function crearHojaProductosSKU(ss) {
   // Validación Activo (columna G)
   const validacionActivo = SpreadsheetApp.newDataValidation()
     .requireValueInList(['SI', 'NO'], true)
-    .setAllowInvalid(false)
+    .setAllowInvalid(true)
     .build();
   sheet.getRange('G2:G100').setDataValidation(validacionActivo);
 
@@ -5488,6 +5677,21 @@ function perderDeal(userId, username, registeredUser, datos) {
 // ============================================
 // FUNCIONES AUXILIARES
 // ============================================
+
+// Lista de todos los SKUs para validaciones de hojas
+function obtenerListaSKUs_() {
+  return [
+    'SVC-001', 'SVC-002', 'SVC-003', 'SVC-004',
+    'PLN-EMP-001', 'PLN-EMP-002', 'PLN-GRM-001',
+    'PLN-CORP-001', 'PLN-CORP-002', 'PLN-CORP-003', 'PLN-CORP-004',
+    'PLN-CORP-005', 'PLN-CORP-006', 'PLN-CORP-007',
+    'PLN-WEB-001', 'PLN-WEB-002', 'PLN-WEB-003',
+    'APK-001', 'APK-002', 'APK-003', 'APK-004', 'APK-005',
+    'ADD-001', 'ADD-002', 'ADD-004', 'ADD-005', 'ADD-006',
+    'SUP-001', 'SUP-002', 'SUP-003',
+    'ADQ-001', 'ADQ-003'
+  ];
+}
 
 // Calcular probabilidad según etapa
 function calcularProbabilidadPorEtapa(etapa) {
