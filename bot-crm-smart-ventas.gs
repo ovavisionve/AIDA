@@ -3732,6 +3732,45 @@ function testFase1_RegistrarLead() {
   Logger.log('═══════════════════════════════════════════');
 }
 
+// ============================================
+// LIMPIEZA: Borra filas fantasma de Pipeline_Detallado
+// (filas con timestamp pero sin datos reales en columnas clave)
+// Ejecuta ANTES de testFase1 si getLastRow > 1
+// ============================================
+function limpiarFilasFantasma() {
+  Logger.log('Limpiando filas fantasma de hojas de ventas...');
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+
+  var hojasVentas = ['Pipeline_Detallado', 'Interacciones_Cliente', 'Ventas_Cerradas', 'Lost_Deals'];
+
+  for (var h = 0; h < hojasVentas.length; h++) {
+    var sheet = ss.getSheetByName(hojasVentas[h]);
+    if (!sheet) continue;
+
+    var lastRow = sheet.getLastRow();
+    if (lastRow <= 1) {
+      Logger.log('  ' + hojasVentas[h] + ': solo encabezados, OK');
+      continue;
+    }
+
+    // Borrar todo el contenido de fila 2 en adelante (mantener encabezados)
+    var maxCols = sheet.getMaxColumns();
+    sheet.getRange(2, 1, lastRow - 1, maxCols).clear();
+
+    // Eliminar filas extra (dejar solo 100 filas libres bajo encabezados)
+    var maxRows = sheet.getMaxRows();
+    if (maxRows > 200) {
+      sheet.deleteRows(201, maxRows - 200);
+    }
+
+    var newLast = sheet.getLastRow();
+    Logger.log('  ' + hojasVentas[h] + ': limpia (antes: ' + lastRow + ' filas, ahora: ' + newLast + ')');
+  }
+
+  Logger.log('');
+  Logger.log('Limpieza completada. Ahora ejecuta testFase1_RegistrarLead()');
+}
+
 function simularMensajeReal() {
   Logger.log('=== SIMULANDO MENSAJE REAL ===');
   
@@ -5808,6 +5847,12 @@ function perderDeal(userId, username, registeredUser, datos) {
 // ============================================
 function escribirFilaSegura_(sheet, fila) {
   var nextRow = Math.max(sheet.getLastRow() + 1, 2);
+  // Expandir la hoja si no tiene suficientes filas
+  var maxRows = sheet.getMaxRows();
+  if (nextRow > maxRows) {
+    sheet.insertRowsAfter(maxRows, nextRow - maxRows + 100);
+    Logger.log('📐 Hoja expandida de ' + maxRows + ' a ' + (nextRow + 100) + ' filas');
+  }
   var range = sheet.getRange(nextRow, 1, 1, fila.length);
   // Limpiar cualquier validación restrictiva en la fila destino
   range.clearDataValidations();
