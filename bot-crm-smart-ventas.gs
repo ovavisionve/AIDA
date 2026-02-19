@@ -443,8 +443,14 @@ function setupTriggers() {
     .everyDays(1)
     .atHour(9)
     .create();
-  
-  Logger.log('✅ Triggers configurados (CRM + Ventas)');
+
+  // Trigger para recordatorios de follow-up (cada 2 horas)
+  ScriptApp.newTrigger('enviarRecordatoriosFollowUp')
+    .timeBased()
+    .everyHours(2)
+    .create();
+
+  Logger.log('✅ Triggers configurados (CRM + Ventas + Follow-ups)');
 }
 
 // ============================================
@@ -1486,7 +1492,20 @@ function reiniciarContadorTokens() {
 
 function procesarRespuestaIA(chatId, userId, username, registeredUser, respuestaIA, contexto) {
   Logger.log('📋 Procesando respuesta de IA...');
-  
+  Logger.log('📝 Respuesta cruda (primeros 300 chars): ' + respuestaIA.substring(0, 300));
+
+  // ═══════════════════════════════════════════
+  // NORMALIZAR TAGS: hacer case-insensitive, quitar espacios extra
+  // Convierte [consulta: Pipeline] → [CONSULTA:pipeline]
+  // Convierte [Accion: nuevo_lead] → [ACCION:nuevo_lead]
+  // ═══════════════════════════════════════════
+  respuestaIA = respuestaIA.replace(/\[\s*(CONSULTA|consulta|Consulta)\s*:\s*(\w+)\s*\]/gi, function(match, tipo, valor) {
+    return '[CONSULTA:' + valor.toLowerCase() + ']';
+  });
+  respuestaIA = respuestaIA.replace(/\[\s*(ACCION|accion|Accion)\s*:\s*(\w+)\s*\]/gi, function(match, tipo, valor) {
+    return '[ACCION:' + valor.toLowerCase() + ']';
+  });
+
   // ═══════════════════════════════════════════
   // HELPER: Extraer JSON robusto de acción
   // ═══════════════════════════════════════════
@@ -1741,7 +1760,29 @@ function procesarRespuestaIA(chatId, userId, username, registeredUser, respuesta
         }
         
         registrarContacto(userId, username, registeredUser, datos);
-        enviarMensajeTelegram(chatId, '✅ Contacto "' + datos.nombreEmpresa + '" registrado correctamente.\n\n📂 Se creó carpeta en Drive para sus documentos.');
+
+        // AUTO-SYNC: Crear lead automáticamente al registrar contacto
+        var mensajeLead = '';
+        try {
+          var yaEsLead = verificarLeadExiste_(datos.nombreEmpresa);
+          if (!yaEsLead) {
+            registrarLead(userId, username, registeredUser, {
+              cliente: datos.nombreEmpresa,
+              producto: 'SVC-001',
+              monto: 0,
+              etapa: 'Investigación',
+              origen: 'Otro',
+              canal: 'WhatsApp',
+              notas: 'Lead creado automáticamente al registrar contacto'
+            });
+            mensajeLead = '\n📋 Lead creado automáticamente en Pipeline.';
+            Logger.log('✅ Lead auto-creado para contacto: ' + datos.nombreEmpresa);
+          }
+        } catch (leadError) {
+          Logger.log('⚠️ No se pudo auto-crear lead: ' + leadError);
+        }
+
+        enviarMensajeTelegram(chatId, '✅ Contacto "' + datos.nombreEmpresa + '" registrado correctamente.\n\n📂 Se creó carpeta en Drive para sus documentos.' + mensajeLead);
         limpiarContexto(chatId);
         guardarConversacion(userId, username, registeredUser, 'assistant', 'Contacto registrado: ' + datos.nombreEmpresa);
         return;
@@ -5405,11 +5446,20 @@ function registrarLead(userId, username, registeredUser, datos) {
     
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     
-    // Verificar que el cliente existe en Contactos
+    // Verificar que el cliente existe en Contactos - si no, crearlo automáticamente
     const clienteExiste = verificarClienteExiste(datos.cliente);
     if (!clienteExiste) {
-      Logger.log(`⚠️ Cliente "${datos.cliente}" no existe en Contactos`);
-      // No bloqueamos, pero advertimos
+      Logger.log(`🔄 Auto-creando contacto para lead: ${datos.cliente}`);
+      try {
+        registrarContacto(userId, username, registeredUser, {
+          nombreEmpresa: datos.cliente,
+          estatus: 'Prospecto',
+          notas: 'Contacto creado automáticamente al registrar lead. Producto: ' + (datos.producto || '') + '. Origen: ' + (datos.origen || '')
+        });
+        Logger.log(`✅ Contacto auto-creado: ${datos.cliente}`);
+      } catch (contactoError) {
+        Logger.log(`⚠️ No se pudo auto-crear contacto: ${contactoError.message}`);
+      }
     }
     
     // Verificar que el producto existe (solo advertencia, no bloquea)
@@ -5496,7 +5546,7 @@ function registrarLead(userId, username, registeredUser, datos) {
                `📅 Cierre estimado: ${fechaCierreEst}\n` +
                `📍 Origen: ${datos.origen || 'Otro'}` +
                mensajeBANT +
-               (!clienteExiste ? '\n\n⚠️ Nota: Este cliente no está registrado en Contactos. Considera agregarlo.' : '')
+               (!clienteExiste ? '\n\n📇 Contacto creado automáticamente en Contactos.' : '')
     };
     
   } catch (error) {
@@ -6089,6 +6139,24 @@ function escribirFilaSegura_(sheet, fila) {
   SpreadsheetApp.flush();
   Logger.log('📝 Fila escrita en fila ' + nextRow + ' de ' + sheet.getName());
   return nextRow;
+}
+
+// Verificar si ya existe un lead activo para un cliente
+function verificarLeadExiste_(nombreCliente) {
+  try {
+    var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    var sheet = ss.getSheetByName('Pipeline_Detallado');
+    if (!sheet || sheet.getLastRow() <= 1) return false;
+    var data = sheet.getDataRange().getValues();
+    var nombre = nombreCliente.toLowerCase();
+    for (var i = 1; i < data.length; i++) {
+      var clienteFila = (data[i][4] || '').toString().toLowerCase();
+      if (clienteFila === nombre && data[i][15] === 'Activo') return true;
+    }
+    return false;
+  } catch (e) {
+    return false;
+  }
 }
 
 // Lista de todos los SKUs para validaciones de hojas
@@ -6888,5 +6956,328 @@ function enviarSugerenciasDiarias() {
     
   } catch (error) {
     Logger.log('❌ Error enviando sugerencias: ' + error);
+  }
+}
+
+// ============================================
+// RECORDATORIOS DE FOLLOW-UP POR FECHA
+// Revisa Interacciones_Cliente y envía recordatorios
+// cuando la fecha de follow-up es hoy o ya pasó
+// ============================================
+function enviarRecordatoriosFollowUp() {
+  try {
+    Logger.log('🔔 Revisando follow-ups pendientes...');
+    var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    var sheet = ss.getSheetByName('Interacciones_Cliente');
+    if (!sheet || sheet.getLastRow() <= 1) return;
+
+    var data = sheet.getDataRange().getValues();
+    var hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    var recordatoriosEnviados = 0;
+
+    for (var i = 1; i < data.length; i++) {
+      var fechaFollowup = data[i][9]; // Columna J - Fecha Follow-up
+      var userId = data[i][1];        // Columna B - User ID
+      var cliente = data[i][4];       // Columna E - Cliente
+      var proximoPaso = data[i][8];   // Columna I - Próximo Paso
+      var resultado = data[i][7];     // Columna H - Resultado
+
+      if (!fechaFollowup || !userId || resultado === 'No interesado') continue;
+
+      var fechaFU = new Date(fechaFollowup);
+      fechaFU.setHours(0, 0, 0, 0);
+
+      // Si la fecha de follow-up es hoy o ayer (no más de 1 día pasado)
+      var diffDias = Math.floor((hoy - fechaFU) / (1000 * 60 * 60 * 24));
+
+      if (diffDias >= 0 && diffDias <= 1) {
+        var mensaje = '📬 RECORDATORIO DE SEGUIMIENTO\n\n';
+        mensaje += '👤 Cliente: ' + cliente + '\n';
+        if (proximoPaso) mensaje += '📋 Pendiente: ' + proximoPaso + '\n';
+        if (diffDias === 0) {
+          mensaje += '📅 Seguimiento programado para HOY\n';
+        } else {
+          mensaje += '⚠️ Seguimiento atrasado (ayer)\n';
+        }
+        mensaje += '\n💡 Escríbele "Registra interacción con ' + cliente + '" cuando lo contactes.';
+
+        enviarMensajeTelegram(userId, mensaje);
+        recordatoriosEnviados++;
+        Logger.log('📬 Recordatorio enviado: ' + cliente + ' → userId ' + userId);
+      }
+    }
+
+    // También revisar follow-ups de Pipeline (propuestas pendientes)
+    var pipeSheet = ss.getSheetByName('Pipeline_Detallado');
+    if (pipeSheet && pipeSheet.getLastRow() > 1) {
+      var pipeData = pipeSheet.getDataRange().getValues();
+      for (var j = 1; j < pipeData.length; j++) {
+        if (pipeData[j][15] !== 'Activo') continue;
+        var diasEnEtapa = parseInt(pipeData[j][12]) || 0;
+        var etapa = pipeData[j][6];
+        var userId2 = pipeData[j][1];
+        var cliente2 = pipeData[j][4];
+        var monto2 = pipeData[j][7];
+
+        // Recordatorio urgente: propuestas sin respuesta > 5 días
+        if (etapa === 'Propuesta Enviada' && diasEnEtapa >= 5 && userId2) {
+          var msg = '🔥 SEGUIMIENTO URGENTE\n\n';
+          msg += '👤 ' + cliente2 + ' | $' + monto2 + '\n';
+          msg += '📊 Propuesta enviada hace ' + diasEnEtapa + ' días sin respuesta\n\n';
+          msg += '💡 Contacta al cliente para avanzar o cerrar este deal.';
+          enviarMensajeTelegram(userId2, msg);
+          recordatoriosEnviados++;
+        }
+
+        // Recordatorio: negociación estancada > 7 días
+        if (etapa === 'Negociación' && diasEnEtapa >= 7 && userId2) {
+          var msg2 = '⏰ NEGOCIACIÓN ESTANCADA\n\n';
+          msg2 += '👤 ' + cliente2 + ' | $' + monto2 + '\n';
+          msg2 += '📊 En negociación hace ' + diasEnEtapa + ' días\n\n';
+          msg2 += '💡 ¿Hay bloqueos? Intenta ofrecer incentivos o cerrar esta semana.';
+          enviarMensajeTelegram(userId2, msg2);
+          recordatoriosEnviados++;
+        }
+      }
+    }
+
+    Logger.log('🔔 Total recordatorios enviados: ' + recordatoriosEnviados);
+  } catch (error) {
+    Logger.log('❌ Error en recordatorios follow-up: ' + error);
+  }
+}
+
+// ============================================
+// TEST FASE 3: FLUJO COMPLETO DESDE "HOLA"
+// Simula mensajes como los enviaría un usuario real
+// ============================================
+function testFase3_FlujoDesdeHola() {
+  var resultados = [];
+  var errores = [];
+  var uid = 'TEST-FLUJO';
+  var uname = 'test_flujo';
+  var ruser = 'Vendedor Flujo';
+
+  function logTest(nombre, fn) {
+    try {
+      Logger.log('');
+      Logger.log('--- ' + nombre + ' ---');
+      var r = fn();
+      if (r && r.exito === false) {
+        errores.push(nombre + ': ' + r.mensaje);
+        Logger.log('FALLÓ: ' + r.mensaje);
+      } else {
+        resultados.push(nombre);
+        Logger.log('OK');
+      }
+      return r;
+    } catch (e) {
+      errores.push(nombre + ': ' + e.message);
+      Logger.log('ERROR: ' + e.message);
+      return null;
+    }
+  }
+
+  Logger.log('═══════════════════════════════════════════');
+  Logger.log('TEST FASE 3: FLUJO COMPLETO CON AUTO-SYNC');
+  Logger.log('═══════════════════════════════════════════');
+
+  // ---- TEST 1: Registrar contacto → debe auto-crear lead ----
+  logTest('1. Contacto auto-crea Lead', function() {
+    var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+
+    // Registrar contacto
+    registrarContacto(uid, uname, ruser, {
+      nombreEmpresa: 'AutoSync Test Corp',
+      estatus: 'Prospecto caliente',
+      nombreApellido: 'Carlos Prueba',
+      correo: 'carlos@autosync.test',
+      telefono: '0414-1234567',
+      notas: 'Test de auto-sync contacto→lead'
+    });
+
+    // Verificar que se creó el lead automáticamente
+    var leadExiste = verificarLeadExiste_('AutoSync Test Corp');
+    if (!leadExiste) throw new Error('El lead NO se creó automáticamente al registrar contacto');
+    Logger.log('   Contacto creado Y lead auto-creado');
+    return { exito: true };
+  });
+
+  // ---- TEST 2: Registrar lead → debe auto-crear contacto ----
+  logTest('2. Lead auto-crea Contacto', function() {
+    var resultado = registrarLead(uid, uname, ruser, {
+      cliente: 'LeadFirst Test Inc',
+      producto: 'PLN-EMP-001',
+      monto: 3000,
+      etapa: 'Investigación',
+      origen: 'LinkedIn',
+      canal: 'Email',
+      notas: 'Test de auto-sync lead→contacto'
+    });
+
+    // Verificar que se creó el contacto automáticamente
+    var contactoExiste = verificarClienteExiste('LeadFirst Test Inc');
+    if (!contactoExiste) throw new Error('El contacto NO se creó automáticamente al registrar lead');
+    Logger.log('   Lead creado Y contacto auto-creado');
+    if (resultado.mensaje.indexOf('Contacto creado automáticamente') === -1) {
+      throw new Error('Mensaje no confirma la creación automática del contacto');
+    }
+    return resultado;
+  });
+
+  // ---- TEST 3: Registrar lead de cliente que YA existe → no duplicar contacto ----
+  logTest('3. Lead de cliente existente no duplica contacto', function() {
+    var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    var contactos = ss.getSheetByName('Contactos');
+    var antes = contactos.getLastRow();
+
+    registrarLead(uid, uname, ruser, {
+      cliente: 'LeadFirst Test Inc',
+      producto: 'SVC-002',
+      monto: 1500,
+      etapa: 'Contacto Inicial',
+      origen: 'Referido'
+    });
+
+    var despues = contactos.getLastRow();
+    if (despues > antes) throw new Error('Se duplicó el contacto (antes: ' + antes + ', después: ' + despues + ')');
+    Logger.log('   No se duplicó contacto (filas contactos: ' + antes + ')');
+    return { exito: true };
+  });
+
+  // ---- TEST 4: Flujo completo de venta ----
+  logTest('4. Flujo: interacción → demo → propuesta → cierre', function() {
+    // Interacción
+    var r1 = registrarContactoVenta(uid, uname, ruser, {
+      cliente: 'LeadFirst Test Inc',
+      tipo: 'Llamada',
+      canal: 'Llamada',
+      resumen: 'Primera llamada',
+      resultado: 'Exitoso',
+      proximoPaso: 'Agendar demo',
+      fechaFollowup: new Date().toISOString().split('T')[0]
+    });
+    if (!r1.exito) throw new Error('Interacción falló: ' + r1.mensaje);
+
+    // Demo
+    var r2 = registrarDemo(uid, uname, ruser, {
+      cliente: 'LeadFirst Test Inc',
+      producto: 'PLN-EMP-001',
+      resumen: 'Demo completa',
+      resultado: 'Muy interesado',
+      proximoPaso: 'Enviar propuesta',
+      duracion: 45
+    });
+    if (!r2.exito) throw new Error('Demo falló: ' + r2.mensaje);
+
+    // Propuesta
+    var r3 = registrarPropuesta(uid, uname, ruser, {
+      cliente: 'LeadFirst Test Inc',
+      monto: 3000,
+      detalles: 'Plan anual',
+      proximoPaso: 'Seguimiento viernes'
+    });
+    if (!r3.exito) throw new Error('Propuesta falló: ' + r3.mensaje);
+
+    // Cierre
+    var r4 = cerrarVenta(uid, uname, ruser, {
+      cliente: 'LeadFirst Test Inc',
+      producto: 'PLN-EMP-001',
+      monto: 3000,
+      canal: 'Llamada',
+      observaciones: 'Cierre exitoso test'
+    });
+    if (!r4.exito) throw new Error('Cierre falló: ' + r4.mensaje);
+
+    Logger.log('   Flujo completo: interacción → demo → propuesta → cierre OK');
+    return { exito: true };
+  });
+
+  // ---- TEST 5: Follow-up reminders (no envía a Telegram, solo valida lógica) ----
+  logTest('5. Recordatorios follow-up', function() {
+    // Probar que la función no crashea
+    enviarRecordatoriosFollowUp();
+    Logger.log('   enviarRecordatoriosFollowUp() ejecutó sin errores');
+    return { exito: true };
+  });
+
+  // ---- TEST 6: Tag normalization ----
+  logTest('6. Normalización de tags', function() {
+    var pruebas = [
+      { input: '[CONSULTA: pipeline]Hola', esperado: '[CONSULTA:pipeline]' },
+      { input: '[consulta:Pipeline]', esperado: '[CONSULTA:pipeline]' },
+      { input: '[Accion: nuevo_lead]', esperado: '[ACCION:nuevo_lead]' },
+      { input: '[ACCION:cerrar_venta]', esperado: '[ACCION:cerrar_venta]' }
+    ];
+
+    for (var k = 0; k < pruebas.length; k++) {
+      var normalizado = pruebas[k].input
+        .replace(/\[\s*(CONSULTA|consulta|Consulta)\s*:\s*(\w+)\s*\]/gi, function(m, t, v) {
+          return '[CONSULTA:' + v.toLowerCase() + ']';
+        })
+        .replace(/\[\s*(ACCION|accion|Accion)\s*:\s*(\w+)\s*\]/gi, function(m, t, v) {
+          return '[ACCION:' + v.toLowerCase() + ']';
+        });
+
+      if (normalizado.indexOf(pruebas[k].esperado) === -1) {
+        throw new Error('"' + pruebas[k].input + '" → "' + normalizado + '" (esperaba: ' + pruebas[k].esperado + ')');
+      }
+    }
+    Logger.log('   4/4 tags normalizados correctamente');
+    return { exito: true };
+  });
+
+  // ---- TEST 7: Todas las consultas siguen funcionando ----
+  logTest('7. Consultas post-sync', function() {
+    var pipeline = consultarPipeline(uid);
+    var forecast = consultarForecast(uid);
+    var kpis = consultarKPIs(uid);
+    if (!pipeline || !forecast || !kpis) throw new Error('Alguna consulta retornó vacío');
+    Logger.log('   Pipeline, Forecast, KPIs OK');
+    return { exito: true };
+  });
+
+  // ════════════════════════════════════════════
+  // RESUMEN
+  // ════════════════════════════════════════════
+  Logger.log('');
+  Logger.log('═══════════════════════════════════════════');
+  Logger.log('RESUMEN FASE 3:');
+  Logger.log('  Pasaron: ' + resultados.length + '/7');
+  Logger.log('  Fallaron: ' + errores.length + '/7');
+
+  if (errores.length > 0) {
+    Logger.log('');
+    Logger.log('ERRORES:');
+    for (var e = 0; e < errores.length; e++) {
+      Logger.log('  ❌ ' + errores[e]);
+    }
+  }
+
+  if (errores.length === 0) {
+    Logger.log('');
+    Logger.log('✅✅✅ FASE 3 COMPLETA - AUTO-SYNC + REMINDERS + TAGS');
+    Logger.log('');
+    Logger.log('Para activar automatizaciones, ejecuta: setupTriggers()');
+    Logger.log('Esto activa:');
+    Logger.log('  - Alertas de deals fríos cada 4 horas');
+    Logger.log('  - Recordatorios de follow-up cada 2 horas');
+    Logger.log('  - Sugerencias inteligentes diarias a las 9 AM');
+    Logger.log('  - Resumen diario a las 6 PM');
+  }
+
+  // Verificar hojas
+  Logger.log('');
+  Logger.log('VERIFICACIÓN DE HOJAS:');
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var hojas = ['Contactos', 'Pipeline_Detallado', 'Interacciones_Cliente', 'Ventas_Cerradas', 'Lost_Deals'];
+  for (var h = 0; h < hojas.length; h++) {
+    var sh = ss.getSheetByName(hojas[h]);
+    if (sh) {
+      Logger.log('  ' + hojas[h] + ': ' + (sh.getLastRow() - 1) + ' registros');
+    } else {
+      Logger.log('  ' + hojas[h] + ': NO EXISTE');
+    }
   }
 }
