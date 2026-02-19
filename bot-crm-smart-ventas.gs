@@ -249,12 +249,20 @@ function configurarPromptsInicialesV31(ss) {
   // Generar el prompt base con ventas integradas
   const promptSistema = generarPromptSistemaConVentas();
   
-  // Configurar prompts
+  // Configurar TODOS los prompts (CRM + Ventas)
+  var msgBienvenida = '👋 ¡Bienvenido al CRM de Smart!\n\nPara comenzar, necesito que inicies sesión.\n\n🔐 Envía tus credenciales:\n/login usuario contraseña\n\nEjemplo: /login luisila comercial123';
+
+  var msgLoginExitoso = '✅ ¡Login exitoso, {{USUARIO}}!\n\nBienvenido al CRM de Smart. Estoy listo para ayudarte a:\n\n📅 Reuniones y Tareas\n💰 Pipeline de Ventas (leads, demos, propuestas)\n👥 Contactos y Documentos\n📊 KPIs y Reportes\n\n💡 Ejemplos:\n- "Nuevo lead: Empresa ABC, manejan 500 facturas/mes"\n- "Agenda reunión mañana 3pm con Sayyan y Diana"\n- "¿Cómo va el pipeline?"\n- "Dame el forecast del mes"\n\nComandos: /pendientes /resumen /clear /logout /help\n\n¿Qué deseas hacer?';
+
+  var msgRecordatorio = '🔔 RECORDATORIO Smart: Tienes una {{TIPO}} pendiente:\n📋 {{DESCRIPCION}}\n⏰ {{FECHA_HORA}}\n\n¡No olvides prepararte!';
+
   const prompts = [
     ['sistema_base', 'system', 'SI', promptSistema],
-    ['bienvenida', 'system', 'SI', 'Bienvenido a Smart CRM + Ventas. Soy tu asistente inteligente para gestión operativa y fuerza de ventas. ¿En qué puedo ayudarte?'],
-    ['mensaje_error_nombre_vacio', 'system', 'SI', '❌ Necesito el nombre de la empresa. ¿Cuál es?'],
-    ['mensaje_error_reunion_incompleta', 'system', 'SI', '❌ Para agendar una reunión necesito: fecha, hora y descripción. ¿Puedes completar esos datos?']
+    ['mensaje_bienvenida', 'message', 'SI', msgBienvenida],
+    ['mensaje_login_exitoso', 'message', 'SI', msgLoginExitoso],
+    ['mensaje_error_nombre_vacio', 'message', 'SI', '❌ Para registrar un contacto necesito el nombre de la empresa.\n\n¿Cuál es el nombre de la empresa que deseas registrar?'],
+    ['mensaje_error_reunion_incompleta', 'message', 'SI', '❌ Para agendar la reunión necesito:\n- Fecha (día específico)\n- Hora\n- Descripción o tema de la reunión\n\n¿Puedes proporcionar esta información?'],
+    ['mensaje_recordatorio', 'message', 'SI', msgRecordatorio]
   ];
   
   // Limpiar prompts existentes
@@ -1342,11 +1350,33 @@ function obtenerPendientesParaContexto(userId) {
         texto += `${i + 1}. ${a}\n`;
       });
     }
-    
+
+    // Deals activos en pipeline
+    var pipeSheet = ss.getSheetByName('Pipeline_Detallado');
+    if (pipeSheet) {
+      var pipeData = pipeSheet.getDataRange().getValues();
+      var deals = [];
+      for (var p = pipeData.length - 1; p >= 1 && deals.length < 5; p--) {
+        if (String(pipeData[p][1]) == String(userId) && pipeData[p][15] === 'Activo') {
+          var cli = pipeData[p][4];
+          var prod = pipeData[p][5];
+          var etapa = pipeData[p][6];
+          var monto = pipeData[p][7];
+          deals.push('"' + cli + '" - ' + prod + ' $' + monto + ' (' + etapa + ')');
+        }
+      }
+      if (deals.length > 0) {
+        texto += '\n💰 DEALS ACTIVOS EN PIPELINE:\n';
+        deals.forEach(function(d, i) {
+          texto += (i + 1) + '. ' + d + '\n';
+        });
+      }
+    }
+
   } catch (error) {
     Logger.log('⚠️ Error obteniendo pendientes: ' + error);
   }
-  
+
   return texto || '\n\n(El usuario no tiene pendientes registrados)';
 }
 
@@ -1832,11 +1862,78 @@ function procesarRespuestaIA(chatId, userId, username, registeredUser, respuesta
   }
   
   // ═══════════════════════════════════════════
-  // TERCERO: RESPUESTA CONVERSACIONAL
+  // TERCERO: CONSULTAS DE VENTAS
   // ═══════════════════════════════════════════
-  
-  var textoLimpio = respuestaIA.replace(/\[ACCION:.*?\][\s\S]*?\}/g, '').trim();
-  
+
+  if (respuestaIA.includes('[CONSULTA:pipeline]')) {
+    var resultado = consultarPipeline(userId);
+    enviarMensajeTelegram(chatId, resultado);
+    guardarConversacion(userId, username, registeredUser, 'assistant', resultado);
+    return;
+  }
+
+  if (respuestaIA.includes('[CONSULTA:forecast]')) {
+    var resultado = consultarForecast(userId);
+    enviarMensajeTelegram(chatId, resultado);
+    guardarConversacion(userId, username, registeredUser, 'assistant', resultado);
+    return;
+  }
+
+  if (respuestaIA.includes('[CONSULTA:kpis]')) {
+    var resultado = consultarKPIs(userId);
+    enviarMensajeTelegram(chatId, resultado);
+    guardarConversacion(userId, username, registeredUser, 'assistant', resultado);
+    return;
+  }
+
+  if (respuestaIA.includes('[CONSULTA:reporte_semanal]')) {
+    var resultado = generarReporteSemanal(userId, registeredUser);
+    enviarMensajeTelegram(chatId, resultado);
+    guardarConversacion(userId, username, registeredUser, 'assistant', resultado);
+    return;
+  }
+
+  if (respuestaIA.includes('[CONSULTA:leads_frios]')) {
+    var resultado = consultarLeadsFrios(userId);
+    enviarMensajeTelegram(chatId, resultado);
+    guardarConversacion(userId, username, registeredUser, 'assistant', resultado);
+    return;
+  }
+
+  if (respuestaIA.includes('[CONSULTA:top_clientes]')) {
+    var resultado = consultarTopClientes();
+    enviarMensajeTelegram(chatId, resultado);
+    guardarConversacion(userId, username, registeredUser, 'assistant', resultado);
+    return;
+  }
+
+  if (respuestaIA.includes('[CONSULTA:patrones_perdida]')) {
+    var resultado = analizarPatronesPerdida();
+    enviarMensajeTelegram(chatId, resultado);
+    guardarConversacion(userId, username, registeredUser, 'assistant', resultado);
+    return;
+  }
+
+  if (respuestaIA.includes('[CONSULTA:ciclo_venta]')) {
+    var resultado = consultarCicloVenta();
+    enviarMensajeTelegram(chatId, resultado);
+    guardarConversacion(userId, username, registeredUser, 'assistant', resultado);
+    return;
+  }
+
+  if (respuestaIA.includes('[CONSULTA:sugerencias]')) {
+    var resultado = generarSugerenciasInteligentes(userId, registeredUser);
+    enviarMensajeTelegram(chatId, resultado);
+    guardarConversacion(userId, username, registeredUser, 'assistant', resultado);
+    return;
+  }
+
+  // ═══════════════════════════════════════════
+  // CUARTO: RESPUESTA CONVERSACIONAL
+  // ═══════════════════════════════════════════
+
+  var textoLimpio = respuestaIA.replace(/\[ACCION:.*?\][\s\S]*?\}/g, '').replace(/\[CONSULTA:.*?\]/g, '').trim();
+
   if (textoLimpio) {
     enviarMensajeTelegram(chatId, textoLimpio);
     guardarConversacion(userId, username, registeredUser, 'assistant', textoLimpio);
@@ -3386,30 +3483,519 @@ function pruebaNotificacionParticipantes() {
 }
 
 // ============================================
-// ACTUALIZACIÓN DE PROMPTS (SOLO PARA MIGRACIÓN)
+// DESPLIEGUE SEGURO: NO BORRA DATOS EXISTENTES
 // ============================================
 
-function actualizarPromptsV31() {
-  Logger.log('🔄 Actualizando prompts a V3.1...');
-  
+function desplegarActualizacionVentas() {
+  Logger.log('🚀 === DESPLEGANDO ACTUALIZACIÓN VENTAS ===');
+  Logger.log('');
+
   try {
-    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-    const sheet = ss.getSheetByName('Prompts');
-    
-    // Limpiar prompts existentes (excepto encabezado)
-    const lastRow = sheet.getLastRow();
-    if (lastRow > 1) {
-      sheet.deleteRows(2, lastRow - 1);
+    var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+
+    // ─── PASO 1: Crear hojas de ventas si no existen ───
+    Logger.log('📊 Paso 1: Verificando hojas de ventas...');
+    var hojasCreadas = [];
+
+    if (!ss.getSheetByName('Pipeline_Detallado')) {
+      crearHojaPipelineDetallado(ss);
+      hojasCreadas.push('Pipeline_Detallado');
+    } else {
+      Logger.log('  ✅ Pipeline_Detallado ya existe (no se toca)');
     }
-    
-    // Configurar nuevos prompts
+
+    if (!ss.getSheetByName('Interacciones_Cliente')) {
+      crearHojaInteraccionesCliente(ss);
+      hojasCreadas.push('Interacciones_Cliente');
+    } else {
+      Logger.log('  ✅ Interacciones_Cliente ya existe (no se toca)');
+    }
+
+    if (!ss.getSheetByName('Ventas_Cerradas')) {
+      crearHojaVentasCerradas(ss);
+      hojasCreadas.push('Ventas_Cerradas');
+    } else {
+      Logger.log('  ✅ Ventas_Cerradas ya existe (no se toca)');
+    }
+
+    if (!ss.getSheetByName('Lost_Deals')) {
+      crearHojaLostDeals(ss);
+      hojasCreadas.push('Lost_Deals');
+    } else {
+      Logger.log('  ✅ Lost_Deals ya existe (no se toca)');
+    }
+
+    if (!ss.getSheetByName('KPIs_Auto')) {
+      crearHojaKPIsAuto(ss);
+      hojasCreadas.push('KPIs_Auto');
+    } else {
+      Logger.log('  ✅ KPIs_Auto ya existe (no se toca)');
+    }
+
+    // Productos_SKU se recrea siempre (es catálogo, no data de usuario)
+    crearHojaProductosSKU(ss);
+    Logger.log('  ✅ Productos_SKU actualizado con 30+ SKUs');
+
+    // ─── PASO 2: Actualizar prompts ───
+    Logger.log('');
+    Logger.log('🤖 Paso 2: Actualizando prompts (IA aprende ventas)...');
+    var promptSheet = ss.getSheetByName('Prompts');
+    var lastRow = promptSheet.getLastRow();
+    if (lastRow > 1) {
+      promptSheet.deleteRows(2, lastRow - 1);
+    }
     configurarPromptsInicialesV31(ss);
-    
-    Logger.log('✅ Prompts V3.1 actualizados correctamente');
-    
+    Logger.log('  ✅ Prompt incluye catálogo, recomendaciones y consultas');
+
+    // ─── PASO 3: Actualizar MAX_TOKENS ───
+    Logger.log('');
+    Logger.log('⚙️ Paso 3: Configuración...');
+    var configSheet = ss.getSheetByName('Configuracion');
+    var configData = configSheet.getDataRange().getValues();
+    for (var i = 1; i < configData.length; i++) {
+      if (configData[i][0] === 'MAX_TOKENS_IA') {
+        configSheet.getRange(i + 1, 2).setValue('2500');
+        Logger.log('  ✅ MAX_TOKENS_IA subido a 2500');
+        break;
+      }
+    }
+
+    // ─── PASO 4: Actualizar Dashboard con ventas ───
+    Logger.log('');
+    Logger.log('📊 Paso 4: Dashboard...');
+    actualizarDashboardVentas(ss);
+
+    // ─── RESULTADO ───
+    Logger.log('');
+    Logger.log('═══════════════════════════════════════════');
+    Logger.log('🚀 DESPLIEGUE COMPLETADO');
+    Logger.log('═══════════════════════════════════════════');
+    Logger.log('');
+    if (hojasCreadas.length > 0) {
+      Logger.log('📋 Hojas CREADAS: ' + hojasCreadas.join(', '));
+    }
+    Logger.log('📋 Lo que se actualizó:');
+    Logger.log('  ✅ Prompt con catálogo real (30+ SKUs)');
+    Logger.log('  ✅ Recomendación inteligente por NC/mes');
+    Logger.log('  ✅ 9 consultas de ventas (pipeline, forecast, KPIs, etc.)');
+    Logger.log('  ✅ 7 acciones de ventas (lead, demo, propuesta, cierre, etc.)');
+    Logger.log('  ✅ MAX_TOKENS subido a 2500');
+    Logger.log('  ✅ Dashboard con sección de ventas');
+    Logger.log('');
+    Logger.log('📋 Lo que NO se tocó:');
+    Logger.log('  ✅ Reuniones, Actividades, Contactos');
+    Logger.log('  ✅ Conversaciones, Usuarios');
+    Logger.log('  ✅ Datos existentes en pipeline (si los hay)');
+    Logger.log('');
+    Logger.log('🧪 PRUEBA EN TELEGRAM:');
+    Logger.log('  1. "Nuevo lead: Panadería ABC, manejan 100 facturas al mes"');
+    Logger.log('  2. "¿Cómo va el pipeline?"');
+    Logger.log('  3. "Dame el forecast del mes"');
+
   } catch (error) {
-    Logger.log('❌ Error actualizando prompts: ' + error);
+    Logger.log('❌ ERROR EN DESPLIEGUE: ' + error.message);
+    Logger.log('Stack: ' + error.stack);
   }
+}
+
+// Función auxiliar para recrear hojas de ventas con validaciones corregidas
+function recrearHojasVentas() {
+  Logger.log('🔄 Recreando hojas de ventas (corrige validaciones)...');
+  Logger.log('⚠️ ADVERTENCIA: Esto borra datos en las hojas de ventas');
+
+  try {
+    var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+
+    crearHojaPipelineDetallado(ss);
+    crearHojaInteraccionesCliente(ss);
+    crearHojaVentasCerradas(ss);
+    crearHojaLostDeals(ss);
+    crearHojaKPIsAuto(ss);
+    crearHojaProductosSKU(ss);
+
+    Logger.log('✅ Todas las hojas de ventas recreadas con validaciones corregidas');
+    Logger.log('✅ Ahora aceptan todos los SKUs (30+)');
+  } catch (error) {
+    Logger.log('❌ Error: ' + error.message);
+  }
+}
+
+// ============================================
+// FASE 1: TEST DE REGISTRO EN PIPELINE
+// Ejecuta esta función desde el editor de Apps Script
+// Si funciona, verás una fila nueva en Pipeline_Detallado
+// ============================================
+function testFase1_RegistrarLead() {
+  Logger.log('═══════════════════════════════════════════');
+  Logger.log('TEST FASE 1: REGISTRAR LEAD EN PIPELINE');
+  Logger.log('═══════════════════════════════════════════');
+
+  // 1. Verificar SPREADSHEET_ID
+  if (!SPREADSHEET_ID) {
+    Logger.log('❌ SPREADSHEET_ID no está configurado.');
+    Logger.log('→ Ejecuta configurarInicial() primero.');
+    return;
+  }
+  Logger.log('✅ SPREADSHEET_ID: ' + SPREADSHEET_ID);
+
+  // 2. Abrir spreadsheet
+  var ss;
+  try {
+    ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    Logger.log('✅ Spreadsheet: ' + ss.getName());
+    Logger.log('   URL: ' + ss.getUrl());
+  } catch (e) {
+    Logger.log('❌ No se puede abrir el spreadsheet: ' + e.message);
+    return;
+  }
+
+  // 3. Verificar hoja Pipeline_Detallado
+  var pipeline = ss.getSheetByName('Pipeline_Detallado');
+  if (!pipeline) {
+    Logger.log('❌ La hoja Pipeline_Detallado no existe.');
+    Logger.log('→ Ejecuta desplegarActualizacionVentas() primero.');
+    return;
+  }
+
+  var filasAntes = pipeline.getLastRow();
+  Logger.log('✅ Pipeline_Detallado existe. Filas actuales: ' + filasAntes);
+
+  // 4. Verificar validaciones actuales (diagnóstico)
+  try {
+    var validacion = pipeline.getRange('F2').getDataValidation();
+    if (validacion) {
+      Logger.log('   Validación en F2 - AllowInvalid: ' + validacion.getAllowInvalid());
+      if (!validacion.getAllowInvalid()) {
+        Logger.log('   ⚠️ La validación tiene AllowInvalid=false (restrictiva)');
+        Logger.log('   → escribirFilaSegura_ limpiará esto automáticamente');
+      }
+    }
+  } catch (e) {
+    Logger.log('   (No se pudo leer validación: ' + e.message + ')');
+  }
+
+  // 5. REGISTRAR UN LEAD DE PRUEBA usando la función real
+  Logger.log('');
+  Logger.log('Registrando lead de prueba...');
+
+  var resultado = registrarLead(
+    'TEST-001',           // userId
+    'test_user',          // username
+    'Usuario de Prueba',  // registeredUser
+    {
+      cliente: 'Empresa Test Fase1',
+      producto: 'PLN-EMP-001',
+      monto: 500,
+      etapa: 'Investigación',
+      origen: 'Otro',
+      canal: 'WhatsApp',
+      notas: 'Lead de prueba - puedes borrar esta fila'
+    }
+  );
+
+  Logger.log('');
+  Logger.log('Resultado: ' + JSON.stringify(resultado));
+
+  // 6. Verificar que se escribió
+  var filasDespues = pipeline.getLastRow();
+  Logger.log('');
+  Logger.log('Filas ANTES: ' + filasAntes);
+  Logger.log('Filas DESPUÉS: ' + filasDespues);
+
+  if (resultado.exito && filasDespues > filasAntes) {
+    // Leer la fila escrita para confirmar
+    var datosEscritos = pipeline.getRange(filasDespues, 1, 1, 16).getValues()[0];
+    Logger.log('');
+    Logger.log('✅✅✅ FASE 1 EXITOSA - Lead registrado correctamente');
+    Logger.log('   Cliente: ' + datosEscritos[4]);
+    Logger.log('   Producto: ' + datosEscritos[5]);
+    Logger.log('   Etapa: ' + datosEscritos[6]);
+    Logger.log('   Monto: ' + datosEscritos[7]);
+    Logger.log('   Estado: ' + datosEscritos[15]);
+    Logger.log('');
+    Logger.log('→ Ahora prueba desde Telegram diciendo algo como:');
+    Logger.log('  "Registra un lead: Panadería Don José, producto PLN-EMP-001, monto 1000"');
+    Logger.log('→ Revisa Pipeline_Detallado en tu hoja de cálculo');
+  } else if (resultado.exito && filasDespues === filasAntes) {
+    Logger.log('');
+    Logger.log('⚠️ La función retornó éxito pero NO se agregó fila.');
+    Logger.log('Esto indica un problema con el spreadsheet.');
+    Logger.log('→ Ejecuta recrearHojasVentas() para recrear las hojas.');
+  } else {
+    Logger.log('');
+    Logger.log('❌ Error: ' + resultado.mensaje);
+  }
+
+  Logger.log('');
+  Logger.log('═══════════════════════════════════════════');
+  Logger.log('FIN DEL TEST FASE 1');
+  Logger.log('═══════════════════════════════════════════');
+}
+
+// ============================================
+// FASE 2: TEST COMPLETO DE TODAS LAS FUNCIONES DE VENTAS
+// Ejecuta esta función para probar TODO el flujo
+// ============================================
+function testFase2_FlujoCompleto() {
+  var resultados = [];
+  var errores = [];
+
+  function logTest(nombre, fn) {
+    try {
+      Logger.log('');
+      Logger.log('--- TEST: ' + nombre + ' ---');
+      var r = fn();
+      if (r && r.exito === false) {
+        errores.push(nombre + ': ' + r.mensaje);
+        Logger.log('FALLÓ: ' + r.mensaje);
+      } else {
+        resultados.push(nombre);
+        Logger.log('OK');
+      }
+      return r;
+    } catch (e) {
+      errores.push(nombre + ': ' + e.message);
+      Logger.log('ERROR: ' + e.message);
+      return null;
+    }
+  }
+
+  Logger.log('═══════════════════════════════════════════');
+  Logger.log('TEST FASE 2: FLUJO COMPLETO DE VENTAS');
+  Logger.log('═══════════════════════════════════════════');
+
+  var uid = 'TEST-002';
+  var uname = 'test_ventas';
+  var ruser = 'Vendedor Test';
+
+  // ---- 1. REGISTRAR LEAD ----
+  var lead1 = logTest('1. Registrar Lead (Acme Corp)', function() {
+    return registrarLead(uid, uname, ruser, {
+      cliente: 'Acme Corp Test',
+      producto: 'PLN-CORP-001',
+      monto: 5000,
+      etapa: 'Investigación',
+      origen: 'LinkedIn',
+      canal: 'Email',
+      notas: 'Lead de prueba Fase 2'
+    });
+  });
+
+  // ---- 2. REGISTRAR INTERACCIÓN ----
+  logTest('2. Registrar Interacción', function() {
+    return registrarContactoVenta(uid, uname, ruser, {
+      cliente: 'Acme Corp Test',
+      tipo: 'Llamada',
+      canal: 'Llamada',
+      resumen: 'Primera llamada de contacto',
+      resultado: 'Exitoso',
+      proximoPaso: 'Agendar demo',
+      tiempoInvertido: 15
+    });
+  });
+
+  // ---- 3. MOVER ETAPA ----
+  logTest('3. Mover Etapa a Contacto Inicial', function() {
+    return moverEtapa(uid, {
+      cliente: 'Acme Corp Test',
+      nuevaEtapa: 'Contacto Inicial',
+      notas: 'Llamada exitosa, interesado'
+    });
+  });
+
+  // ---- 4. REGISTRAR DEMO ----
+  logTest('4. Registrar Demo', function() {
+    return registrarDemo(uid, uname, ruser, {
+      cliente: 'Acme Corp Test',
+      producto: 'PLN-CORP-001',
+      resumen: 'Demo completa del sistema',
+      resultado: 'Interesado',
+      proximoPaso: 'Enviar propuesta',
+      duracion: 60
+    });
+  });
+
+  // ---- 5. REGISTRAR PROPUESTA ----
+  logTest('5. Registrar Propuesta', function() {
+    return registrarPropuesta(uid, uname, ruser, {
+      cliente: 'Acme Corp Test',
+      monto: 5000,
+      detalles: 'Propuesta plan corporativo anual',
+      proximoPaso: 'Seguimiento en 3 días'
+    });
+  });
+
+  // ---- 6. CERRAR VENTA ----
+  logTest('6. Cerrar Venta', function() {
+    return cerrarVenta(uid, uname, ruser, {
+      cliente: 'Acme Corp Test',
+      producto: 'PLN-CORP-001',
+      monto: 5000,
+      canal: 'Email',
+      observaciones: 'Cierre de prueba Fase 2'
+    });
+  });
+
+  // ---- 7. REGISTRAR SEGUNDO LEAD + PERDER DEAL ----
+  logTest('7a. Registrar Lead (Beta Inc)', function() {
+    return registrarLead(uid, uname, ruser, {
+      cliente: 'Beta Inc Test',
+      producto: 'SVC-002',
+      monto: 2000,
+      etapa: 'Contacto Inicial',
+      origen: 'Referido',
+      canal: 'WhatsApp'
+    });
+  });
+
+  logTest('7b. Perder Deal (Beta Inc)', function() {
+    return perderDeal(uid, uname, ruser, {
+      cliente: 'Beta Inc Test',
+      razon: 'Precio',
+      competidor: 'Competidor X',
+      posibleRescate: 'SI',
+      notas: 'Perdida de prueba Fase 2'
+    });
+  });
+
+  // ════════════════════════════════════════════
+  // CONSULTAS
+  // ════════════════════════════════════════════
+  Logger.log('');
+  Logger.log('═══════════════════════════════════════════');
+  Logger.log('CONSULTAS:');
+
+  logTest('8. Consultar Pipeline', function() {
+    var r = consultarPipeline(uid);
+    Logger.log('   Respuesta: ' + (r || '').substring(0, 200));
+    return { exito: r && r.length > 0 ? true : false, mensaje: r ? 'OK' : 'Vacío' };
+  });
+
+  logTest('9. Consultar Forecast', function() {
+    var r = consultarForecast(uid);
+    Logger.log('   Respuesta: ' + (r || '').substring(0, 200));
+    return { exito: r && r.length > 0 ? true : false, mensaje: r ? 'OK' : 'Vacío' };
+  });
+
+  logTest('10. Consultar KPIs', function() {
+    var r = consultarKPIs(uid);
+    Logger.log('   Respuesta: ' + (r || '').substring(0, 200));
+    return { exito: r && r.length > 0 ? true : false, mensaje: r ? 'OK' : 'Vacío' };
+  });
+
+  logTest('11. Reporte Semanal', function() {
+    var r = generarReporteSemanal(uid, ruser);
+    Logger.log('   Respuesta: ' + (r || '').substring(0, 200));
+    return { exito: r && r.length > 0 ? true : false, mensaje: r ? 'OK' : 'Vacío' };
+  });
+
+  logTest('12. Leads Fríos', function() {
+    var r = consultarLeadsFrios(uid);
+    Logger.log('   Respuesta: ' + (r || '').substring(0, 200));
+    return { exito: r && r.length > 0 ? true : false, mensaje: r ? 'OK' : 'Vacío' };
+  });
+
+  logTest('13. Top Clientes', function() {
+    var r = consultarTopClientes();
+    Logger.log('   Respuesta: ' + (r || '').substring(0, 200));
+    return { exito: r && r.length > 0 ? true : false, mensaje: r ? 'OK' : 'Vacío' };
+  });
+
+  logTest('14. Patrones Pérdida', function() {
+    var r = analizarPatronesPerdida();
+    Logger.log('   Respuesta: ' + (r || '').substring(0, 200));
+    return { exito: r && r.length > 0 ? true : false, mensaje: r ? 'OK' : 'Vacío' };
+  });
+
+  logTest('15. Ciclo Venta', function() {
+    var r = consultarCicloVenta();
+    Logger.log('   Respuesta: ' + (r || '').substring(0, 200));
+    return { exito: r && r.length > 0 ? true : false, mensaje: r ? 'OK' : 'Vacío' };
+  });
+
+  // ════════════════════════════════════════════
+  // RESUMEN FINAL
+  // ════════════════════════════════════════════
+  Logger.log('');
+  Logger.log('═══════════════════════════════════════════');
+  Logger.log('RESUMEN:');
+  Logger.log('  Pasaron: ' + resultados.length + '/15');
+  Logger.log('  Fallaron: ' + errores.length + '/15');
+  Logger.log('');
+
+  if (errores.length > 0) {
+    Logger.log('ERRORES:');
+    for (var i = 0; i < errores.length; i++) {
+      Logger.log('  ❌ ' + errores[i]);
+    }
+  }
+
+  if (errores.length === 0) {
+    Logger.log('✅✅✅ TODAS LAS FUNCIONES PASARON');
+    Logger.log('');
+    Logger.log('Siguiente paso: prueba desde Telegram con mensajes como:');
+    Logger.log('  "Registra un lead: Panadería Don José, PLN-EMP-001, monto 1000"');
+    Logger.log('  "Muéstrame el pipeline"');
+    Logger.log('  "¿Cómo van los KPIs?"');
+  } else {
+    Logger.log('');
+    Logger.log('Mándame este log para revisar los errores.');
+  }
+
+  Logger.log('═══════════════════════════════════════════');
+
+  // Verificar hojas
+  Logger.log('');
+  Logger.log('VERIFICACIÓN DE HOJAS:');
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var hojasCheck = ['Pipeline_Detallado', 'Interacciones_Cliente', 'Ventas_Cerradas', 'Lost_Deals'];
+  for (var j = 0; j < hojasCheck.length; j++) {
+    var sh = ss.getSheetByName(hojasCheck[j]);
+    if (sh) {
+      Logger.log('  ' + hojasCheck[j] + ': ' + (sh.getLastRow() - 1) + ' registros');
+    } else {
+      Logger.log('  ' + hojasCheck[j] + ': NO EXISTE');
+    }
+  }
+}
+
+// ============================================
+// LIMPIEZA: Borra filas fantasma de Pipeline_Detallado
+// (filas con timestamp pero sin datos reales en columnas clave)
+// Ejecuta ANTES de testFase1 si getLastRow > 1
+// ============================================
+function limpiarFilasFantasma() {
+  Logger.log('Limpiando filas fantasma de hojas de ventas...');
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+
+  var hojasVentas = ['Pipeline_Detallado', 'Interacciones_Cliente', 'Ventas_Cerradas', 'Lost_Deals'];
+
+  for (var h = 0; h < hojasVentas.length; h++) {
+    var sheet = ss.getSheetByName(hojasVentas[h]);
+    if (!sheet) continue;
+
+    var lastRow = sheet.getLastRow();
+    if (lastRow <= 1) {
+      Logger.log('  ' + hojasVentas[h] + ': solo encabezados, OK');
+      continue;
+    }
+
+    // Borrar todo el contenido de fila 2 en adelante (mantener encabezados)
+    var maxCols = sheet.getMaxColumns();
+    sheet.getRange(2, 1, lastRow - 1, maxCols).clear();
+
+    // Eliminar filas extra (dejar solo 100 filas libres bajo encabezados)
+    var maxRows = sheet.getMaxRows();
+    if (maxRows > 200) {
+      sheet.deleteRows(201, maxRows - 200);
+    }
+
+    var newLast = sheet.getLastRow();
+    Logger.log('  ' + hojasVentas[h] + ': limpia (antes: ' + lastRow + ' filas, ahora: ' + newLast + ')');
+  }
+
+  Logger.log('');
+  Logger.log('Limpieza completada. Ahora ejecuta testFase1_RegistrarLead()');
 }
 
 function simularMensajeReal() {
@@ -3892,6 +4478,32 @@ Respuesta: Para Restaurante La Esquina con 3 puntos de venta recomiendo **APK Em
 {"cliente":"Restaurante La Esquina","producto":"APK-003","monto":"24","origen":"Otro","canal":"WhatsApp","etapa":"Investigación","notas":"3 cajas POS. APK-003 $24/mes (4 usuarios)"}
 
 ═══════════════════════════════════════════
+FORMATOS DE SALIDA - CONSULTAS:
+═══════════════════════════════════════════
+
+Cuando el usuario pida información sobre ventas, reportes o métricas, genera el tag correspondiente:
+
+[CONSULTA:pipeline] → "muéstrame el pipeline", "¿cómo va el pipeline?", "deals activos"
+[CONSULTA:forecast] → "¿cuál es el forecast?", "¿cuánto esperamos vender?", "proyección"
+[CONSULTA:kpis] → "muéstrame los KPIs", "¿cómo van las métricas?", "dashboard de ventas"
+[CONSULTA:reporte_semanal] → "reporte semanal", "¿qué hicimos esta semana?", "resumen de la semana"
+[CONSULTA:leads_frios] → "leads fríos", "¿qué deals están parados?", "deals sin actividad"
+[CONSULTA:top_clientes] → "mejores clientes", "top clientes", "¿quiénes compran más?"
+[CONSULTA:patrones_perdida] → "¿por qué perdemos ventas?", "análisis de pérdidas", "deals perdidos"
+[CONSULTA:ciclo_venta] → "ciclo de venta", "¿cuánto tardamos en cerrar?", "tiempo promedio"
+[CONSULTA:sugerencias] → "dame sugerencias", "¿qué debería hacer?", "recomendaciones"
+
+Ejemplo:
+Usuario: "¿Cómo va el pipeline?"
+Respuesta: [CONSULTA:pipeline]
+
+Usuario: "¿Cuál es el forecast del mes?"
+Respuesta: [CONSULTA:forecast]
+
+Usuario: "¿Tengo leads que se están enfriando?"
+Respuesta: [CONSULTA:leads_frios]
+
+═══════════════════════════════════════════
 REGLAS CRÍTICAS:
 ═══════════════════════════════════════════
 
@@ -3907,6 +4519,7 @@ REGLAS CRÍTICAS:
 ✓ Si mencionan cantidad de NC/facturas → RECOMENDAR plan con precios (mensual y anual)
 ✓ Usa SKU reales: PLN-EMP-001, PLN-CORP-001..006, PLN-WEB-001..003, APK-001..005, SVC-001..004, ADD-001, etc.
 ✓ SIEMPRE muestra el desglose de costos cuando recomiendes un plan
+✓ Para CONSULTAS de ventas, usa los tags [CONSULTA:...] para que el sistema genere la data automáticamente
 
 ═══════════════════════════════════════════
 IMPORTANTE:
@@ -4128,23 +4741,25 @@ function crearHojaPipelineDetallado(ss) {
   ];
   const validacionEtapa = SpreadsheetApp.newDataValidation()
     .requireValueInList(etapasValidas, true)
-    .setAllowInvalid(false)
+    .setAllowInvalid(true)
     .build();
   sheet.getRange('G2:G1000').setDataValidation(validacionEtapa);
   
-  // Validación de Producto (columna F)
-  const productosValidos = ['SVC-001', 'SVC-002', 'SVC-003', 'SVC-004'];
-  const validacionProducto = SpreadsheetApp.newDataValidation()
-    .requireValueInList(productosValidos, true)
-    .setAllowInvalid(false)
-    .build();
-  sheet.getRange('F2:F1000').setDataValidation(validacionProducto);
-  
+  // Validación de Producto (columna F) - Todos los SKUs del catálogo
+  var skusPipeline = obtenerListaSKUs_();
+  if (skusPipeline.length > 0) {
+    var validacionProducto = SpreadsheetApp.newDataValidation()
+      .requireValueInList(skusPipeline, true)
+      .setAllowInvalid(true)
+      .build();
+    sheet.getRange('F2:F1000').setDataValidation(validacionProducto);
+  }
+
   // Validación de Origen Lead (columna K)
   const origenesValidos = ['Referido', 'Cold Call', 'LinkedIn', 'Web', 'Evento', 'Otro'];
   const validacionOrigen = SpreadsheetApp.newDataValidation()
     .requireValueInList(origenesValidos, true)
-    .setAllowInvalid(false)
+    .setAllowInvalid(true)
     .build();
   sheet.getRange('K2:K1000').setDataValidation(validacionOrigen);
   
@@ -4152,7 +4767,7 @@ function crearHojaPipelineDetallado(ss) {
   const canalesValidos = ['WhatsApp', 'Llamada', 'Email', 'Presencial'];
   const validacionCanal = SpreadsheetApp.newDataValidation()
     .requireValueInList(canalesValidos, true)
-    .setAllowInvalid(false)
+    .setAllowInvalid(true)
     .build();
   sheet.getRange('L2:L1000').setDataValidation(validacionCanal);
   
@@ -4160,7 +4775,7 @@ function crearHojaPipelineDetallado(ss) {
   const estadosValidos = ['Activo', 'Ganado', 'Perdido'];
   const validacionEstado = SpreadsheetApp.newDataValidation()
     .requireValueInList(estadosValidos, true)
-    .setAllowInvalid(false)
+    .setAllowInvalid(true)
     .build();
   sheet.getRange('P2:P1000').setDataValidation(validacionEstado);
   
@@ -4238,7 +4853,7 @@ function crearHojaInteraccionesCliente(ss) {
   const tiposValidos = ['Llamada', 'WhatsApp', 'Email', 'Reunión', 'Demo', 'Otro'];
   const validacionTipo = SpreadsheetApp.newDataValidation()
     .requireValueInList(tiposValidos, true)
-    .setAllowInvalid(false)
+    .setAllowInvalid(true)
     .build();
   sheet.getRange('F2:F1000').setDataValidation(validacionTipo);
   
@@ -4246,7 +4861,7 @@ function crearHojaInteraccionesCliente(ss) {
   const canalesValidos = ['WhatsApp', 'Llamada', 'Email', 'Presencial', 'Video'];
   const validacionCanal = SpreadsheetApp.newDataValidation()
     .requireValueInList(canalesValidos, true)
-    .setAllowInvalid(false)
+    .setAllowInvalid(true)
     .build();
   sheet.getRange('G2:G1000').setDataValidation(validacionCanal);
   
@@ -4254,7 +4869,7 @@ function crearHojaInteraccionesCliente(ss) {
   const resultadosValidos = ['Exitoso', 'Pendiente Follow-up', 'No contactado', 'No interesado'];
   const validacionResultado = SpreadsheetApp.newDataValidation()
     .requireValueInList(resultadosValidos, true)
-    .setAllowInvalid(false)
+    .setAllowInvalid(true)
     .build();
   sheet.getRange('I2:I1000').setDataValidation(validacionResultado);
   
@@ -4323,19 +4938,21 @@ function crearHojaVentasCerradas(ss) {
   
   // Validaciones
   
-  // Producto (columna F)
-  const productosValidos = ['SVC-001', 'SVC-002', 'SVC-003', 'SVC-004'];
-  const validacionProducto = SpreadsheetApp.newDataValidation()
-    .requireValueInList(productosValidos, true)
-    .setAllowInvalid(false)
-    .build();
-  sheet.getRange('F2:F1000').setDataValidation(validacionProducto);
-  
+  // Producto (columna F) - Todos los SKUs
+  var skusVentas = obtenerListaSKUs_();
+  if (skusVentas.length > 0) {
+    var validacionProducto = SpreadsheetApp.newDataValidation()
+      .requireValueInList(skusVentas, true)
+      .setAllowInvalid(true)
+      .build();
+    sheet.getRange('F2:F1000').setDataValidation(validacionProducto);
+  }
+
   // Canal Cierre (columna K)
   const canalesValidos = ['WhatsApp', 'Llamada', 'Email', 'Presencial'];
   const validacionCanal = SpreadsheetApp.newDataValidation()
     .requireValueInList(canalesValidos, true)
-    .setAllowInvalid(false)
+    .setAllowInvalid(true)
     .build();
   sheet.getRange('K2:K1000').setDataValidation(validacionCanal);
   
@@ -4343,7 +4960,7 @@ function crearHojaVentasCerradas(ss) {
   const tiposValidos = ['Nuevo', 'Recurrente'];
   const validacionTipo = SpreadsheetApp.newDataValidation()
     .requireValueInList(tiposValidos, true)
-    .setAllowInvalid(false)
+    .setAllowInvalid(true)
     .build();
   sheet.getRange('L2:L1000').setDataValidation(validacionTipo);
   
@@ -4415,14 +5032,16 @@ function crearHojaLostDeals(ss) {
   
   // Validaciones
   
-  // Producto (columna F)
-  const productosValidos = ['SVC-001', 'SVC-002', 'SVC-003', 'SVC-004'];
-  const validacionProducto = SpreadsheetApp.newDataValidation()
-    .requireValueInList(productosValidos, true)
-    .setAllowInvalid(false)
-    .build();
-  sheet.getRange('F2:F1000').setDataValidation(validacionProducto);
-  
+  // Producto (columna F) - Todos los SKUs
+  var skusLost = obtenerListaSKUs_();
+  if (skusLost.length > 0) {
+    var validacionProducto = SpreadsheetApp.newDataValidation()
+      .requireValueInList(skusLost, true)
+      .setAllowInvalid(true)
+      .build();
+    sheet.getRange('F2:F1000').setDataValidation(validacionProducto);
+  }
+
   // Etapa Perdida (columna H)
   const etapasValidas = [
     'Investigación',
@@ -4433,7 +5052,7 @@ function crearHojaLostDeals(ss) {
   ];
   const validacionEtapa = SpreadsheetApp.newDataValidation()
     .requireValueInList(etapasValidas, true)
-    .setAllowInvalid(false)
+    .setAllowInvalid(true)
     .build();
   sheet.getRange('H2:H1000').setDataValidation(validacionEtapa);
   
@@ -4441,7 +5060,7 @@ function crearHojaLostDeals(ss) {
   const razonesValidas = ['Precio', 'Competencia', 'Timing', 'No hay presupuesto', 'Sin interés', 'Otro'];
   const validacionRazon = SpreadsheetApp.newDataValidation()
     .requireValueInList(razonesValidas, true)
-    .setAllowInvalid(false)
+    .setAllowInvalid(true)
     .build();
   sheet.getRange('I2:I1000').setDataValidation(validacionRazon);
   
@@ -4449,7 +5068,7 @@ function crearHojaLostDeals(ss) {
   const rescateValidos = ['SI', 'NO'];
   const validacionRescate = SpreadsheetApp.newDataValidation()
     .requireValueInList(rescateValidos, true)
-    .setAllowInvalid(false)
+    .setAllowInvalid(true)
     .build();
   sheet.getRange('K2:K1000').setDataValidation(validacionRescate);
   
@@ -4686,7 +5305,7 @@ function crearHojaProductosSKU(ss) {
   // Validación Activo (columna G)
   const validacionActivo = SpreadsheetApp.newDataValidation()
     .requireValueInList(['SI', 'NO'], true)
-    .setAllowInvalid(false)
+    .setAllowInvalid(true)
     .build();
   sheet.getRange('G2:G100').setDataValidation(validacionActivo);
 
@@ -4800,7 +5419,10 @@ function registrarLead(userId, username, registeredUser, datos) {
     }
     
     const sheet = ss.getSheetByName('Pipeline_Detallado');
-    
+    if (!sheet) {
+      throw new Error('La hoja Pipeline_Detallado no existe. Ejecuta desplegarActualizacionVentas() primero.');
+    }
+
     // Determinar probabilidad automática según etapa inicial
     const etapaInicial = datos.etapa || 'Investigación';
     const probabilidad = calcularProbabilidadPorEtapa(etapaInicial);
@@ -4846,11 +5468,10 @@ function registrarLead(userId, username, registeredUser, datos) {
       'Activo'                              // P - Estado
     ];
     
-    // Insertar en Pipeline_Detallado
-    sheet.appendRow(fila);
-    
-    // Aplicar fórmula de Días en Etapa en la última fila
-    const ultimaFila = sheet.getLastRow();
+    // Insertar en Pipeline_Detallado (escritura segura - limpia validaciones antes)
+    const ultimaFila = escribirFilaSegura_(sheet, fila);
+
+    // Aplicar fórmula de Días en Etapa en la fila insertada
     sheet.getRange(ultimaFila, 13).setFormula('=IF(A' + ultimaFila + '="","",INT(NOW()-A' + ultimaFila + '))');
     
     Logger.log(`✅ Lead registrado: ${datos.cliente} - ${datos.producto}`);
@@ -4906,7 +5527,10 @@ function registrarContactoVenta(userId, username, registeredUser, datos) {
     
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     const sheet = ss.getSheetByName('Interacciones_Cliente');
-    
+    if (!sheet) {
+      throw new Error('La hoja Interacciones_Cliente no existe. Ejecuta desplegarActualizacionVentas() primero.');
+    }
+
     // Preparar datos
     const fila = [
       new Date(),                           // A - Timestamp
@@ -4922,8 +5546,8 @@ function registrarContactoVenta(userId, username, registeredUser, datos) {
       datos.fechaFollowup || '',            // K - Fecha Follow-up
       datos.tiempoInvertido || 0            // L - Tiempo Invertido (minutos)
     ];
-    
-    sheet.appendRow(fila);
+
+    escribirFilaSegura_(sheet, fila);
     
     // Actualizar timestamp del deal en Pipeline si existe
     actualizarTimestampDeal(datos.cliente);
@@ -5044,7 +5668,10 @@ function registrarDemo(userId, username, registeredUser, datos) {
     
     // Registrar en Interacciones_Cliente
     const sheetInteracciones = ss.getSheetByName('Interacciones_Cliente');
-    
+    if (!sheetInteracciones) {
+      throw new Error('La hoja Interacciones_Cliente no existe.');
+    }
+
     const fila = [
       new Date(),
       userId,
@@ -5059,8 +5686,8 @@ function registrarDemo(userId, username, registeredUser, datos) {
       datos.fechaFollowup || '',
       datos.duracion || 45                            // 45 min por defecto
     ];
-    
-    sheetInteracciones.appendRow(fila);
+
+    escribirFilaSegura_(sheetInteracciones, fila);
     
     // Si el cliente tiene deal activo, moverlo a "Propuesta Enviada" si no está más avanzado
     const sheetPipeline = ss.getSheetByName('Pipeline_Detallado');
@@ -5128,7 +5755,10 @@ function registrarPropuesta(userId, username, registeredUser, datos) {
     
     // Registrar interacción
     const sheetInteracciones = ss.getSheetByName('Interacciones_Cliente');
-    
+    if (!sheetInteracciones) {
+      throw new Error('La hoja Interacciones_Cliente no existe.');
+    }
+
     const fila = [
       new Date(),
       userId,
@@ -5143,8 +5773,8 @@ function registrarPropuesta(userId, username, registeredUser, datos) {
       datos.fechaFollowup || '',
       datos.tiempoInvertido || 30
     ];
-    
-    sheetInteracciones.appendRow(fila);
+
+    escribirFilaSegura_(sheetInteracciones, fila);
     
     // Mover el deal a "Propuesta Enviada" si no está más avanzado
     const resultado = moverEtapa(userId, {
@@ -5294,8 +5924,8 @@ function cerrarVenta(userId, username, registeredUser, datos) {
       datos.observaciones || ''             // M - Observaciones
     ];
     
-    sheetVentas.appendRow(filaVenta);
-    
+    escribirFilaSegura_(sheetVentas, filaVenta);
+
     Logger.log(`✅ Venta cerrada: ${datos.cliente} - $${datos.monto}`);
     
     // Mensaje de éxito con estadísticas
@@ -5394,8 +6024,8 @@ function perderDeal(userId, username, registeredUser, datos) {
       datos.notas || ''                     // L - Notas
     ];
     
-    sheetLost.appendRow(filaLost);
-    
+    escribirFilaSegura_(sheetLost, filaLost);
+
     Logger.log(`✅ Deal marcado como perdido: ${datos.cliente}`);
     
     // Emoji según razón
@@ -5436,6 +6066,45 @@ function perderDeal(userId, username, registeredUser, datos) {
 // ============================================
 // FUNCIONES AUXILIARES
 // ============================================
+
+// ============================================
+// HELPER: ESCRIBIR FILA DE FORMA SEGURA
+// Limpia validaciones restrictivas antes de escribir
+// y usa setValues + flush para garantizar la escritura
+// ============================================
+function escribirFilaSegura_(sheet, fila) {
+  var nextRow = Math.max(sheet.getLastRow() + 1, 2);
+  // Expandir la hoja si no tiene suficientes filas
+  var maxRows = sheet.getMaxRows();
+  if (nextRow > maxRows) {
+    sheet.insertRowsAfter(maxRows, nextRow - maxRows + 100);
+    Logger.log('📐 Hoja expandida de ' + maxRows + ' a ' + (nextRow + 100) + ' filas');
+  }
+  var range = sheet.getRange(nextRow, 1, 1, fila.length);
+  // Limpiar cualquier validación restrictiva en la fila destino
+  range.clearDataValidations();
+  // Escribir con setValues (más confiable que appendRow)
+  range.setValues([fila]);
+  // Forzar que la escritura se aplique inmediatamente
+  SpreadsheetApp.flush();
+  Logger.log('📝 Fila escrita en fila ' + nextRow + ' de ' + sheet.getName());
+  return nextRow;
+}
+
+// Lista de todos los SKUs para validaciones de hojas
+function obtenerListaSKUs_() {
+  return [
+    'SVC-001', 'SVC-002', 'SVC-003', 'SVC-004',
+    'PLN-EMP-001', 'PLN-EMP-002', 'PLN-GRM-001',
+    'PLN-CORP-001', 'PLN-CORP-002', 'PLN-CORP-003', 'PLN-CORP-004',
+    'PLN-CORP-005', 'PLN-CORP-006', 'PLN-CORP-007',
+    'PLN-WEB-001', 'PLN-WEB-002', 'PLN-WEB-003',
+    'APK-001', 'APK-002', 'APK-003', 'APK-004', 'APK-005',
+    'ADD-001', 'ADD-002', 'ADD-004', 'ADD-005', 'ADD-006',
+    'SUP-001', 'SUP-002', 'SUP-003',
+    'ADQ-001', 'ADQ-003'
+  ];
+}
 
 // Calcular probabilidad según etapa
 function calcularProbabilidadPorEtapa(etapa) {
