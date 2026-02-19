@@ -80,7 +80,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es">
       <head>
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="icon" href="/favicon.png" type="image/png" />
         <meta name="geo.region" content="VE" />
         <meta name="geo.placename" content="Caracas" />
         <meta name="geo.position" content="10.4806;-66.9036" />

@@ -21,7 +21,7 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center">
-            <img src="/logo-white.svg" alt="AIDA" className="h-7" />
+            <img src="/logo-white.png" alt="AIDA" className="h-7" />
           </Link>
 
           {/* Desktop links */}

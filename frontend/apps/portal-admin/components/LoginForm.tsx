@@ -58,7 +58,7 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
     <div className="flex min-h-screen items-center justify-center bg-[#0a0f1a]">
       <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur-sm">
         <div className="mb-8 text-center">
-          <img src="/logo-white.svg" alt="AIDA" className="h-8 mx-auto" />
+          <img src="/logo-white.png" alt="AIDA" className="h-8 mx-auto" />
           <p className="mt-3 text-sm text-gray-500">Portal de Administración</p>
         </div>
 

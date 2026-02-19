@@ -38,7 +38,7 @@ export default function Sidebar({ active, onNavigate }: { active: string; onNavi
   return (
     <aside className="w-60 bg-[#0a0f1a] border-r border-white/5 text-white flex flex-col min-h-screen">
       <div className="p-5 border-b border-white/10">
-        <img src="/logo-white.svg" alt="AIDA" className="h-5" />
+        <img src="/logo-white.png" alt="AIDA" className="h-5" />
         <p className="text-[11px] text-gray-500 mt-2">Portal 5 — IA & Integraciones</p>
       </div>
 

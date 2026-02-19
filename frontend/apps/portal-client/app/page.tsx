@@ -123,7 +123,7 @@ export default function Home() {
       <div className="flex min-h-screen items-center justify-center bg-[#0a0f1a]">
         <div className="w-full max-w-md rounded-2xl bg-white/5 border border-white/10 backdrop-blur-lg p-8 shadow-2xl">
           <div className="mb-8 text-center">
-            <img src="/logo-gradient.svg" alt="AIDA" className="h-8 mx-auto" />
+            <img src="/logo-gradient.png" alt="AIDA" className="h-8 mx-auto" />
             <p className="mt-3 text-sm text-gray-500">Portal Cliente — Documentos Fiscales</p>
           </div>
           <form onSubmit={handleLogin} className="space-y-5">
@@ -164,7 +164,7 @@ export default function Home() {
       {/* Sidebar */}
       <aside className="w-64 aida-sidebar text-white flex flex-col">
         <div className="flex h-16 items-center px-6 border-b border-white/10">
-          <h1 className="text-xl font-bold tracking-tight">AIDA</h1>
+          <img src="/logo-white.png" alt="AIDA" className="h-5" />
           <span className="ml-2 rounded-full bg-aida-accent/20 px-2 py-0.5 text-xs font-medium text-blue-300">Cliente</span>
         </div>
 

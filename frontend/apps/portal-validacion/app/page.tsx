@@ -98,7 +98,7 @@ export default function PortalValidacion() {
       <header className="border-b border-white/5 px-6 py-4">
         <div className="mx-auto flex max-w-5xl items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/logo-white.svg" alt="AIDA" className="h-6" />
+            <img src="/logo-white.png" alt="AIDA" className="h-6" />
             <div>
               <p className="text-sm font-medium text-gray-300">Imprenta Digital</p>
               <p className="text-xs text-gray-400">Validacion de Documentos Fiscales</p>

@@ -8,7 +8,7 @@ export default function Footer() {
           {/* Brand */}
           <div className="md:col-span-1">
             <Link href="/" className="flex items-center">
-              <img src="/logo-white.svg" alt="AIDA" className="h-6" />
+              <img src="/logo-white.png" alt="AIDA" className="h-6" />
             </Link>
             <p className="mt-3 text-sm text-slate-500 leading-relaxed">
               La imprenta digital más inteligente de Venezuela. Facturación electrónica

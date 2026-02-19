@@ -55,7 +55,7 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
         <div className="flex h-16 items-center justify-between px-4">
           {sidebarOpen && (
             <div className="flex items-center gap-2">
-              <img src="/logo-white.svg" alt="AIDA" className="h-5" />
+              <img src="/logo-white.png" alt="AIDA" className="h-5" />
               <span className="text-xs text-gray-500 font-medium">Admin</span>
             </div>
           )}

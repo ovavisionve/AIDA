@@ -35,7 +35,7 @@ export default function LoginForm({ onLogin }: { onLogin: (token: string) => voi
     <div className="min-h-screen flex items-center justify-center bg-[#0a0f1a]">
       <form onSubmit={handleSubmit} className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-8 w-full max-w-md">
         <div className="text-center mb-6">
-          <img src="/logo-white.svg" alt="AIDA" className="h-8 mx-auto" />
+          <img src="/logo-white.png" alt="AIDA" className="h-8 mx-auto" />
           <p className="text-sm text-gray-500 mt-3">Portal 5 - Integraciones y Monitoreo</p>
         </div>
 
