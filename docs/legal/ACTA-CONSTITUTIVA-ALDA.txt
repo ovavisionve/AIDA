@@ -1,0 +1,303 @@
+ACTA CONSTITUTIVA Y ESTATUTOS SOCIALES DE LA SOCIEDAD ANONIMA
+ALDA S.A.
+(Nombre Comercial: AIDA)
+
+================================================================================
+
+NOSOTROS: LUIS ALEJANDRO SILVA LAGUNA, titular de la Cedula de Identidad
+Nro. V-27.985.880, RIF V-279858804; y [NOMBRE COMPLETO DEL SEGUNDO SOCIO],
+titular de la Cedula de Identidad Nro. V-[________], RIF V-[________].
+Mayores de edad, de nacionalidad venezolana, de este domicilio, [estado civil].
+Respectivamente, declaramos: que hemos convenido constituir como en efecto
+constituimos en este documento una sociedad anonima la cual se regira por las
+leyes de la Republica Bolivariana de Venezuela y por las clausulas contenidas
+en este documento, el mismo ha sido redactado con amplitud suficiente para que
+funcione a la vez de Acta Constitutiva y Estatutos Sociales de la referida
+Sociedad.
+
+================================================================================
+TITULO I
+DENOMINACION. OBJETO. DOMICILIO Y DURACION
+================================================================================
+
+PRIMERA: La sociedad se denominara ALDA S.A., pudiendo operar comercialmente
+bajo el nombre AIDA.
+
+SEGUNDA: La sociedad tendra su domicilio en la ciudad de Caracas, en la
+siguiente direccion: [DIRECCION COMPLETA DE LA SEDE], pudiendo establecer y
+mantener sedes, oficinas, centros de datos y puntos de atencion en todo el
+territorio nacional de la Republica Bolivariana de Venezuela cuando asi lo
+decida una Asamblea. La sociedad podra contratar servicios de infraestructura
+tecnologica y alojamiento de servidores con proveedores nacionales
+especializados para la prestacion de sus servicios.
+
+TERCERA: La sociedad se constituye por un tiempo de cuarenta (40) anos a contar
+de la fecha de inscripcion del documento Constitutivo ante el Registro
+Mercantil. No se extingue por muerte, interdiccion, quiebra o desincorporacion
+voluntaria de cualquiera de sus miembros; y le corresponde exclusivamente a la
+Junta Directiva la decision sobre la continuidad o disolucion de la misma.
+
+CUARTA: La sociedad tendra como objeto principal las siguientes actividades:
+
+  a) IMPRENTA DIGITAL: Servicios de impresion digital en todas sus modalidades,
+     incluyendo impresion de gran formato, impresion bajo demanda, diseno
+     grafico, produccion de material publicitario, papeleria corporativa,
+     empaques, etiquetas, senaletica y todo tipo de productos impresos mediante
+     tecnologia digital.
+
+  b) FACTURACION ELECTRONICA: Desarrollo, operacion y comercializacion de
+     plataformas tecnologicas para la emision, recepcion, procesamiento y
+     almacenamiento de documentos fiscales electronicos (facturas, notas de
+     credito, notas de debito y retenciones), conforme a la normativa vigente
+     del Servicio Nacional Integrado de Administracion Aduanera y Tributaria
+     (SENIAT) y demas organismos reguladores.
+
+  c) DESARROLLO DE SOFTWARE: Creacion, diseno, desarrollo, mantenimiento y
+     comercializacion de aplicaciones informaticas, plataformas web, interfaces
+     de programacion de aplicaciones (API), sistemas de gestion empresarial y
+     soluciones tecnologicas para la automatizacion de procesos administrativos
+     y fiscales.
+
+  d) SERVICIOS TECNOLOGICOS: Prestacion de servicios de consultoria
+     tecnologica, integracion de sistemas, soporte tecnico, hospedaje de
+     aplicaciones (hosting), procesamiento de datos en la nube y servicios de
+     inteligencia artificial aplicada a procesos empresariales.
+
+  e) INTERMEDIACION DIGITAL: Operacion de plataformas digitales que permitan a
+     empresas y personas naturales el acceso a servicios de facturacion,
+     gestion fiscal, impresion y otros servicios complementarios mediante
+     suscripcion o pago por uso.
+
+  De tal forma el objetivo principal es simplemente enunciativo y no limitativo,
+  ya que la sociedad podra dedicarse a otras actividades conexas o no con las
+  indicadas, siempre y cuando sean de licito comercio y se consideren de interes
+  para la misma.
+
+================================================================================
+TITULO II
+EL CAPITAL Y LAS ACCIONES
+================================================================================
+
+QUINTA: El capital social de la sociedad es de [MONTO EN LETRAS] BOLIVARES
+DIGITALES ([MONTO],00 Bs.D) dividido en [MONTO EN LETRAS] ([MONTO]) acciones
+nominativas, cada una con valor nominal de UN BOLIVAR DIGITAL (1,00 Bs.D), las
+cuales confieren a sus propietarios iguales derechos y obligaciones, y han sido
+suscritas y pagadas de la siguiente manera:
+
+  LUIS ALEJANDRO SILVA LAGUNA ha suscrito y pagado [CANTIDAD EN LETRAS]
+  ([CANTIDAD]) acciones con un valor nominal de UN BOLIVAR DIGITAL (1,00 Bs.D)
+  cada una, para un total de [CANTIDAD] BOLIVARES DIGITALES ([CANTIDAD],00
+  Bs.D), equivalente al [__]% del capital social.
+
+  [NOMBRE DEL SEGUNDO SOCIO] ha suscrito y pagado [CANTIDAD EN LETRAS]
+  ([CANTIDAD]) acciones con un valor nominal de UN BOLIVAR DIGITAL (1,00 Bs.D)
+  cada una, para un total de [CANTIDAD] BOLIVARES DIGITALES ([CANTIDAD],00
+  Bs.D), equivalente al [__]% del capital social.
+
+  El capital de la empresa ha sido cancelado mediante [inventario de bienes /
+  deposito bancario / aporte en efectivo] anexo a este documento.
+
+SEXTA: Las acciones son nominativas e indivisibles y dan a sus propietarios
+derechos iguales y proporcionales al numero de las acciones que posean,
+correspondiendo a cada accion un (1) voto en la Asamblea General de
+Accionistas. No podran enajenarse sin haber ofrecido antes en venta a los demas
+accionistas, y la intencion de venderla debera comunicarse por escrito a estos,
+quienes tendran el derecho de preferencia de adquirirlas en un plazo de treinta
+(30) dias siguientes a la notificacion, entendiendose que el accionista
+oferente queda en libertad de enajenar a terceros en caso de transcurrir dicho
+plazo sin que hagan uso del referido derecho de preferencia.
+
+================================================================================
+TITULO III
+DE LA ASAMBLEA
+================================================================================
+
+SEPTIMA: En cualquier dia del mes de noviembre, se reunira en la sede social de
+la sociedad, previa convocatoria, la Asamblea General Ordinaria, la cual
+ejercera las atribuciones siguientes:
+
+  A) Considerar y aprobar o improbar el balance general y estado de ganancias y
+     perdidas, con vista al informe del comisario.
+  B) Elegir en la oportunidad correspondiente a los miembros de la Junta
+     Directiva de la sociedad y fijarles su remuneracion.
+  C) Nombrar el comisario principal y fijar su remuneracion.
+  D) Considerar y resolver cualquier otro asunto que le fuere especialmente
+     sometido.
+
+OCTAVA: Las asambleas extraordinarias se reuniran cada vez que le interese a la
+sociedad, a solicitud de los miembros de la Junta Directiva o del Comisario,
+cuando les sea solicitado por un numero de accionistas que representen por lo
+menos un quinto (1/5) del capital social. Para aprobar y decidir se requiere el
+voto favorable de por lo menos el cincuenta y uno por ciento (51%) del capital
+social.
+
+NOVENA: Las asambleas ordinarias y extraordinarias seran convocadas mediante
+publicacion hecha por la prensa, con cinco (5) dias de anticipacion por lo
+menos, al dia fijado para su celebracion, indicando el lugar, hora, fecha y
+objeto de la reunion. La formalidad de la publicacion de la convocatoria no se
+hara necesaria cuando esta sea suscrita por todos los accionistas de la
+sociedad y este representada en la asamblea la totalidad del capital social.
+
+DECIMA: De cada una de las reuniones de la asamblea se levantara un acta que se
+inscribira en el libro de actas y asambleas y que sera suscrita por los
+accionistas asistentes a la reunion.
+
+================================================================================
+TITULO IV
+DE LA ADMINISTRACION
+================================================================================
+
+UNDECIMA: La sociedad sera administrada y representada por una Junta Directiva
+integrada por dos (2) miembros, que se denominaran: Presidente y Vicepresidente,
+quienes seran de libre eleccion y remocion por parte de la Asamblea de
+Accionistas, duraran en sus cargos cinco (5) anos, pudiendo ser reelectos.
+
+DUODECIMA: Los miembros de la Junta Directiva de la sociedad, actuando en forma
+indistinta, tendran las mas amplias atribuciones en la administracion de la
+Sociedad, sin mas limitacion que las que preve el Codigo de Comercio para los
+administradores de sociedades anonimas, con los deberes correspondientes.
+
+DECIMA TERCERA: La sociedad tendra un Comisario designado por la Asamblea
+General de Accionistas, quien durara un (1) ano en sus funciones, podra ser
+reelecto y tendra los deberes y atribuciones que le asigne el Codigo de
+Comercio.
+
+DECIMA CUARTA: Solo el Presidente y el Vicepresidente de la sociedad, de manera
+conjunta o separada, ejerceran la representacion legal de la sociedad ante
+terceros, podran firmar por ella y obligarla, ademas de tener los mas amplios
+poderes de administracion, teniendo las siguientes atribuciones:
+
+  A) Comprar, vender, ceder, traspasar, gravar, arrendar y, en general,
+     contratar, negociar, adquirir o enajenar bienes muebles e inmuebles y
+     derechos de todas las clases.
+  B) Abrir y movilizar cuentas bancarias, inclusive autorizando a terceros;
+     firmar, endosar, aceptar, emitir y en general ejecutar toda clase de
+     operaciones sobre cheques, letras de cambio, pagares o cualquier efecto
+     de comercio.
+  C) Constituir garantias hipotecarias y prendarias, pero unica y
+     exclusivamente para garantizar obligaciones a favor de la sociedad.
+  D) Constituir factores mercantiles y cuestiones previas, transigir y en
+     general ejecutar cualquier otro acto necesario o conveniente para los
+     intereses de la sociedad.
+  E) Celebrar contratos de licenciamiento de software, prestacion de servicios
+     tecnologicos, suscripcion de plataformas digitales, y todo tipo de
+     acuerdos relacionados con la actividad tecnologica y de impresion digital.
+  F) Otorgar poderes generales o especiales, judiciales y extrajudiciales, y
+     revocar los poderes otorgados.
+  G) Solicitar y contraer creditos o prestamos de cualquier indole que requiera
+     la sociedad.
+  H) Nombrar y remover los empleados de la sociedad y fijarles su remuneracion.
+  I) Fijar el monto de los fondos de reserva y de cualquier otro que juzgue
+     necesario, asi como los apartados que haya que hacerse con este fin.
+  J) Fijar el monto de los gastos generales y de administracion.
+  K) Convocar y presidir las asambleas generales ordinarias.
+  L) Cumplir y hacer cumplir las decisiones de las asambleas de accionistas.
+  M) Calcular y determinar el monto de los dividendos por distribuirse y las
+     demas partidas a que se refiere la clausula Decima Septima del Titulo VI.
+  N) Acordar el empleo de los fondos de reserva.
+  O) Tendran de igual modo facultad para contraer obligaciones para la compra
+     y venta de titulos, valores, bonos, acciones e instrumentos canjeables.
+  P) Contratar servicios de infraestructura tecnologica, centros de datos,
+     alojamiento en la nube y servicios de telecomunicaciones necesarios para
+     la operacion de las plataformas de la sociedad.
+
+================================================================================
+TITULO V
+DEL COMISARIO
+================================================================================
+
+DECIMA QUINTA: La sociedad tendra un Comisario Principal, quien sera elegido por
+la Asamblea General de Accionistas, durara en sus funciones cinco (5) anos,
+pudiendo ser reelegido, y tendra las atribuciones y deberes senalados a estos
+en el Codigo de Comercio.
+
+================================================================================
+TITULO VI
+DEL BALANCE, UTILIDADES Y FONDOS DE RESERVA
+================================================================================
+
+DECIMA SEXTA: El ejercicio economico de la sociedad comprende del primero (1ero)
+de enero hasta el treinta y uno (31) de diciembre del mismo ano. Con excepcion
+del primer ejercicio, que comenzara desde la fecha de inscripcion de la presente
+acta en el Registro Mercantil hasta el treinta y uno (31) de diciembre del
+presente ano. En esta ultima fecha se cerraran las cuentas y se practicara un
+inventario, estados de ganancias y perdidas y balance general, de la manera
+establecida por el Codigo de Comercio; estos estados de cuenta, junto con los
+comprobantes respectivos, se presentaran al Comisario, quien los devolvera con
+su informe dentro del mes siguiente a su recibo.
+
+DECIMA SEPTIMA: El reparto de las utilidades sera distribuido entre los
+accionistas en la proporcion que le corresponda segun el numero de acciones que
+posean, pero la Asamblea General de Accionistas podra optar por dejar las
+utilidades en la sociedad si las necesidades de la empresa asi lo requieren.
+
+================================================================================
+TITULO VII
+DISPOSICIONES TRANSITORIAS
+================================================================================
+
+Para el primer periodo de cinco (5) anos, la Asamblea realiza los siguientes
+nombramientos:
+
+  Presidente:      LUIS ALEJANDRO SILVA LAGUNA
+                   C.I. V-27.985.880
+
+  Vicepresidente:  [NOMBRE COMPLETO DEL SEGUNDO SOCIO]
+                   C.I. V-[________]
+
+Para el cargo de Comisario, la Asamblea nombro a [NOMBRE DEL COMISARIO],
+de nacionalidad venezolana, mayor de edad, [estado civil], de este domicilio y
+titular de la Cedula de Identidad No. V-[________], colegiado(a) inscrito(a)
+en el Colegio de Contadores Publicos del Estado [________] con el
+No. [________], quien debera cumplir con las obligaciones que le imponen los
+articulos 287 y 306 del Codigo de Comercio.
+
+Se autoriza al ciudadano LUIS ALEJANDRO SILVA LAGUNA, titular de la Cedula de
+Identidad No. V-27.985.880, para que presente este documento ante el Registro
+Mercantil correspondiente.
+
+Y nosotros, LUIS ALEJANDRO SILVA LAGUNA y [NOMBRE DEL SEGUNDO SOCIO], ya
+identificados, DECLARAMOS BAJO FE DE JURAMENTO que los capitales, bienes,
+haberes, valores o titulos del acto juridico a objeto de la constitucion de la
+empresa, proceden de actividades licitas, lo cual puede ser corroborado por los
+organismos competentes, y no tienen relacion alguna con organizaciones y
+financiamiento y/o actividades ilicitas contempladas en la Ley Organica Contra
+la Delincuencia Organizada y Financiamiento al Terrorismo, en la Ley Organica
+de Drogas, y los fondos producto de este acto tendran un destino licito.
+
+Caracas, a los [__] dias del mes de [________] de [____].
+
+
+
+____________________________              ____________________________
+LUIS ALEJANDRO SILVA LAGUNA               [NOMBRE DEL SEGUNDO SOCIO]
+C.I. V-27.985.880                         C.I. V-[________]
+PRESIDENTE                                VICEPRESIDENTE
+
+
+================================================================================
+NOTAS PARA COMPLETAR ANTES DE REGISTRAR:
+================================================================================
+
+  1. SEGUNDO SOCIO: Nombre completo, cedula, RIF, estado civil
+  2. DIRECCION SEDE: Direccion completa donde operara la empresa
+  3. CAPITAL SOCIAL: Definir monto total y distribucion porcentual entre socios
+  4. FORMA DE PAGO: Inventario de bienes, deposito bancario o aporte en efectivo
+  5. COMISARIO: Nombre del contador publico colegiado, cedula, numero CPC
+  6. FECHA: Dia y mes de presentacion ante el Registro Mercantil
+  7. REGISTRO MERCANTIL: Acudir al Registro Mercantil del domicilio (Caracas)
+  8. INVENTARIO DE BIENES: Si se paga con bienes, anexar inventario valorado
+     (equipos de impresion, computadoras, servidores, licencias de software, etc.)
+
+================================================================================
+COSTOS ESTIMADOS DE REGISTRO (2025-2026, sujeto a cambios):
+================================================================================
+
+  - Timbres fiscales y aranceles del Registro Mercantil
+  - Publicacion en prensa (gaceta o diario de circulacion regional)
+  - Honorarios del abogado redactor (si aplica)
+  - Legalizacion notarial de firmas
+  - Tramite RIF de la empresa ante el SENIAT
+  - Consultar con el Registro Mercantil de Caracas los aranceles vigentes
+
+================================================================================
