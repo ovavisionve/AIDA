@@ -3620,6 +3620,118 @@ function recrearHojasVentas() {
   }
 }
 
+// ============================================
+// FASE 1: TEST DE REGISTRO EN PIPELINE
+// Ejecuta esta función desde el editor de Apps Script
+// Si funciona, verás una fila nueva en Pipeline_Detallado
+// ============================================
+function testFase1_RegistrarLead() {
+  Logger.log('═══════════════════════════════════════════');
+  Logger.log('TEST FASE 1: REGISTRAR LEAD EN PIPELINE');
+  Logger.log('═══════════════════════════════════════════');
+
+  // 1. Verificar SPREADSHEET_ID
+  if (!SPREADSHEET_ID) {
+    Logger.log('❌ SPREADSHEET_ID no está configurado.');
+    Logger.log('→ Ejecuta configurarInicial() primero.');
+    return;
+  }
+  Logger.log('✅ SPREADSHEET_ID: ' + SPREADSHEET_ID);
+
+  // 2. Abrir spreadsheet
+  var ss;
+  try {
+    ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    Logger.log('✅ Spreadsheet: ' + ss.getName());
+    Logger.log('   URL: ' + ss.getUrl());
+  } catch (e) {
+    Logger.log('❌ No se puede abrir el spreadsheet: ' + e.message);
+    return;
+  }
+
+  // 3. Verificar hoja Pipeline_Detallado
+  var pipeline = ss.getSheetByName('Pipeline_Detallado');
+  if (!pipeline) {
+    Logger.log('❌ La hoja Pipeline_Detallado no existe.');
+    Logger.log('→ Ejecuta desplegarActualizacionVentas() primero.');
+    return;
+  }
+
+  var filasAntes = pipeline.getLastRow();
+  Logger.log('✅ Pipeline_Detallado existe. Filas actuales: ' + filasAntes);
+
+  // 4. Verificar validaciones actuales (diagnóstico)
+  try {
+    var validacion = pipeline.getRange('F2').getDataValidation();
+    if (validacion) {
+      Logger.log('   Validación en F2 - AllowInvalid: ' + validacion.getAllowInvalid());
+      if (!validacion.getAllowInvalid()) {
+        Logger.log('   ⚠️ La validación tiene AllowInvalid=false (restrictiva)');
+        Logger.log('   → escribirFilaSegura_ limpiará esto automáticamente');
+      }
+    }
+  } catch (e) {
+    Logger.log('   (No se pudo leer validación: ' + e.message + ')');
+  }
+
+  // 5. REGISTRAR UN LEAD DE PRUEBA usando la función real
+  Logger.log('');
+  Logger.log('Registrando lead de prueba...');
+
+  var resultado = registrarLead(
+    'TEST-001',           // userId
+    'test_user',          // username
+    'Usuario de Prueba',  // registeredUser
+    {
+      cliente: 'Empresa Test Fase1',
+      producto: 'PLN-EMP-001',
+      monto: 500,
+      etapa: 'Investigación',
+      origen: 'Otro',
+      canal: 'WhatsApp',
+      notas: 'Lead de prueba - puedes borrar esta fila'
+    }
+  );
+
+  Logger.log('');
+  Logger.log('Resultado: ' + JSON.stringify(resultado));
+
+  // 6. Verificar que se escribió
+  var filasDespues = pipeline.getLastRow();
+  Logger.log('');
+  Logger.log('Filas ANTES: ' + filasAntes);
+  Logger.log('Filas DESPUÉS: ' + filasDespues);
+
+  if (resultado.exito && filasDespues > filasAntes) {
+    // Leer la fila escrita para confirmar
+    var datosEscritos = pipeline.getRange(filasDespues, 1, 1, 16).getValues()[0];
+    Logger.log('');
+    Logger.log('✅✅✅ FASE 1 EXITOSA - Lead registrado correctamente');
+    Logger.log('   Cliente: ' + datosEscritos[4]);
+    Logger.log('   Producto: ' + datosEscritos[5]);
+    Logger.log('   Etapa: ' + datosEscritos[6]);
+    Logger.log('   Monto: ' + datosEscritos[7]);
+    Logger.log('   Estado: ' + datosEscritos[15]);
+    Logger.log('');
+    Logger.log('→ Ahora prueba desde Telegram diciendo algo como:');
+    Logger.log('  "Registra un lead: Panadería Don José, producto PLN-EMP-001, monto 1000"');
+    Logger.log('→ Revisa Pipeline_Detallado en tu hoja de cálculo');
+  } else if (resultado.exito && filasDespues === filasAntes) {
+    Logger.log('');
+    Logger.log('⚠️ La función retornó éxito pero NO se agregó fila.');
+    Logger.log('Esto indica un problema con el spreadsheet.');
+    Logger.log('→ Ejecuta recrearHojasVentas() para recrear las hojas.');
+  } else {
+    Logger.log('');
+    Logger.log('❌ Error: ' + resultado.mensaje);
+  }
+
+  Logger.log('');
+  Logger.log('═══════════════════════════════════════════');
+  Logger.log('FIN DEL TEST FASE 1');
+  Logger.log('═══════════════════════════════════════════');
+}
+
 function simularMensajeReal() {
   Logger.log('=== SIMULANDO MENSAJE REAL ===');
   
@@ -5041,7 +5153,10 @@ function registrarLead(userId, username, registeredUser, datos) {
     }
     
     const sheet = ss.getSheetByName('Pipeline_Detallado');
-    
+    if (!sheet) {
+      throw new Error('La hoja Pipeline_Detallado no existe. Ejecuta desplegarActualizacionVentas() primero.');
+    }
+
     // Determinar probabilidad automática según etapa inicial
     const etapaInicial = datos.etapa || 'Investigación';
     const probabilidad = calcularProbabilidadPorEtapa(etapaInicial);
@@ -5087,11 +5202,10 @@ function registrarLead(userId, username, registeredUser, datos) {
       'Activo'                              // P - Estado
     ];
     
-    // Insertar en Pipeline_Detallado
-    sheet.appendRow(fila);
-    
-    // Aplicar fórmula de Días en Etapa en la última fila
-    const ultimaFila = sheet.getLastRow();
+    // Insertar en Pipeline_Detallado (escritura segura - limpia validaciones antes)
+    const ultimaFila = escribirFilaSegura_(sheet, fila);
+
+    // Aplicar fórmula de Días en Etapa en la fila insertada
     sheet.getRange(ultimaFila, 13).setFormula('=IF(A' + ultimaFila + '="","",INT(NOW()-A' + ultimaFila + '))');
     
     Logger.log(`✅ Lead registrado: ${datos.cliente} - ${datos.producto}`);
@@ -5147,7 +5261,10 @@ function registrarContactoVenta(userId, username, registeredUser, datos) {
     
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     const sheet = ss.getSheetByName('Interacciones_Cliente');
-    
+    if (!sheet) {
+      throw new Error('La hoja Interacciones_Cliente no existe. Ejecuta desplegarActualizacionVentas() primero.');
+    }
+
     // Preparar datos
     const fila = [
       new Date(),                           // A - Timestamp
@@ -5163,8 +5280,8 @@ function registrarContactoVenta(userId, username, registeredUser, datos) {
       datos.fechaFollowup || '',            // K - Fecha Follow-up
       datos.tiempoInvertido || 0            // L - Tiempo Invertido (minutos)
     ];
-    
-    sheet.appendRow(fila);
+
+    escribirFilaSegura_(sheet, fila);
     
     // Actualizar timestamp del deal en Pipeline si existe
     actualizarTimestampDeal(datos.cliente);
@@ -5285,7 +5402,10 @@ function registrarDemo(userId, username, registeredUser, datos) {
     
     // Registrar en Interacciones_Cliente
     const sheetInteracciones = ss.getSheetByName('Interacciones_Cliente');
-    
+    if (!sheetInteracciones) {
+      throw new Error('La hoja Interacciones_Cliente no existe.');
+    }
+
     const fila = [
       new Date(),
       userId,
@@ -5300,8 +5420,8 @@ function registrarDemo(userId, username, registeredUser, datos) {
       datos.fechaFollowup || '',
       datos.duracion || 45                            // 45 min por defecto
     ];
-    
-    sheetInteracciones.appendRow(fila);
+
+    escribirFilaSegura_(sheetInteracciones, fila);
     
     // Si el cliente tiene deal activo, moverlo a "Propuesta Enviada" si no está más avanzado
     const sheetPipeline = ss.getSheetByName('Pipeline_Detallado');
@@ -5369,7 +5489,10 @@ function registrarPropuesta(userId, username, registeredUser, datos) {
     
     // Registrar interacción
     const sheetInteracciones = ss.getSheetByName('Interacciones_Cliente');
-    
+    if (!sheetInteracciones) {
+      throw new Error('La hoja Interacciones_Cliente no existe.');
+    }
+
     const fila = [
       new Date(),
       userId,
@@ -5384,8 +5507,8 @@ function registrarPropuesta(userId, username, registeredUser, datos) {
       datos.fechaFollowup || '',
       datos.tiempoInvertido || 30
     ];
-    
-    sheetInteracciones.appendRow(fila);
+
+    escribirFilaSegura_(sheetInteracciones, fila);
     
     // Mover el deal a "Propuesta Enviada" si no está más avanzado
     const resultado = moverEtapa(userId, {
@@ -5535,8 +5658,8 @@ function cerrarVenta(userId, username, registeredUser, datos) {
       datos.observaciones || ''             // M - Observaciones
     ];
     
-    sheetVentas.appendRow(filaVenta);
-    
+    escribirFilaSegura_(sheetVentas, filaVenta);
+
     Logger.log(`✅ Venta cerrada: ${datos.cliente} - $${datos.monto}`);
     
     // Mensaje de éxito con estadísticas
@@ -5635,8 +5758,8 @@ function perderDeal(userId, username, registeredUser, datos) {
       datos.notas || ''                     // L - Notas
     ];
     
-    sheetLost.appendRow(filaLost);
-    
+    escribirFilaSegura_(sheetLost, filaLost);
+
     Logger.log(`✅ Deal marcado como perdido: ${datos.cliente}`);
     
     // Emoji según razón
@@ -5677,6 +5800,24 @@ function perderDeal(userId, username, registeredUser, datos) {
 // ============================================
 // FUNCIONES AUXILIARES
 // ============================================
+
+// ============================================
+// HELPER: ESCRIBIR FILA DE FORMA SEGURA
+// Limpia validaciones restrictivas antes de escribir
+// y usa setValues + flush para garantizar la escritura
+// ============================================
+function escribirFilaSegura_(sheet, fila) {
+  var nextRow = Math.max(sheet.getLastRow() + 1, 2);
+  var range = sheet.getRange(nextRow, 1, 1, fila.length);
+  // Limpiar cualquier validación restrictiva en la fila destino
+  range.clearDataValidations();
+  // Escribir con setValues (más confiable que appendRow)
+  range.setValues([fila]);
+  // Forzar que la escritura se aplique inmediatamente
+  SpreadsheetApp.flush();
+  Logger.log('📝 Fila escrita en fila ' + nextRow + ' de ' + sheet.getName());
+  return nextRow;
+}
 
 // Lista de todos los SKUs para validaciones de hojas
 function obtenerListaSKUs_() {
