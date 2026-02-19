@@ -72,8 +72,8 @@ export default function PortalDevelopers() {
       <div className="flex min-h-screen items-center justify-center">
         <div className="w-full max-w-md space-y-6 rounded-xl border border-white/10 bg-white/5 p-8">
           <div className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-aida-accent font-bold text-xl">A</div>
-            <h1 className="text-2xl font-bold">AIDA Developers</h1>
+            <img src="/logo-white.svg" alt="AIDA" className="h-8 mx-auto mb-3" />
+            <h1 className="text-2xl font-bold">Developers</h1>
             <p className="mt-1 text-sm text-gray-400">Inicie sesion para gestionar sus API keys</p>
           </div>
           <div className="space-y-4">
@@ -113,8 +113,8 @@ export default function PortalDevelopers() {
       <header className="border-b border-white/5 px-6 py-3">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded bg-aida-accent text-sm font-bold">A</div>
-            <span className="font-bold">AIDA Developers</span>
+            <img src="/logo-white.svg" alt="AIDA" className="h-5" />
+            <span className="text-sm font-medium text-gray-400">Developers</span>
           </div>
           <div className="flex items-center gap-4">
             <nav className="flex gap-1">

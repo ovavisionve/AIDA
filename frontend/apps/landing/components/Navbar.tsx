@@ -20,14 +20,8 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-aida-accent to-aida-cyan flex items-center justify-center">
-              <span className="text-white font-black text-sm">AI</span>
-            </div>
-            <span className="text-xl font-bold tracking-tight">
-              <span className="text-white">AID</span>
-              <span className="text-aida-cyan">A</span>
-            </span>
+          <Link href="/" className="flex items-center">
+            <img src="/logo-white.svg" alt="AIDA" className="h-7" />
           </Link>
 
           {/* Desktop links */}

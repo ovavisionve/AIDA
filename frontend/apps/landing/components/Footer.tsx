@@ -7,14 +7,8 @@ export default function Footer() {
         <div className="grid gap-8 md:grid-cols-4">
           {/* Brand */}
           <div className="md:col-span-1">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-aida-accent to-aida-cyan flex items-center justify-center">
-                <span className="text-white font-black text-xs">AI</span>
-              </div>
-              <span className="text-lg font-bold">
-                <span className="text-white">AID</span>
-                <span className="text-aida-cyan">A</span>
-              </span>
+            <Link href="/" className="flex items-center">
+              <img src="/logo-white.svg" alt="AIDA" className="h-6" />
             </Link>
             <p className="mt-3 text-sm text-slate-500 leading-relaxed">
               La imprenta digital más inteligente de Venezuela. Facturación electrónica
@@ -76,7 +70,7 @@ export default function Footer() {
 
         <div className="mt-12 pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-slate-600">
-            &copy; {new Date().getFullYear()} AIDA Imprenta Digital C.A. Todos los derechos reservados.
+            &copy; {new Date().getFullYear()} ALDA S.A. (AIDA Imprenta Digital). Todos los derechos reservados.
           </p>
           <div className="flex items-center gap-4 text-slate-600">
             <span className="text-xs">Hecho con</span>

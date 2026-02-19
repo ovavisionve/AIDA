@@ -45,8 +45,8 @@ export default function Sidebar({ active, onNavigate, profile, onLogout }: Sideb
   return (
     <aside className="flex w-56 flex-col aida-sidebar text-white">
       {/* Logo */}
-      <div className="flex h-14 items-center gap-2 px-4 border-b border-white/5">
-        <span className="text-lg font-bold tracking-tight">AIDA</span>
+      <div className="flex h-14 items-center gap-2.5 px-4 border-b border-white/5">
+        <img src="/logo-white.svg" alt="AIDA" className="h-5" />
         <span className="rounded-full bg-aida-cyan/20 px-2 py-0.5 text-[10px] font-medium text-aida-cyan">Facturador</span>
       </div>
 

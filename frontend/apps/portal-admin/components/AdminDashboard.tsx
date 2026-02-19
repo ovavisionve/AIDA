@@ -53,7 +53,12 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
     <div className="flex h-screen bg-[#0a0f1a]">
       <aside className={`${sidebarOpen ? "w-64" : "w-20"} flex flex-col bg-[#0a0f1a] border-r border-white/5 text-white transition-all duration-300`}>
         <div className="flex h-16 items-center justify-between px-4">
-          {sidebarOpen && <h1 className="text-xl font-bold text-white">AIDA Admin</h1>}
+          {sidebarOpen && (
+            <div className="flex items-center gap-2">
+              <img src="/logo-white.svg" alt="AIDA" className="h-5" />
+              <span className="text-xs text-gray-500 font-medium">Admin</span>
+            </div>
+          )}
           <button onClick={() => setSidebarOpen(!sidebarOpen)} className="rounded-lg p-2 hover:bg-white/10">
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />

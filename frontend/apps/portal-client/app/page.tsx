@@ -123,8 +123,8 @@ export default function Home() {
       <div className="flex min-h-screen items-center justify-center bg-[#0a0f1a]">
         <div className="w-full max-w-md rounded-2xl bg-white/5 border border-white/10 backdrop-blur-lg p-8 shadow-2xl">
           <div className="mb-8 text-center">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-aida-accent to-aida-cyan bg-clip-text text-transparent tracking-tight">AIDA</h1>
-            <p className="mt-2 text-sm text-gray-500">Portal Cliente — Documentos Fiscales</p>
+            <img src="/logo-gradient.svg" alt="AIDA" className="h-8 mx-auto" />
+            <p className="mt-3 text-sm text-gray-500">Portal Cliente — Documentos Fiscales</p>
           </div>
           <form onSubmit={handleLogin} className="space-y-5">
             {error && <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-400">{error}</div>}

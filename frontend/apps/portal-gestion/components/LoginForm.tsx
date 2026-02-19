@@ -35,8 +35,8 @@ export default function LoginForm({ onLogin }: { onLogin: (token: string) => voi
     <div className="min-h-screen flex items-center justify-center bg-[#0a0f1a]">
       <form onSubmit={handleSubmit} className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-8 w-full max-w-md">
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-white">AIDA Gestion</h1>
-          <p className="text-sm text-gray-500 mt-1">Portal 5 - Integraciones y Monitoreo</p>
+          <img src="/logo-white.svg" alt="AIDA" className="h-8 mx-auto" />
+          <p className="text-sm text-gray-500 mt-3">Portal 5 - Integraciones y Monitoreo</p>
         </div>
 
         {error && <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm p-3 rounded-lg mb-4">{error}</div>}

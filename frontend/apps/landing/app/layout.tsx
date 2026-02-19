@@ -36,7 +36,7 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "AIDA - Imprenta Digital Inteligente" }],
   creator: "AIDA",
-  publisher: "AIDA Imprenta Digital C.A.",
+  publisher: "ALDA S.A.",
   openGraph: {
     type: "website",
     locale: "es_VE",
@@ -80,7 +80,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es">
       <head>
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <meta name="geo.region" content="VE" />
         <meta name="geo.placename" content="Caracas" />
         <meta name="geo.position" content="10.4806;-66.9036" />

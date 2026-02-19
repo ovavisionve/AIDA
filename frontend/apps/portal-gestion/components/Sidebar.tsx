@@ -38,8 +38,8 @@ export default function Sidebar({ active, onNavigate }: { active: string; onNavi
   return (
     <aside className="w-60 bg-[#0a0f1a] border-r border-white/5 text-white flex flex-col min-h-screen">
       <div className="p-5 border-b border-white/10">
-        <h2 className="text-lg font-bold tracking-tight text-white">AIDA</h2>
-        <p className="text-[11px] text-gray-500 mt-0.5">Portal 5 — IA & Integraciones</p>
+        <img src="/logo-white.svg" alt="AIDA" className="h-5" />
+        <p className="text-[11px] text-gray-500 mt-2">Portal 5 — IA & Integraciones</p>
       </div>
 
       <nav className="flex-1 py-2 overflow-auto">
