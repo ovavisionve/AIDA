@@ -3733,6 +3733,233 @@ function testFase1_RegistrarLead() {
 }
 
 // ============================================
+// FASE 2: TEST COMPLETO DE TODAS LAS FUNCIONES DE VENTAS
+// Ejecuta esta función para probar TODO el flujo
+// ============================================
+function testFase2_FlujoCompleto() {
+  var resultados = [];
+  var errores = [];
+
+  function logTest(nombre, fn) {
+    try {
+      Logger.log('');
+      Logger.log('--- TEST: ' + nombre + ' ---');
+      var r = fn();
+      if (r && r.exito === false) {
+        errores.push(nombre + ': ' + r.mensaje);
+        Logger.log('FALLÓ: ' + r.mensaje);
+      } else {
+        resultados.push(nombre);
+        Logger.log('OK');
+      }
+      return r;
+    } catch (e) {
+      errores.push(nombre + ': ' + e.message);
+      Logger.log('ERROR: ' + e.message);
+      return null;
+    }
+  }
+
+  Logger.log('═══════════════════════════════════════════');
+  Logger.log('TEST FASE 2: FLUJO COMPLETO DE VENTAS');
+  Logger.log('═══════════════════════════════════════════');
+
+  var uid = 'TEST-002';
+  var uname = 'test_ventas';
+  var ruser = 'Vendedor Test';
+
+  // ---- 1. REGISTRAR LEAD ----
+  var lead1 = logTest('1. Registrar Lead (Acme Corp)', function() {
+    return registrarLead(uid, uname, ruser, {
+      cliente: 'Acme Corp Test',
+      producto: 'PLN-CORP-001',
+      monto: 5000,
+      etapa: 'Investigación',
+      origen: 'LinkedIn',
+      canal: 'Email',
+      notas: 'Lead de prueba Fase 2'
+    });
+  });
+
+  // ---- 2. REGISTRAR INTERACCIÓN ----
+  logTest('2. Registrar Interacción', function() {
+    return registrarContactoVenta(uid, uname, ruser, {
+      cliente: 'Acme Corp Test',
+      tipo: 'Llamada',
+      canal: 'Llamada',
+      resumen: 'Primera llamada de contacto',
+      resultado: 'Exitoso',
+      proximoPaso: 'Agendar demo',
+      tiempoInvertido: 15
+    });
+  });
+
+  // ---- 3. MOVER ETAPA ----
+  logTest('3. Mover Etapa a Contacto Inicial', function() {
+    return moverEtapa(uid, {
+      cliente: 'Acme Corp Test',
+      nuevaEtapa: 'Contacto Inicial',
+      notas: 'Llamada exitosa, interesado'
+    });
+  });
+
+  // ---- 4. REGISTRAR DEMO ----
+  logTest('4. Registrar Demo', function() {
+    return registrarDemo(uid, uname, ruser, {
+      cliente: 'Acme Corp Test',
+      producto: 'PLN-CORP-001',
+      resumen: 'Demo completa del sistema',
+      resultado: 'Interesado',
+      proximoPaso: 'Enviar propuesta',
+      duracion: 60
+    });
+  });
+
+  // ---- 5. REGISTRAR PROPUESTA ----
+  logTest('5. Registrar Propuesta', function() {
+    return registrarPropuesta(uid, uname, ruser, {
+      cliente: 'Acme Corp Test',
+      monto: 5000,
+      detalles: 'Propuesta plan corporativo anual',
+      proximoPaso: 'Seguimiento en 3 días'
+    });
+  });
+
+  // ---- 6. CERRAR VENTA ----
+  logTest('6. Cerrar Venta', function() {
+    return cerrarVenta(uid, uname, ruser, {
+      cliente: 'Acme Corp Test',
+      producto: 'PLN-CORP-001',
+      monto: 5000,
+      canal: 'Email',
+      observaciones: 'Cierre de prueba Fase 2'
+    });
+  });
+
+  // ---- 7. REGISTRAR SEGUNDO LEAD + PERDER DEAL ----
+  logTest('7a. Registrar Lead (Beta Inc)', function() {
+    return registrarLead(uid, uname, ruser, {
+      cliente: 'Beta Inc Test',
+      producto: 'SVC-002',
+      monto: 2000,
+      etapa: 'Contacto Inicial',
+      origen: 'Referido',
+      canal: 'WhatsApp'
+    });
+  });
+
+  logTest('7b. Perder Deal (Beta Inc)', function() {
+    return perderDeal(uid, uname, ruser, {
+      cliente: 'Beta Inc Test',
+      razon: 'Precio',
+      competidor: 'Competidor X',
+      posibleRescate: 'SI',
+      notas: 'Perdida de prueba Fase 2'
+    });
+  });
+
+  // ════════════════════════════════════════════
+  // CONSULTAS
+  // ════════════════════════════════════════════
+  Logger.log('');
+  Logger.log('═══════════════════════════════════════════');
+  Logger.log('CONSULTAS:');
+
+  logTest('8. Consultar Pipeline', function() {
+    var r = consultarPipeline(uid);
+    Logger.log('   Respuesta: ' + (r || '').substring(0, 200));
+    return { exito: r && r.length > 0 ? true : false, mensaje: r ? 'OK' : 'Vacío' };
+  });
+
+  logTest('9. Consultar Forecast', function() {
+    var r = consultarForecast(uid);
+    Logger.log('   Respuesta: ' + (r || '').substring(0, 200));
+    return { exito: r && r.length > 0 ? true : false, mensaje: r ? 'OK' : 'Vacío' };
+  });
+
+  logTest('10. Consultar KPIs', function() {
+    var r = consultarKPIs(uid);
+    Logger.log('   Respuesta: ' + (r || '').substring(0, 200));
+    return { exito: r && r.length > 0 ? true : false, mensaje: r ? 'OK' : 'Vacío' };
+  });
+
+  logTest('11. Reporte Semanal', function() {
+    var r = generarReporteSemanal(uid, ruser);
+    Logger.log('   Respuesta: ' + (r || '').substring(0, 200));
+    return { exito: r && r.length > 0 ? true : false, mensaje: r ? 'OK' : 'Vacío' };
+  });
+
+  logTest('12. Leads Fríos', function() {
+    var r = consultarLeadsFrios(uid);
+    Logger.log('   Respuesta: ' + (r || '').substring(0, 200));
+    return { exito: r && r.length > 0 ? true : false, mensaje: r ? 'OK' : 'Vacío' };
+  });
+
+  logTest('13. Top Clientes', function() {
+    var r = consultarTopClientes();
+    Logger.log('   Respuesta: ' + (r || '').substring(0, 200));
+    return { exito: r && r.length > 0 ? true : false, mensaje: r ? 'OK' : 'Vacío' };
+  });
+
+  logTest('14. Patrones Pérdida', function() {
+    var r = analizarPatronesPerdida();
+    Logger.log('   Respuesta: ' + (r || '').substring(0, 200));
+    return { exito: r && r.length > 0 ? true : false, mensaje: r ? 'OK' : 'Vacío' };
+  });
+
+  logTest('15. Ciclo Venta', function() {
+    var r = consultarCicloVenta();
+    Logger.log('   Respuesta: ' + (r || '').substring(0, 200));
+    return { exito: r && r.length > 0 ? true : false, mensaje: r ? 'OK' : 'Vacío' };
+  });
+
+  // ════════════════════════════════════════════
+  // RESUMEN FINAL
+  // ════════════════════════════════════════════
+  Logger.log('');
+  Logger.log('═══════════════════════════════════════════');
+  Logger.log('RESUMEN:');
+  Logger.log('  Pasaron: ' + resultados.length + '/15');
+  Logger.log('  Fallaron: ' + errores.length + '/15');
+  Logger.log('');
+
+  if (errores.length > 0) {
+    Logger.log('ERRORES:');
+    for (var i = 0; i < errores.length; i++) {
+      Logger.log('  ❌ ' + errores[i]);
+    }
+  }
+
+  if (errores.length === 0) {
+    Logger.log('✅✅✅ TODAS LAS FUNCIONES PASARON');
+    Logger.log('');
+    Logger.log('Siguiente paso: prueba desde Telegram con mensajes como:');
+    Logger.log('  "Registra un lead: Panadería Don José, PLN-EMP-001, monto 1000"');
+    Logger.log('  "Muéstrame el pipeline"');
+    Logger.log('  "¿Cómo van los KPIs?"');
+  } else {
+    Logger.log('');
+    Logger.log('Mándame este log para revisar los errores.');
+  }
+
+  Logger.log('═══════════════════════════════════════════');
+
+  // Verificar hojas
+  Logger.log('');
+  Logger.log('VERIFICACIÓN DE HOJAS:');
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var hojasCheck = ['Pipeline_Detallado', 'Interacciones_Cliente', 'Ventas_Cerradas', 'Lost_Deals'];
+  for (var j = 0; j < hojasCheck.length; j++) {
+    var sh = ss.getSheetByName(hojasCheck[j]);
+    if (sh) {
+      Logger.log('  ' + hojasCheck[j] + ': ' + (sh.getLastRow() - 1) + ' registros');
+    } else {
+      Logger.log('  ' + hojasCheck[j] + ': NO EXISTE');
+    }
+  }
+}
+
+// ============================================
 // LIMPIEZA: Borra filas fantasma de Pipeline_Detallado
 // (filas con timestamp pero sin datos reales en columnas clave)
 // Ejecuta ANTES de testFase1 si getLastRow > 1
