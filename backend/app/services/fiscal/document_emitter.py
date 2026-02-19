@@ -22,6 +22,11 @@ from app.schemas.fiscal import (
 )
 from app.services.fiscal.calculator import calcular_item, calcular_totales
 from app.services.fiscal.control_numbers import assign_control_number, void_control_number
+from app.services.fiscal.seniat_validator import SeniatValidator
+from app.services.fiscal.seniat_validator.bridge import build_seniat_json
+
+import logging
+_logger = logging.getLogger(__name__)
 
 
 class DocumentEmissionError(Exception):
@@ -74,6 +79,43 @@ async def emitir_documento(
     pago_en_divisas = getattr(request, "pago_en_divisas", False) or request.moneda != "VES"
     porcentaje_igtf = getattr(request, "porcentaje_igtf", 3.00)
     totales = calcular_totales(items_calculados, pago_en_divisas, porcentaje_igtf)
+
+    # 4b. Validación SENIAT V1.4 pre-emisión
+    try:
+        seniat_json = build_seniat_json(
+            tipo_documento=request.tipo_documento,
+            emisor_rif=emisor_rif,
+            emisor_razon_social=emisor_razon,
+            emisor_direccion=emisor_dir or "",
+            receptor_rif=request.receptor.rif,
+            receptor_razon_social=request.receptor.razon_social,
+            receptor_direccion=request.receptor.direccion or "",
+            items_calculados=items_calculados,
+            totales=totales,
+            moneda=request.moneda,
+            tasa_cambio=request.tasa_cambio,
+            forma_pago=request.pagos[0].forma if request.pagos else "efectivo",
+            observaciones=request.observaciones,
+        )
+        validator = SeniatValidator()
+        seniat_result = validator.validate(seniat_json)
+        if not seniat_result.is_valid:
+            error_msgs = [
+                f"[{e.code}] {e.field}: {e.message}"
+                for e in seniat_result.errors
+            ]
+            raise DocumentEmissionError(
+                "SENIAT_VALIDATION_FAILED",
+                f"El documento no cumple con las reglas SENIAT V1.4 ({len(seniat_result.errors)} errores)",
+                error_msgs,
+            )
+        if seniat_result.warnings:
+            for w in seniat_result.warnings:
+                _logger.warning("SENIAT warning [%s] %s: %s", w.code, w.field, w.message)
+    except DocumentEmissionError:
+        raise
+    except Exception as e:
+        _logger.warning("SENIAT pre-validation skipped due to error: %s", e)
 
     # 5. Crear el documento en BD para obtener ID
     fecha_emision = request.fecha_emision or datetime.now(timezone.utc)

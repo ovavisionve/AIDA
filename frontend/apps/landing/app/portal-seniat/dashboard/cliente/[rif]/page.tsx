@@ -44,242 +44,19 @@ interface Empresa {
   auditoria: AuditoriaEntry[];
 }
 
-/* ── Mock DB ── */
-const mockDB: Record<string, Empresa> = {
-  "J-12345678-9": {
-    rif: "J-12345678-9",
-    nombre: "Distribuidora Oriental C.A.",
-    estado: "Carabobo",
-    ciudad: "Valencia",
-    direccion: "Av. Bolívar Norte, Torre Empresarial, Piso 8, Oficina 8-B",
-    telefono: "+58 241-1234567",
-    email: "fiscal@distribuidoraoriental.com.ve",
-    actividadEconomica: "Distribución y comercialización de productos de consumo masivo",
-    plan: "Empresarial",
-    fechaRegistro: "15/03/2025",
-    status: "cumple",
-    homologado: true,
-    prov102: true,
-    prov121: true,
-    numerosControlAsignados: 10000,
-    numerosControlUsados: 4823,
-    documentos: [
-      { tipo: "Factura", numero: "00-045821", fecha: "17/02/2026", monto: "Bs. 2,340.50", receptor: "Comercial Los Andes C.A. (J-98765432-1)", status: "valido", uuid: "a1b2c3d4-e5f6-7890-abcd-ef1234567890" },
-      { tipo: "Factura", numero: "00-045820", fecha: "16/02/2026", monto: "Bs. 8,920.00", receptor: "Supermercados Unidos S.A. (J-11223344-5)", status: "valido", uuid: "b2c3d4e5-f6a7-8901-bcde-f12345678901" },
-      { tipo: "Ret. IVA", numero: "00-009810", fecha: "16/02/2026", monto: "Bs. 1,338.00", receptor: "Agente de retención: Distribuidora Oriental C.A.", status: "valido", uuid: "c3d4e5f6-a7b8-9012-cdef-123456789012" },
-      { tipo: "Nota Crédito", numero: "00-003449", fecha: "15/02/2026", monto: "Bs. 456.80", receptor: "Comercial Los Andes C.A. (J-98765432-1)", status: "valido", uuid: "d4e5f6a7-b8c9-0123-defa-234567890123" },
-      { tipo: "Factura", numero: "00-045819", fecha: "15/02/2026", monto: "Bs. 15,400.00", receptor: "Grupo Industrial Delta C.A. (J-55667788-0)", status: "valido", uuid: "e5f6a7b8-c9d0-1234-efab-345678901234" },
-      { tipo: "Ret. ISLR", numero: "00-002100", fecha: "14/02/2026", monto: "Bs. 2,310.00", receptor: "Retención a proveedor: Transportes Rápido C.A.", status: "valido", uuid: "f6a7b8c9-d0e1-2345-fabc-456789012345" },
-      { tipo: "Guía Despacho", numero: "00-000890", fecha: "14/02/2026", monto: "—", receptor: "Destino: Barquisimeto, Lara", status: "valido", uuid: "a7b8c9d0-e1f2-3456-abcd-567890123456" },
-      { tipo: "Factura", numero: "00-045818", fecha: "13/02/2026", monto: "Bs. 3,200.75", receptor: "Farmacia Popular S.R.L. (J-33445566-9)", status: "valido", uuid: "b8c9d0e1-f2a3-4567-bcde-678901234567" },
-      { tipo: "Nota Débito", numero: "00-001580", fecha: "12/02/2026", monto: "Bs. 890.25", receptor: "Ajuste por diferencia cambiaria - Supermercados Unidos S.A.", status: "valido", uuid: "c9d0e1f2-a3b4-5678-cdef-789012345678" },
-      { tipo: "Factura", numero: "00-045817", fecha: "11/02/2026", monto: "Bs. 22,100.00", receptor: "Distribuidora Nacional C.A. (J-44556677-8)", status: "valido", uuid: "d0e1f2a3-b4c5-6789-defa-890123456789" },
-      { tipo: "Ret. IVA", numero: "00-009809", fecha: "10/02/2026", monto: "Bs. 3,315.00", receptor: "Agente de retención: Distribuidora Oriental C.A.", status: "valido", uuid: "e1f2a3b4-c5d6-7890-efab-901234567890" },
-      { tipo: "Factura", numero: "00-045816", fecha: "09/02/2026", monto: "Bs. 5,670.30", receptor: "Ferretería El Constructor C.A. (J-22334455-7)", status: "anulado", uuid: "f2a3b4c5-d6e7-8901-fabc-012345678901" },
-    ],
-    auditoria: [
-      { fecha: "17/02/2026 09:15", accion: "Emisión de factura", detalle: "Factura 00-045821 emitida correctamente. Número de control válido." },
-      { fecha: "16/02/2026 14:30", accion: "Retención IVA procesada", detalle: "Comprobante de retención IVA 00-009810 generado al 75%." },
-      { fecha: "16/02/2026 10:20", accion: "Emisión de factura", detalle: "Factura 00-045820 emitida correctamente. Monto alto verificado por IA." },
-      { fecha: "15/02/2026 16:45", accion: "Nota de crédito emitida", detalle: "NC 00-003449 vinculada a factura 00-045800. Monto dentro del rango permitido." },
-      { fecha: "15/02/2026 09:00", accion: "Emisión de factura", detalle: "Factura 00-045819 emitida. Monto Bs. 15,400.00 verificado por IA." },
-      { fecha: "14/02/2026 11:00", accion: "Retención ISLR procesada", detalle: "Comprobante ISLR 00-002100. Porcentaje aplicado según tabla de actividades." },
-      { fecha: "14/02/2026 08:30", accion: "Guía de despacho emitida", detalle: "GD 00-000890 para traslado a Barquisimeto, Lara." },
-      { fecha: "12/02/2026 15:20", accion: "Nota de débito emitida", detalle: "ND 00-001580 por ajuste cambiario. Monto verificado." },
-      { fecha: "10/02/2026 08:00", accion: "Verificación de cumplimiento", detalle: "Auditoría automática: Providencia 102 ✓, Providencia 121 ✓. Sin observaciones." },
-      { fecha: "09/02/2026 14:10", accion: "Alerta: Factura anulada", detalle: "Factura 00-045816 anulada. Motivo: error en datos del receptor." },
-    ],
-  },
-  "J-40987654-3": {
-    rif: "J-40987654-3",
-    nombre: "Inversiones Maracay 2020 C.A.",
-    estado: "Aragua",
-    ciudad: "Maracay",
-    direccion: "Centro Comercial Las Américas, Local 45, Planta Baja",
-    telefono: "+58 243-9876543",
-    email: "administracion@inversionesmaracay.com.ve",
-    actividadEconomica: "Importación y venta de equipos electrónicos",
-    plan: "Profesional",
-    fechaRegistro: "22/06/2025",
-    status: "cumple",
-    homologado: true,
-    prov102: true,
-    prov121: true,
-    numerosControlAsignados: 2000,
-    numerosControlUsados: 1247,
-    documentos: [
-      { tipo: "Factura", numero: "00-012470", fecha: "16/02/2026", monto: "Bs. 45,800.00", receptor: "Corporación Electrónica Nacional C.A. (J-22334455-6)", status: "valido", uuid: "aa11bb22-cc33-dd44-ee55-ff6677889900" },
-      { tipo: "Factura", numero: "00-012469", fecha: "15/02/2026", monto: "Bs. 12,350.00", receptor: "TecnoShop Express S.R.L. (J-44556677-8)", status: "valido", uuid: "bb22cc33-dd44-ee55-ff66-778899001122" },
-      { tipo: "Nota Débito", numero: "00-001230", fecha: "14/02/2026", monto: "Bs. 670.25", receptor: "Ajuste por diferencia cambiaria", status: "valido", uuid: "cc33dd44-ee55-ff66-7788-990011223344" },
-      { tipo: "Ret. IVA", numero: "00-004560", fecha: "13/02/2026", monto: "Bs. 6,870.00", receptor: "Agente de retención: Inversiones Maracay 2020 C.A.", status: "valido", uuid: "dd44ee55-ff66-7788-9900-112233445566" },
-      { tipo: "Nota Crédito", numero: "00-000890", fecha: "10/02/2026", monto: "Bs. 2,100.00", receptor: "TecnoShop Express S.R.L. (J-44556677-8)", status: "valido", uuid: "ee55ff66-7788-9900-1122-334455667788" },
-    ],
-    auditoria: [
-      { fecha: "16/02/2026 11:00", accion: "Emisión de factura", detalle: "Factura 00-012470 emitida. Monto alto verificado." },
-      { fecha: "15/02/2026 09:30", accion: "Emisión de factura", detalle: "Factura 00-012469 emitida correctamente." },
-      { fecha: "14/02/2026 16:00", accion: "Nota de débito emitida", detalle: "ND 00-001230 por ajuste cambiario." },
-      { fecha: "01/02/2026 08:00", accion: "Verificación mensual", detalle: "Auditoría automática: todo en cumplimiento." },
-    ],
-  },
-  "J-30112233-0": {
-    rif: "J-30112233-0",
-    nombre: "Tecnología y Redes del Centro C.A.",
-    estado: "Distrito Capital",
-    ciudad: "Caracas",
-    direccion: "Av. Francisco de Miranda, Centro Lido, Torre D, Piso 12",
-    telefono: "+58 212-5551234",
-    email: "contabilidad@tecyredes.com.ve",
-    actividadEconomica: "Servicios de tecnología, redes y telecomunicaciones",
-    plan: "Profesional",
-    fechaRegistro: "10/09/2025",
-    status: "revision",
-    homologado: true,
-    prov102: true,
-    prov121: false,
-    numerosControlAsignados: 2000,
-    numerosControlUsados: 892,
-    documentos: [
-      { tipo: "Factura", numero: "00-008920", fecha: "15/02/2026", monto: "Bs. 28,500.00", receptor: "Banco del Tesoro (G-20001234-0)", status: "valido", uuid: "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d" },
-      { tipo: "Nota Débito", numero: "00-001234", fecha: "15/02/2026", monto: "Bs. 670.25", receptor: "Ajuste por intereses de mora", status: "revision", uuid: "2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e" },
-    ],
-    auditoria: [
-      { fecha: "15/02/2026 14:00", accion: "Alerta: Nota de débito en revisión", detalle: "ND 00-001234 marcada para revisión. Monto de intereses requiere verificación." },
-      { fecha: "12/02/2026 08:00", accion: "Alerta: Homologación pendiente", detalle: "Providencia 121 no cumplida. Sistema pendiente de homologación ante SENIAT." },
-    ],
-  },
-  "V-18765432-5": {
-    rif: "V-18765432-5",
-    nombre: "Carlos Mendoza (Persona Natural)",
-    estado: "Zulia",
-    ciudad: "Maracaibo",
-    direccion: "Av. 5 de Julio, Sector Tierra Negra, Edif. Don Carlos, PB",
-    telefono: "+58 261-7654321",
-    email: "carlos.mendoza@gmail.com",
-    actividadEconomica: "Servicios profesionales de consultoría empresarial",
-    plan: "Básico",
-    fechaRegistro: "05/01/2026",
-    status: "alerta",
-    homologado: false,
-    prov102: true,
-    prov121: false,
-    numerosControlAsignados: 500,
-    numerosControlUsados: 56,
-    documentos: [
-      { tipo: "Factura", numero: "00-000056", fecha: "28/01/2026", monto: "Bs. 4,500.00", receptor: "Constructora Lago Azul C.A. (J-88990011-2)", status: "valido", uuid: "3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f" },
-      { tipo: "Factura", numero: "00-000055", fecha: "20/01/2026", monto: "Bs. 3,200.00", receptor: "Ingeniería Moderna C.A. (J-77889900-3)", status: "valido", uuid: "4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a" },
-    ],
-    auditoria: [
-      { fecha: "10/02/2026 08:00", accion: "Alerta: Inactividad detectada", detalle: "Sin emisión de documentos en los últimos 20 días. Última factura: 28/01/2026." },
-      { fecha: "05/02/2026 08:00", accion: "Alerta: Homologación pendiente", detalle: "Sistema no homologado bajo Providencia 121. Riesgo de sanciones." },
-    ],
-  },
-  "J-29876543-7": {
-    rif: "J-29876543-7",
-    nombre: "Importadora del Caribe C.A.",
-    estado: "Nueva Esparta",
-    ciudad: "Porlamar",
-    direccion: "Zona Franca de Margarita, Galpón 12-B",
-    telefono: "+58 295-2631234",
-    email: "fiscal@importadoradelcaribe.com.ve",
-    actividadEconomica: "Importación y distribución de mercancía general",
-    plan: "Empresarial",
-    fechaRegistro: "01/01/2025",
-    status: "cumple",
-    homologado: true,
-    prov102: true,
-    prov121: true,
-    numerosControlAsignados: 50000,
-    numerosControlUsados: 7891,
-    documentos: [
-      { tipo: "Ret. IVA", numero: "00-009812", fecha: "17/02/2026", monto: "Bs. 1,872.00", receptor: "Retención a: Naviera del Sur C.A. (J-66778899-4)", status: "valido", uuid: "5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b" },
-      { tipo: "Factura", numero: "00-078910", fecha: "17/02/2026", monto: "Bs. 125,000.00", receptor: "Cadena de Tiendas Popular C.A. (J-99001122-5)", status: "valido", uuid: "6f7a8b9c-0d1e-2f3a-4b5c-6d7e8f9a0b1c" },
-      { tipo: "Factura", numero: "00-078909", fecha: "16/02/2026", monto: "Bs. 89,500.00", receptor: "Supermercados Isla C.A. (J-11002233-6)", status: "valido", uuid: "7a8b9c0d-1e2f-3a4b-5c6d-7e8f9a0b1c2d" },
-    ],
-    auditoria: [
-      { fecha: "17/02/2026 10:00", accion: "Retención IVA procesada", detalle: "Comprobante 00-009812. Retención al 75% sobre factura de proveedor." },
-      { fecha: "17/02/2026 08:30", accion: "Emisión de factura de alto monto", detalle: "Factura 00-078910 por Bs. 125,000.00. Verificación IA: aprobada." },
-      { fecha: "01/02/2026 08:00", accion: "Verificación mensual", detalle: "Auditoría automática: cumplimiento total. Sin observaciones." },
-    ],
-  },
-  "J-41567890-2": {
-    rif: "J-41567890-2",
-    nombre: "Servicios Industriales del Sur C.A.",
-    estado: "Bolívar",
-    ciudad: "Ciudad Guayana",
-    direccion: "Zona Industrial Matanzas, Calle 3, Galpón 7",
-    telefono: "+58 286-9112345",
-    email: "admin@servindsur.com.ve",
-    actividadEconomica: "Servicios industriales, mantenimiento y suministros",
-    plan: "Profesional",
-    fechaRegistro: "18/07/2025",
-    status: "cumple",
-    homologado: true,
-    prov102: true,
-    prov121: true,
-    numerosControlAsignados: 2000,
-    numerosControlUsados: 2134,
-    documentos: [
-      { tipo: "Ret. ISLR", numero: "00-002103", fecha: "16/02/2026", monto: "Bs. 3,100.75", receptor: "Retención a: Suministros CVG C.A. (J-12340000-1)", status: "valido", uuid: "8b9c0d1e-2f3a-4b5c-6d7e-8f9a0b1c2d3e" },
-      { tipo: "Factura", numero: "00-021340", fecha: "16/02/2026", monto: "Bs. 67,800.00", receptor: "SIDOR C.A. (J-00000001-0)", status: "valido", uuid: "9c0d1e2f-3a4b-5c6d-7e8f-9a0b1c2d3e4f" },
-    ],
-    auditoria: [
-      { fecha: "16/02/2026 15:00", accion: "Retención ISLR procesada", detalle: "Comprobante 00-002103 emitido correctamente." },
-      { fecha: "16/02/2026 09:00", accion: "Emisión de factura", detalle: "Factura 00-021340 emitida. Cliente industrial verificado." },
-    ],
-  },
-  "J-50234567-1": {
-    rif: "J-50234567-1",
-    nombre: "Agropecuaria Los Llanos S.A.",
-    estado: "Barinas",
-    ciudad: "Barinas",
-    direccion: "Carretera Nacional vía Torunos, Km 12, Finca Los Llanos",
-    telefono: "+58 273-5321234",
-    email: "contabilidad@agrollanos.com.ve",
-    actividadEconomica: "Producción agropecuaria y comercialización de ganado",
-    plan: "Básico",
-    fechaRegistro: "20/11/2025",
-    status: "cumple",
-    homologado: true,
-    prov102: true,
-    prov121: true,
-    numerosControlAsignados: 500,
-    numerosControlUsados: 341,
-    documentos: [
-      { tipo: "Guía Despacho", numero: "00-000892", fecha: "15/02/2026", monto: "—", receptor: "Destino: Frigorífico Central, Maracay", status: "valido", uuid: "0d1e2f3a-4b5c-6d7e-8f9a-0b1c2d3e4f5a" },
-      { tipo: "Factura", numero: "00-003410", fecha: "15/02/2026", monto: "Bs. 180,000.00", receptor: "Frigorífico Central C.A. (J-10203040-5)", status: "valido", uuid: "1e2f3a4b-5c6d-7e8f-9a0b-1c2d3e4f5a6b" },
-    ],
-    auditoria: [
-      { fecha: "15/02/2026 07:00", accion: "Guía de despacho emitida", detalle: "GD 00-000892 para traslado de mercancía a Aragua." },
-      { fecha: "15/02/2026 07:05", accion: "Factura emitida", detalle: "Factura 00-003410 asociada a guía de despacho." },
-    ],
-  },
-  "G-20000001-0": {
-    rif: "G-20000001-0",
-    nombre: "Alcaldía del Municipio Libertador",
-    estado: "Distrito Capital",
-    ciudad: "Caracas",
-    direccion: "Esquina de Municipal, Edificio Sede Alcaldía, Piso 3",
-    telefono: "+58 212-8621234",
-    email: "recaudacion@alcaldialibertador.gob.ve",
-    actividadEconomica: "Administración pública municipal — recaudación de impuestos",
-    plan: "Empresarial",
-    fechaRegistro: "01/06/2025",
-    status: "cumple",
-    homologado: true,
-    prov102: true,
-    prov121: true,
-    numerosControlAsignados: 50000,
-    numerosControlUsados: 12340,
-    documentos: [
-      { tipo: "Factura", numero: "00-089001", fecha: "15/02/2026", monto: "Bs. 45,000.00", receptor: "Consorcio Vial Caracas C.A. (J-55443322-1)", status: "valido", uuid: "2f3a4b5c-6d7e-8f9a-0b1c-2d3e4f5a6b7c" },
-      { tipo: "Factura", numero: "00-089000", fecha: "14/02/2026", monto: "Bs. 32,500.00", receptor: "Constructora Capital S.A. (J-66554433-2)", status: "valido", uuid: "3a4b5c6d-7e8f-9a0b-1c2d-3e4f5a6b7c8d" },
-    ],
-    auditoria: [
-      { fecha: "15/02/2026 10:00", accion: "Emisión de factura institucional", detalle: "Factura 00-089001 emitida por servicio de obra pública." },
-      { fecha: "01/02/2026 08:00", accion: "Verificación mensual", detalle: "Entidad gubernamental en cumplimiento total." },
-    ],
-  },
+/* ── Map doc type code to label ── */
+const DOC_TYPE_MAP: Record<string, string> = {
+  factura: "Factura", invoice: "Factura", "01": "Factura",
+  nota_credito: "Nota Crédito", credit_note: "Nota Crédito", "02": "Nota Crédito",
+  nota_debito: "Nota Débito", debit_note: "Nota Débito", "03": "Nota Débito",
+  guia_despacho: "Guía Despacho", "04": "Guía Despacho",
+  retencion_iva: "Ret. IVA", "05": "Ret. IVA",
+  retencion_islr: "Ret. ISLR", "06": "Ret. ISLR",
 };
+
+function mapDocType(t: string): string {
+  return DOC_TYPE_MAP[t?.toLowerCase()] || t || "Factura";
+}
 
 /* ── Helper Components ── */
 function StatusBadge({ status }: { status: string }) {
@@ -581,51 +358,78 @@ export default function ClienteDetallePage() {
 
   const [empresa, setEmpresa] = useState<Empresa | null | undefined>(undefined);
 
-  // Fetch client data from API, fallback to mockDB
+  // Fetch client data from real API
   useEffect(() => {
     const token = sessionStorage.getItem("seniat_token");
+    if (!token) { setEmpresa(null); return; }
 
-    // Try API first
-    if (token) {
-      fetch(`${API}/clients?page_size=50`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-        .then(r => r.ok ? r.json() : Promise.reject("api error"))
-        .then(data => {
-          const client = (data.items || []).find((c: Record<string, unknown>) => c.rif === rifParam);
-          if (client) {
-            const emp: Empresa = {
-              rif: client.rif,
-              nombre: client.razon_social || client.nombre_comercial || "",
-              estado: (client.direccion_fiscal || "").split(",").pop()?.trim() || "Venezuela",
-              ciudad: (client.direccion_fiscal || "").split(",")[0]?.trim() || "",
-              direccion: client.direccion_fiscal || "",
-              telefono: client.telefono_principal || "—",
-              email: client.email_principal || "—",
-              actividadEconomica: client.sector_industria || "Actividad comercial",
-              plan: client.plan || "Básico",
-              fechaRegistro: new Date(client.fecha_inicio || client.created_at).toLocaleDateString("es-VE"),
-              status: client.is_suspended ? "alerta" : client.is_active ? "cumple" : "revision",
-              homologado: client.is_active,
-              prov102: true,
-              prov121: client.is_active,
-              numerosControlAsignados: client.max_documentos_mes || 1000,
-              numerosControlUsados: Math.floor((client.max_documentos_mes || 1000) * 0.4),
-              documentos: [],
-              auditoria: [],
-            };
-            setEmpresa(emp);
-          } else {
-            // Fallback to mockDB
-            setEmpresa(mockDB[rifParam] || null);
+    const headers = { Authorization: `Bearer ${token}` };
+
+    // Fetch client info
+    fetch(`${API}/clients?page_size=50`, { headers })
+      .then(r => r.ok ? r.json() : Promise.reject("api error"))
+      .then(async (data) => {
+        const client = (data.items || []).find((c: Record<string, unknown>) => c.rif === rifParam);
+        if (!client) { setEmpresa(null); return; }
+
+        const emp: Empresa = {
+          rif: client.rif,
+          nombre: client.razon_social || client.nombre_comercial || "",
+          estado: (client.direccion_fiscal || "").split(",").pop()?.trim() || "Venezuela",
+          ciudad: (client.direccion_fiscal || "").split(",")[0]?.trim() || "",
+          direccion: client.direccion_fiscal || "",
+          telefono: client.telefono_principal || "—",
+          email: client.email_principal || "—",
+          actividadEconomica: client.sector_industria || "Actividad comercial",
+          plan: client.plan || "Básico",
+          fechaRegistro: new Date(client.fecha_inicio || client.created_at).toLocaleDateString("es-VE"),
+          status: client.is_suspended ? "alerta" : client.is_active ? "cumple" : "revision",
+          homologado: client.is_active,
+          prov102: true,
+          prov121: client.is_active,
+          numerosControlAsignados: client.max_documentos_mes || 1000,
+          numerosControlUsados: 0,
+          documentos: [],
+          auditoria: [],
+        };
+
+        // Fetch documents for this client in parallel
+        try {
+          const docsRes = await fetch(`${API}/documents?page_size=50&search=${encodeURIComponent(rifParam)}`, { headers });
+          if (docsRes.ok) {
+            const docsData = await docsRes.json();
+            emp.documentos = (docsData.items || []).map((d: Record<string, unknown>) => ({
+              tipo: mapDocType((d.document_type as string) || ""),
+              numero: (d.control_number as string) || (d.document_number as string) || "—",
+              fecha: d.created_at ? new Date(d.created_at as string).toLocaleDateString("es-VE") : "—",
+              monto: d.total_amount ? `Bs. ${Number(d.total_amount).toLocaleString("es-VE", { minimumFractionDigits: 2 })}` : "—",
+              receptor: `${(d.receptor_razon_social as string) || ""} ${(d.receptor_rif as string) ? `(${d.receptor_rif})` : ""}`.trim() || "—",
+              status: (d.status as string) === "active" || (d.status as string) === "valid" ? "valido" : (d.status as string) === "voided" ? "anulado" : "valido",
+              uuid: (d.id as string) || crypto.randomUUID(),
+            }));
+            emp.numerosControlUsados = emp.documentos.length;
           }
-        })
-        .catch(() => {
-          setEmpresa(mockDB[rifParam] || null);
-        });
-    } else {
-      setEmpresa(mockDB[rifParam] || null);
-    }
+        } catch (err) { console.error("Failed to fetch documents:", err); }
+
+        // Fetch audit logs for this client
+        try {
+          const auditRes = await fetch(`${API}/admin/audit-logs?page_size=20&search=${encodeURIComponent(rifParam)}`, { headers });
+          if (auditRes.ok) {
+            const auditData = await auditRes.json();
+            emp.auditoria = (auditData.items || []).map((log: Record<string, unknown>) => ({
+              fecha: log.created_at ? new Date(log.created_at as string).toLocaleString("es-VE") : "—",
+              accion: (log.action as string) || "Acción registrada",
+              detalle: `${log.action || ""} — ${log.details || log.resource_type || ""} ${log.resource_id || ""}`.trim(),
+            }));
+          }
+        } catch (err) { console.error("Failed to fetch audit logs:", err); }
+
+        setEmpresa(emp);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch client:", err);
+        setEmpresa(null);
+      });
   }, [rifParam]);
 
   // Filters
