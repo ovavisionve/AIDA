@@ -38,6 +38,7 @@ from app.services.fiscal.document_emitter import (
     emitir_documento, anular_documento, DocumentEmissionError,
 )
 from app.services.fiscal.control_numbers import get_available_count
+from app.services.fiscal.seniat_validator import SeniatValidator, ValidationResult
 from app.core.deps import log_audit
 
 router = APIRouter()
@@ -288,4 +289,47 @@ async def account_status(
             "almacenamiento_gb": client.max_almacenamiento_gb,
         },
         "numeros_control": control_stats,
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# POST /fiscal/validate-seniat  →  Validar documento según reglas SENIAT V1.4
+# ─────────────────────────────────────────────────────────────────────────────
+@router.post(
+    "/validate-seniat",
+    summary="Validar documento contra reglas SENIAT V1.4",
+    description="""
+    Valida un documento fiscal JSON contra todas las reglas oficiales del SENIAT
+    (GGTIC.GIT.00.02 / Versión 1.4) **sin emitirlo**. Útil para:
+    - Pre-validar documentos antes de emitir
+    - Diagnosticar errores en la integración del cliente
+    - Testing de la estructura JSON del ERP del cliente
+
+    Retorna la lista detallada de errores con códigos SENIAT oficiales.
+    """,
+    tags=["Fiscal - Validación SENIAT"],
+)
+async def validate_seniat_document(
+    request: Request,
+    client: Client = Depends(get_client_from_api_key),
+):
+    """Valida un documento fiscal contra las reglas SENIAT V1.4 sin emitirlo."""
+    body = await request.json()
+
+    validator = SeniatValidator()
+    validation = validator.validate(body)
+
+    status_code = 200 if validation.is_valid else 203
+
+    return {
+        "status": status_code,
+        "is_valid": validation.is_valid,
+        "total_errors": len(validation.errors),
+        "total_warnings": len(validation.warnings),
+        "client": {
+            "rif": client.rif,
+            "razon_social": client.razon_social,
+        },
+        "errors": [e.to_dict() for e in validation.errors],
+        "warnings": [w.to_dict() for w in validation.warnings],
     }
