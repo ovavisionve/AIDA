@@ -3,8 +3,21 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    background-color: #0a0f1a !important;
+    color-scheme: dark;
+  }
   body {
     @apply bg-[#0a0f1a] text-white antialiased;
+    background-color: #0a0f1a !important;
+  }
+  input, select, textarea {
+    color-scheme: dark;
+  }
+  /* Force dark option backgrounds in all selects */
+  option {
+    background-color: #111827;
+    color: white;
   }
 }
 
@@ -22,7 +35,7 @@
     background: linear-gradient(135deg, #0a0f1a 0%, #111827 50%, #0a0f1a 100%);
   }
   .aida-sidebar {
-    @apply bg-[#0a0f1a] border-r border-white/5;
+    @apply bg-[#070b14] border-r border-white/5;
   }
   .glow-accent {
     box-shadow: 0 0 20px rgba(99, 102, 241, 0.15), 0 0 60px rgba(99, 102, 241, 0.05);

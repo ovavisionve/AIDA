@@ -15,6 +15,10 @@
   input, select, textarea {
     color-scheme: dark;
   }
+  option {
+    background-color: #111827;
+    color: white;
+  }
 }
 
 @layer components {

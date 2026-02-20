@@ -94,10 +94,10 @@ export default function IntegrationsSection() {
     try {
       const [erpR, clientsR] = await Promise.all([
         api("/admin/erp-types"),
-        api("/admin/clients?page_size=200"),
+        api("/clients?page_size=200"),
       ]);
       const erpD = await erpR.json();
-      setErpTypes(erpD);
+      setErpTypes(Array.isArray(erpD) ? erpD : []);
       const clientsD = await clientsR.json();
       setClients(
         (clientsD.items || []).map((c: { id: string; razon_social: string; rif: string }) => ({
@@ -345,13 +345,16 @@ export default function IntegrationsSection() {
                 <select
                   value={form.client_id}
                   onChange={e => setForm({ ...form, client_id: e.target.value })}
-                  className="w-full rounded-lg bg-white/5 border border-white/10 text-white px-3 py-2 text-sm focus:border-aida-accent focus:outline-none"
+                  className="w-full rounded-lg bg-[#111827] border border-white/10 text-white px-3 py-2 text-sm focus:border-aida-accent focus:outline-none"
                 >
-                  <option value="">Seleccionar cliente...</option>
+                  <option value="" className="bg-[#111827] text-gray-400">Seleccionar cliente...</option>
                   {clients.map(c => (
-                    <option key={c.id} value={c.id}>{c.razon_social} ({c.rif})</option>
+                    <option key={c.id} value={c.id} className="bg-[#111827] text-white">{c.razon_social} ({c.rif})</option>
                   ))}
                 </select>
+                {clients.length === 0 && (
+                  <p className="text-[10px] text-amber-400 mt-1">Cargando clientes...</p>
+                )}
               </div>
 
               <div>
@@ -361,7 +364,7 @@ export default function IntegrationsSection() {
                   value={form.agent_name}
                   onChange={e => setForm({ ...form, agent_name: e.target.value })}
                   placeholder="Ej: Agente Integración SAP - Imprenta Digital"
-                  className="w-full rounded-lg bg-white/5 border border-white/10 text-white px-3 py-2 text-sm focus:border-aida-accent focus:outline-none"
+                  className="w-full rounded-lg bg-[#111827] border border-white/10 text-white px-3 py-2 text-sm focus:border-aida-accent focus:outline-none"
                 />
               </div>
 
@@ -370,10 +373,10 @@ export default function IntegrationsSection() {
                 <select
                   value={form.erp_type}
                   onChange={e => setForm({ ...form, erp_type: e.target.value })}
-                  className="w-full rounded-lg bg-white/5 border border-white/10 text-white px-3 py-2 text-sm focus:border-aida-accent focus:outline-none"
+                  className="w-full rounded-lg bg-[#111827] border border-white/10 text-white px-3 py-2 text-sm focus:border-aida-accent focus:outline-none"
                 >
                   {erpTypes.map(e => (
-                    <option key={e.code} value={e.code}>{e.name}</option>
+                    <option key={e.code} value={e.code} className="bg-[#111827] text-white">{e.name}</option>
                   ))}
                 </select>
               </div>
@@ -385,7 +388,7 @@ export default function IntegrationsSection() {
                   onChange={e => setForm({ ...form, integration_notes: e.target.value })}
                   rows={3}
                   placeholder="Contexto sobre la integración del cliente, necesidades específicas..."
-                  className="w-full rounded-lg bg-white/5 border border-white/10 text-white px-3 py-2 text-sm focus:border-aida-accent focus:outline-none resize-none"
+                  className="w-full rounded-lg bg-[#111827] border border-white/10 text-white px-3 py-2 text-sm focus:border-aida-accent focus:outline-none resize-none"
                 />
               </div>
 
@@ -396,7 +399,7 @@ export default function IntegrationsSection() {
                   onChange={e => setForm({ ...form, custom_instructions: e.target.value })}
                   rows={3}
                   placeholder="Instrucciones adicionales para el agente IA al atender a este cliente..."
-                  className="w-full rounded-lg bg-white/5 border border-white/10 text-white px-3 py-2 text-sm focus:border-aida-accent focus:outline-none resize-none"
+                  className="w-full rounded-lg bg-[#111827] border border-white/10 text-white px-3 py-2 text-sm focus:border-aida-accent focus:outline-none resize-none"
                 />
               </div>
 
@@ -455,7 +458,7 @@ export default function IntegrationsSection() {
                   type="text"
                   value={editAgent.agent_name}
                   onChange={e => setEditAgent({ ...editAgent, agent_name: e.target.value })}
-                  className="w-full rounded-lg bg-white/5 border border-white/10 text-white px-3 py-2 text-sm focus:border-aida-accent focus:outline-none"
+                  className="w-full rounded-lg bg-[#111827] border border-white/10 text-white px-3 py-2 text-sm focus:border-aida-accent focus:outline-none"
                 />
               </div>
 
@@ -464,7 +467,7 @@ export default function IntegrationsSection() {
                 <select
                   value={editAgent.erp_type}
                   onChange={e => setEditAgent({ ...editAgent, erp_type: e.target.value })}
-                  className="w-full rounded-lg bg-white/5 border border-white/10 text-white px-3 py-2 text-sm focus:border-aida-accent focus:outline-none"
+                  className="w-full rounded-lg bg-[#111827] border border-white/10 text-white px-3 py-2 text-sm focus:border-aida-accent focus:outline-none"
                 >
                   {erpTypes.map(e => (
                     <option key={e.code} value={e.code}>{e.name}</option>
@@ -477,7 +480,7 @@ export default function IntegrationsSection() {
                 <select
                   value={editAgent.status}
                   onChange={e => setEditAgent({ ...editAgent, status: e.target.value })}
-                  className="w-full rounded-lg bg-white/5 border border-white/10 text-white px-3 py-2 text-sm focus:border-aida-accent focus:outline-none"
+                  className="w-full rounded-lg bg-[#111827] border border-white/10 text-white px-3 py-2 text-sm focus:border-aida-accent focus:outline-none"
                 >
                   <option value="active">Activo</option>
                   <option value="paused">Pausado</option>
@@ -491,7 +494,7 @@ export default function IntegrationsSection() {
                   value={editAgent.integration_notes || ""}
                   onChange={e => setEditAgent({ ...editAgent, integration_notes: e.target.value })}
                   rows={3}
-                  className="w-full rounded-lg bg-white/5 border border-white/10 text-white px-3 py-2 text-sm focus:border-aida-accent focus:outline-none resize-none"
+                  className="w-full rounded-lg bg-[#111827] border border-white/10 text-white px-3 py-2 text-sm focus:border-aida-accent focus:outline-none resize-none"
                 />
               </div>
 
@@ -501,7 +504,7 @@ export default function IntegrationsSection() {
                   value={editAgent.custom_instructions || ""}
                   onChange={e => setEditAgent({ ...editAgent, custom_instructions: e.target.value })}
                   rows={3}
-                  className="w-full rounded-lg bg-white/5 border border-white/10 text-white px-3 py-2 text-sm focus:border-aida-accent focus:outline-none resize-none"
+                  className="w-full rounded-lg bg-[#111827] border border-white/10 text-white px-3 py-2 text-sm focus:border-aida-accent focus:outline-none resize-none"
                 />
               </div>
 
