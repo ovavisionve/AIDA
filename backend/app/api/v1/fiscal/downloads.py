@@ -167,11 +167,18 @@ async def download_pdf(
     layout_config = await _resolve_template_config(db, client.id, doc_type)
     banner_path, banner_position = await _resolve_banner_path(db, client.id, doc_type)
 
+    # Resolve relative URL paths to absolute filesystem paths
+    import os as _os
+    from app.config import get_settings as _get_settings
+    _stg = _get_settings()
+    logo_fs = _os.path.join(_stg.STORAGE_PATH, client.logo_url.lstrip("/")) if client.logo_url else None
+    banner_fs = _os.path.join(_stg.STORAGE_PATH, banner_path.lstrip("/")) if banner_path else None
+
     pdf_bytes = generate_invoice_pdf(
         doc, items, doc_type,
         layout_config=layout_config,
-        logo_path=client.logo_url,
-        banner_path=banner_path,
+        logo_path=logo_fs,
+        banner_path=banner_fs,
         banner_position=banner_position,
     )
 
@@ -300,11 +307,16 @@ async def send_document_email(
 
     layout_config = await _resolve_template_config(db, client.id, doc_type)
     banner_path, banner_position = await _resolve_banner_path(db, client.id, doc_type)
+
+    # Resolve relative URL paths to absolute filesystem paths
+    logo_fs2 = _os.path.join(_stg.STORAGE_PATH, client.logo_url.lstrip("/")) if client.logo_url else None
+    banner_fs2 = _os.path.join(_stg.STORAGE_PATH, banner_path.lstrip("/")) if banner_path else None
+
     pdf_bytes = generate_invoice_pdf(
         doc, items, doc_type,
         layout_config=layout_config,
-        logo_path=client.logo_url,
-        banner_path=banner_path,
+        logo_path=logo_fs2,
+        banner_path=banner_fs2,
         banner_position=banner_position,
     )
     xml_bytes = generate_document_xml(doc, items, doc_type)

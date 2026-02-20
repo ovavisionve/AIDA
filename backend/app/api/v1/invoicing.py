@@ -844,11 +844,18 @@ async def download_document_pdf(
     layout_config = await _resolve_template_config(db, client.id, doc_type)
     banner_path, banner_position = await _resolve_banner_path(db, client.id, doc_type)
 
+    # Resolve relative URL paths to absolute filesystem paths
+    import os
+    from app.config import get_settings
+    _settings = get_settings()
+    logo_fs = os.path.join(_settings.STORAGE_PATH, client.logo_url.lstrip("/")) if client.logo_url else None
+    banner_fs = os.path.join(_settings.STORAGE_PATH, banner_path.lstrip("/")) if banner_path else None
+
     pdf_bytes = generate_invoice_pdf(
         doc, items, doc_type,
         layout_config=layout_config,
-        logo_path=client.logo_url,
-        banner_path=banner_path,
+        logo_path=logo_fs,
+        banner_path=banner_fs,
         banner_position=banner_position,
     )
     filename = f"{doc_type}_{doc.control_number or doc.document_number}.pdf"

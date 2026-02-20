@@ -256,17 +256,31 @@ export default function TemplateSelector({ token }: { token: string }) {
           {banners.length > 0 ? (
             <div className="space-y-2">
               {banners.map((b) => (
-                <div key={b.id} className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-2">
-                  <span className="text-xs text-gray-400 truncate">
-                    {b.document_type === "todos" ? "Todos los documentos" : b.document_type} — {b.position}
-                  </span>
-                  <button onClick={() => deleteBanner(b.id)} className="text-xs text-red-400 hover:text-red-300 ml-2">Eliminar</button>
+                <div key={b.id} className="rounded-lg border border-white/10 bg-white/5 overflow-hidden">
+                  <div className="w-full h-20 bg-white/5 overflow-hidden">
+                    <img
+                      src={`${apiUrl.replace("/api/v1", "")}${b.url}`}
+                      alt="Banner"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between px-3 py-2">
+                    <span className="text-xs text-gray-400 truncate">
+                      {b.document_type === "todos" ? "Todos los documentos" : b.document_type} — {b.position}
+                    </span>
+                    <button onClick={() => deleteBanner(b.id)} className="text-xs text-red-400 hover:text-red-300 ml-2">Eliminar</button>
+                  </div>
                 </div>
               ))}
             </div>
           ) : (
             <p className="text-xs text-gray-500 mb-2">Aparece al pie de tus documentos. Ideal para publicidad o promociones.</p>
           )}
+          <div className="mt-2 rounded-lg bg-amber-500/5 border border-amber-500/10 px-3 py-2">
+            <p className="text-[11px] text-amber-400/80">
+              <strong>Medidas recomendadas:</strong> 700px de ancho x maximo 300px de alto. PNG, JPG o WebP. Max 2 MB.
+            </p>
+          </div>
           <input ref={bannerInputRef} type="file" accept="image/*" onChange={handleBannerUpload} className="hidden" />
           <button
             onClick={() => bannerInputRef.current?.click()}

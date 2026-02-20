@@ -345,6 +345,7 @@ async def get_my_preferences(
 async def preview_template_pdf(
     template_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
 ):
     """Genera un PDF de ejemplo usando esta plantilla para previsualización."""
     result = await db.execute(select(DocumentTemplate).where(DocumentTemplate.id == template_id))
@@ -353,6 +354,38 @@ async def preview_template_pdf(
         raise HTTPException(404, "Plantilla no encontrada.")
 
     from app.services.fiscal.pdf_generator import generate_invoice_pdf
+
+    # Resolve user's logo and banner for preview
+    import os
+    from app.config import get_settings
+    from app.models.clients import Client
+    from app.models.templates import ClientBanner
+
+    _settings = get_settings()
+    logo_fs = None
+    banner_fs = None
+    banner_position = "footer"
+
+    client_id = getattr(current_user, "client_id", None)
+    if client_id:
+        client_result = await db.execute(select(Client).where(Client.id == client_id))
+        client_obj = client_result.scalar_one_or_none()
+        if client_obj and client_obj.logo_url:
+            logo_fs = os.path.join(_settings.STORAGE_PATH, client_obj.logo_url.lstrip("/"))
+
+        banner_result = await db.execute(
+            select(ClientBanner).where(
+                and_(
+                    ClientBanner.client_id == client_id,
+                    ClientBanner.is_active == True,
+                    ClientBanner.document_type.in_(["factura", "todos"]),
+                )
+            )
+        )
+        banner_obj = banner_result.scalars().first()
+        if banner_obj and banner_obj.banner_image_url:
+            banner_fs = os.path.join(_settings.STORAGE_PATH, banner_obj.banner_image_url.lstrip("/"))
+            banner_position = banner_obj.position
 
     # Crear un documento de ejemplo
     class _SampleDoc:
@@ -438,7 +471,13 @@ async def preview_template_pdf(
         items.append(item)
 
     layout_config = t.layout_config
-    pdf_bytes = generate_invoice_pdf(doc, items, doc_type="factura", layout_config=layout_config)
+    pdf_bytes = generate_invoice_pdf(
+        doc, items, doc_type="factura",
+        layout_config=layout_config,
+        logo_path=logo_fs,
+        banner_path=banner_fs,
+        banner_position=banner_position,
+    )
 
     return Response(
         content=pdf_bytes,
