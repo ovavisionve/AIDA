@@ -19,7 +19,7 @@ import base64
 from datetime import datetime
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
-from reportlab.lib.units import mm, pt
+from reportlab.lib.units import mm
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Table, TableStyle, Spacer, HRFlowable, Image,
