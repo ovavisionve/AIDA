@@ -89,6 +89,8 @@ export default function ErrorManager({ token }: { token: string }) {
     low: "bg-blue-500/20 text-blue-400",
   };
 
+  const [showSeniatCodes, setShowSeniatCodes] = useState(false);
+
   const catColors: Record<string, string> = {
     connection: "bg-blue-500/10 text-blue-400",
     authentication: "bg-purple-500/10 text-purple-400",
@@ -98,7 +100,20 @@ export default function ErrorManager({ token }: { token: string }) {
     sync: "bg-orange-500/10 text-orange-400",
     webhook: "bg-pink-500/10 text-pink-400",
     system: "bg-gray-500/10 text-gray-400",
+    seniat_validation: "bg-emerald-500/10 text-emerald-400",
+    seniat_rejected: "bg-red-500/10 text-red-300",
+    seniat_auth: "bg-amber-500/10 text-amber-400",
+    seniat_duplicate: "bg-cyan-500/10 text-cyan-400",
   };
+
+  const SENIAT_ERROR_CODES = [
+    { code: "200", label: "Aceptado", color: "text-green-400", bg: "bg-green-500/10", desc: "Documento procesado exitosamente por SENIAT" },
+    { code: "201", label: "Duplicado", color: "text-yellow-400", bg: "bg-yellow-500/10", desc: "Documento ya fue enviado previamente, no se reprocesa" },
+    { code: "203", label: "Rechazado", color: "text-red-400", bg: "bg-red-500/10", desc: "Rechazado por errores de validación (ver detalle)" },
+    { code: "400", label: "JSON Inválido", color: "text-red-400", bg: "bg-red-500/10", desc: "JSON mal formado o estructura inválida" },
+    { code: "401", label: "No Autorizado", color: "text-orange-400", bg: "bg-orange-500/10", desc: "Token inválido, expirado o no proporcionado" },
+    { code: "500", label: "Error Interno", color: "text-red-400", bg: "bg-red-500/10", desc: "Error del servidor SENIAT, reintentar con backoff" },
+  ];
 
   return (
     <div className="space-y-6">
@@ -138,21 +153,65 @@ export default function ErrorManager({ token }: { token: string }) {
       )}
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-2 items-center">
-        <span className="text-sm text-gray-500">Estado:</span>
-        {["", "open", "investigating", "resolved", "ignored"].map(s => (
-          <button key={s} onClick={() => setStatusFilter(s)}
-            className={`px-3 py-1 rounded-lg text-xs transition ${statusFilter === s ? "bg-aida-accent text-white" : "border border-white/10 bg-white/5 text-gray-300"}`}>
-            {s || "Todos"}
-          </button>
-        ))}
-        <span className="text-sm text-gray-500 ml-2">Severidad:</span>
-        {["", "critical", "high", "medium", "low"].map(s => (
-          <button key={s} onClick={() => setSeverityFilter(s)}
-            className={`px-3 py-1 rounded-lg text-xs transition ${severityFilter === s ? "bg-aida-accent text-white" : "border border-white/10 bg-white/5 text-gray-300"}`}>
-            {s || "Todas"}
-          </button>
-        ))}
+      <div className="space-y-2">
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-sm text-gray-500">Estado:</span>
+          {["", "open", "investigating", "resolved", "ignored"].map(s => (
+            <button key={s} onClick={() => setStatusFilter(s)}
+              className={`px-3 py-1 rounded-lg text-xs transition ${statusFilter === s ? "bg-aida-accent text-white" : "border border-white/10 bg-white/5 text-gray-300"}`}>
+              {s || "Todos"}
+            </button>
+          ))}
+          <span className="text-sm text-gray-500 ml-2">Severidad:</span>
+          {["", "critical", "high", "medium", "low"].map(s => (
+            <button key={s} onClick={() => setSeverityFilter(s)}
+              className={`px-3 py-1 rounded-lg text-xs transition ${severityFilter === s ? "bg-aida-accent text-white" : "border border-white/10 bg-white/5 text-gray-300"}`}>
+              {s || "Todas"}
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-sm text-gray-500">Categoría:</span>
+          {["", "connection", "authentication", "mapping", "validation", "fiscal", "sync", "webhook", "seniat_validation", "seniat_rejected", "system"].map(c => (
+            <button key={c} onClick={() => setCategoryFilter(c)}
+              className={`px-3 py-1 rounded-lg text-xs transition ${categoryFilter === c ? "bg-aida-accent text-white" : "border border-white/10 bg-white/5 text-gray-300"}`}>
+              {c || "Todas"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* SENIAT V1.4 Error Codes Reference */}
+      <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 overflow-hidden">
+        <button onClick={() => setShowSeniatCodes(!showSeniatCodes)}
+          className="w-full flex items-center justify-between p-4 hover:bg-emerald-500/5 transition">
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded text-xs font-semibold">SENIAT V1.4</span>
+            <span className="text-sm text-gray-300">Códigos de respuesta SENIAT</span>
+          </div>
+          <svg className={`w-4 h-4 text-gray-500 transition-transform ${showSeniatCodes ? "rotate-180" : ""}`}
+            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        {showSeniatCodes && (
+          <div className="border-t border-emerald-500/10 p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {SENIAT_ERROR_CODES.map(ec => (
+                <div key={ec.code} className={`rounded-lg ${ec.bg} p-3`}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`font-mono font-bold text-lg ${ec.color}`}>{ec.code}</span>
+                    <span className={`text-xs font-semibold ${ec.color}`}>{ec.label}</span>
+                  </div>
+                  <p className="text-xs text-gray-400">{ec.desc}</p>
+                </div>
+              ))}
+            </div>
+            <p className="text-[11px] text-gray-500 mt-3">
+              Los errores con código 203 (Rechazado) incluyen detalle campo por campo. Los 500 deben reintentarse con backoff exponencial.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Bulk actions */}
@@ -189,6 +248,9 @@ export default function ErrorManager({ token }: { token: string }) {
                       {err.category}
                     </span>
                     <span className="font-mono text-xs text-gray-500">{err.error_code}</span>
+                    {err.category?.startsWith("seniat") && (
+                      <span className="px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 rounded text-[10px] font-semibold">SENIAT</span>
+                    )}
                     {err.occurrence_count > 1 && (
                       <span className="text-xs text-gray-500">x{err.occurrence_count}</span>
                     )}
