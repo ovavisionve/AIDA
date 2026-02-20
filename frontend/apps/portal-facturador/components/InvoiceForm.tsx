@@ -7,7 +7,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 // ═══════════════════════════════════════════════════════════════
 interface Props { token: string }
 
-type DocumentType = "factura" | "nota_credito" | "nota_debito";
+type DocumentType = "factura" | "nota_credito" | "nota_debito" | "guia_despacho" | "retencion_iva" | "retencion_islr";
 
 interface LineItem {
   product_id: string | null;
@@ -109,6 +109,21 @@ export default function InvoiceForm({ token }: Props) {
   const [motivo, setMotivo] = useState("");
   const [concepto, setConcepto] = useState("");
 
+  // ── Guia de Despacho ──
+  const [gdDestinatario, setGdDestinatario] = useState({ rif: "", razon_social: "", direccion: "" });
+  const [gdTransporte, setGdTransporte] = useState({ placa: "", chofer: "", ci_chofer: "" });
+  const [gdDirDestino, setGdDirDestino] = useState("");
+  const [gdMotivoTraslado, setGdMotivoTraslado] = useState("venta");
+
+  // ── Retencion IVA ──
+  const [retIvaPeriodo, setRetIvaPeriodo] = useState(""); // YYYYMM
+  const [retIvaPorcentaje, setRetIvaPorcentaje] = useState(75);
+
+  // ── Retencion ISLR ──
+  const [retIslrConcepto, setRetIslrConcepto] = useState("");
+  const [retIslrPorcentaje, setRetIslrPorcentaje] = useState(0);
+  const [retIslrSustraendo, setRetIslrSustraendo] = useState(0);
+
   // ── Receptor / Customer ──
   const [receptor, setReceptor] = useState({ rif: "", razon_social: "", direccion: "", email: "" });
   const [customerId, setCustomerId] = useState<string | null>(null);
@@ -151,14 +166,21 @@ export default function InvoiceForm({ token }: Props) {
   const [showPreview, setShowPreview] = useState(false);
 
   // ── Derived ──
-  const needsRef = docType !== "factura";
   const isNC = docType === "nota_credito";
   const isND = docType === "nota_debito";
-  const showItems = docType === "factura" || isND || (isNC && ncTipo === "parcial");
+  const isGD = docType === "guia_despacho";
+  const isRetIva = docType === "retencion_iva";
+  const isRetIslr = docType === "retencion_islr";
+  const needsRef = isNC || isND || isRetIva || isRetIslr;
+  const showItems = docType === "factura" || isND || isGD || (isNC && ncTipo === "parcial");
   const isForeignCurrency = moneda === "USD" || moneda === "EUR";
   const bcvRate = exchangeRates?.rates?.USD || null;
   const bcvDate = exchangeRates?.date || "";
-  const docLabel = docType === "factura" ? "Factura" : isNC ? "Nota de Credito" : "Nota de Debito";
+  const docLabels: Record<DocumentType, string> = {
+    factura: "Factura", nota_credito: "Nota de Credito", nota_debito: "Nota de Debito",
+    guia_despacho: "Guia de Despacho", retencion_iva: "Retencion IVA", retencion_islr: "Retencion ISLR",
+  };
+  const docLabel = docLabels[docType];
 
   // ═══════════════════════════════════════════════════════════════
   // FETCH: Exchange rates with retry
@@ -431,6 +453,11 @@ export default function InvoiceForm({ token }: Props) {
       setDocType(dt);
       clearInvoiceRef();
       setMotivo(""); setConcepto(""); setNcTipo("total");
+      setGdDestinatario({ rif: "", razon_social: "", direccion: "" });
+      setGdTransporte({ placa: "", chofer: "", ci_chofer: "" });
+      setGdDirDestino(""); setGdMotivoTraslado("venta");
+      setRetIvaPeriodo(""); setRetIvaPorcentaje(75);
+      setRetIslrConcepto(""); setRetIslrPorcentaje(0); setRetIslrSustraendo(0);
       setError("");
     }
   };
@@ -442,6 +469,11 @@ export default function InvoiceForm({ token }: Props) {
     clearInvoiceRef();
     setObservaciones(""); setMotivo(""); setConcepto("");
     setNcTipo("total"); setProductSearch({}); setFechaVencimiento("");
+    setGdDestinatario({ rif: "", razon_social: "", direccion: "" });
+    setGdTransporte({ placa: "", chofer: "", ci_chofer: "" });
+    setGdDirDestino(""); setGdMotivoTraslado("venta");
+    setRetIvaPeriodo(""); setRetIvaPorcentaje(75);
+    setRetIslrConcepto(""); setRetIslrPorcentaje(0); setRetIslrSustraendo(0);
     setError("");
   };
 
@@ -563,6 +595,44 @@ export default function InvoiceForm({ token }: Props) {
           concepto,
           items: buildItemsPayload(),
         };
+      } else if (docType === "guia_despacho") {
+        endpoint = `${apiUrl}/invoicing/dispatch-guides`;
+        payload = {
+          customer_id: customerId || undefined,
+          receptor_rif: receptor.rif,
+          receptor_razon_social: receptor.razon_social,
+          receptor_direccion: receptor.direccion || "N/A",
+          receptor_email: receptor.email || undefined,
+          destinatario_rif: gdDestinatario.rif,
+          destinatario_razon_social: gdDestinatario.razon_social,
+          destinatario_direccion: gdDestinatario.direccion,
+          direccion_destino: gdDirDestino,
+          motivo_traslado: gdMotivoTraslado,
+          transporte_placa: gdTransporte.placa,
+          transporte_chofer: gdTransporte.chofer,
+          transporte_ci_chofer: gdTransporte.ci_chofer,
+          items: buildItemsPayload(),
+          moneda,
+          tasa_cambio: isForeignCurrency ? getRate(moneda) : undefined,
+          observaciones: observaciones || undefined,
+        };
+      } else if (docType === "retencion_iva") {
+        endpoint = `${apiUrl}/invoicing/iva-withholdings`;
+        payload = {
+          invoice_id: refId,
+          periodo_fiscal: retIvaPeriodo,
+          porcentaje_retencion: retIvaPorcentaje,
+          observaciones: observaciones || undefined,
+        };
+      } else if (docType === "retencion_islr") {
+        endpoint = `${apiUrl}/invoicing/islr-withholdings`;
+        payload = {
+          invoice_id: refId,
+          concepto: retIslrConcepto,
+          porcentaje_retencion: retIslrPorcentaje,
+          sustraendo: retIslrSustraendo,
+          observaciones: observaciones || undefined,
+        };
       }
 
       const res = await fetch(endpoint, {
@@ -629,6 +699,46 @@ export default function InvoiceForm({ token }: Props) {
       return;
     }
 
+    // GD validations
+    if (isGD) {
+      if (!gdDestinatario.rif || !gdDestinatario.razon_social) {
+        setError("Datos del destinatario incompletos: RIF y razon social son requeridos.");
+        return;
+      }
+      if (!gdDirDestino.trim()) {
+        setError("Debe ingresar la direccion de destino de la Guia de Despacho.");
+        return;
+      }
+      if (!receptor.rif || !receptor.razon_social) {
+        setError("Datos del remitente incompletos: RIF y razon social son requeridos.");
+        return;
+      }
+    }
+
+    // Retencion IVA validations
+    if (isRetIva) {
+      if (!retIvaPeriodo.trim()) {
+        setError("Debe ingresar el periodo fiscal (AAAAMM) de la retencion de IVA.");
+        return;
+      }
+      if (retIvaPorcentaje <= 0 || retIvaPorcentaje > 100) {
+        setError("El porcentaje de retencion de IVA debe estar entre 1 y 100.");
+        return;
+      }
+    }
+
+    // Retencion ISLR validations
+    if (isRetIslr) {
+      if (!retIslrConcepto.trim()) {
+        setError("Debe ingresar el concepto de la retencion de ISLR.");
+        return;
+      }
+      if (retIslrPorcentaje <= 0) {
+        setError("El porcentaje de retencion de ISLR debe ser mayor a 0.");
+        return;
+      }
+    }
+
     // Factura needs receptor
     if (docType === "factura") {
       if (!receptor.rif || !receptor.razon_social) {
@@ -663,8 +773,16 @@ export default function InvoiceForm({ token }: Props) {
   // ═══════════════════════════════════════════════════════════════
   if (result) {
     const rDocType = result._docType || "factura";
-    const successLabel = rDocType === "factura" ? "Factura Emitida" : rDocType === "nota_credito" ? "Nota de Credito Emitida" : "Nota de Debito Emitida";
-    const successColor = rDocType === "factura" ? "emerald" : rDocType === "nota_credito" ? "blue" : "amber";
+    const successLabelMap: Record<string, string> = {
+      factura: "Factura Emitida", nota_credito: "Nota de Credito Emitida", nota_debito: "Nota de Debito Emitida",
+      guia_despacho: "Guia de Despacho Emitida", retencion_iva: "Comprobante de Retencion IVA Emitido", retencion_islr: "Comprobante de Retencion ISLR Emitido",
+    };
+    const successColorMap: Record<string, string> = {
+      factura: "emerald", nota_credito: "blue", nota_debito: "amber",
+      guia_despacho: "violet", retencion_iva: "cyan", retencion_islr: "orange",
+    };
+    const successLabel = successLabelMap[rDocType] || "Documento Emitido";
+    const successColor = successColorMap[rDocType] || "emerald";
 
     return (
       <div className="mx-auto max-w-2xl rounded-xl border border-white/10 bg-[#111827] p-6">
@@ -787,6 +905,37 @@ export default function InvoiceForm({ token }: Props) {
               <p className="text-amber-300"><span className="font-medium">Concepto:</span> {concepto}</p>
             </div>
           )}
+          {isGD && (
+            <div className="mb-3 rounded-lg bg-violet-500/10 border border-violet-500/20 px-3 py-2 text-sm space-y-1">
+              <p className="text-violet-300 font-medium">Datos del Despacho</p>
+              <p className="text-violet-300"><span className="font-medium">Destinatario:</span> {gdDestinatario.rif} — {gdDestinatario.razon_social}</p>
+              <p className="text-violet-300"><span className="font-medium">Direccion destino:</span> {gdDirDestino}</p>
+              <p className="text-violet-300"><span className="font-medium">Motivo:</span> {gdMotivoTraslado}</p>
+              {gdTransporte.placa && <p className="text-violet-300"><span className="font-medium">Transporte:</span> Placa {gdTransporte.placa} — {gdTransporte.chofer}</p>}
+            </div>
+          )}
+          {isRetIva && (
+            <div className="mb-3 rounded-lg bg-cyan-500/10 border border-cyan-500/20 px-3 py-2 text-sm space-y-1">
+              <p className="text-cyan-300 font-medium">Retencion de IVA</p>
+              <p className="text-cyan-300"><span className="font-medium">Periodo fiscal:</span> {retIvaPeriodo}</p>
+              <p className="text-cyan-300"><span className="font-medium">Porcentaje retencion:</span> {retIvaPorcentaje}%</p>
+              {refDoc && <p className="text-cyan-300"><span className="font-medium">Base imponible:</span> {refDoc.moneda} {fmtMoney(refDoc.total)}</p>}
+              {refDoc && <p className="text-cyan-400 text-xs mt-1">Monto retenido: {refDoc.moneda} {fmtMoney(refDoc.total * retIvaPorcentaje / 100)}</p>}
+            </div>
+          )}
+          {isRetIslr && (
+            <div className="mb-3 rounded-lg bg-orange-500/10 border border-orange-500/20 px-3 py-2 text-sm space-y-1">
+              <p className="text-orange-300 font-medium">Retencion de ISLR</p>
+              <p className="text-orange-300"><span className="font-medium">Concepto:</span> {retIslrConcepto}</p>
+              <p className="text-orange-300"><span className="font-medium">Porcentaje:</span> {retIslrPorcentaje}%</p>
+              {retIslrSustraendo > 0 && <p className="text-orange-300"><span className="font-medium">Sustraendo:</span> {fmtMoney(retIslrSustraendo)}</p>}
+              {refDoc && (
+                <p className="text-orange-400 text-xs mt-1">
+                  Monto retenido: {refDoc.moneda} {fmtMoney(Math.max(0, refDoc.total * retIslrPorcentaje / 100 - retIslrSustraendo))}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Receptor */}
           <div className="mb-4 rounded-lg bg-[#111827] border border-white/5 p-3 text-sm">
@@ -875,6 +1024,50 @@ export default function InvoiceForm({ token }: Props) {
             </div>
           )}
 
+          {/* Retention totals (when no items) */}
+          {(isRetIva || isRetIslr) && refDoc && (
+            <div className="space-y-1.5 text-sm mb-4">
+              <div className="flex justify-between text-gray-400">
+                <span>Base (factura ref.):</span>
+                <span>{refDoc.moneda} {fmtMoney(refDoc.total)}</span>
+              </div>
+              {isRetIva && (
+                <>
+                  <div className="flex justify-between text-gray-400">
+                    <span>Porcentaje retencion:</span>
+                    <span>{retIvaPorcentaje}%</span>
+                  </div>
+                  <div className="border-t border-white/10 pt-1.5">
+                    <div className="flex justify-between text-lg font-bold text-white">
+                      <span>Monto retenido:</span>
+                      <span>{refDoc.moneda} {fmtMoney(refDoc.total * retIvaPorcentaje / 100)}</span>
+                    </div>
+                  </div>
+                </>
+              )}
+              {isRetIslr && (
+                <>
+                  <div className="flex justify-between text-gray-400">
+                    <span>Porcentaje retencion:</span>
+                    <span>{retIslrPorcentaje}%</span>
+                  </div>
+                  {retIslrSustraendo > 0 && (
+                    <div className="flex justify-between text-gray-400">
+                      <span>Sustraendo:</span>
+                      <span>- {fmtMoney(retIslrSustraendo)}</span>
+                    </div>
+                  )}
+                  <div className="border-t border-white/10 pt-1.5">
+                    <div className="flex justify-between text-lg font-bold text-white">
+                      <span>Monto retenido:</span>
+                      <span>{refDoc.moneda} {fmtMoney(Math.max(0, refDoc.total * retIslrPorcentaje / 100 - retIslrSustraendo))}</span>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
           {/* BCV Rate */}
           {bcvRate && (
             <div className="mb-3 rounded-lg bg-blue-500/10 border border-blue-500/20 px-3 py-2 text-xs text-blue-300">
@@ -948,24 +1141,47 @@ export default function InvoiceForm({ token }: Props) {
         )}
 
         {/* ── Document Type Tabs ── */}
-        <div className="flex gap-2 rounded-xl border border-white/10 bg-[#111827] p-2">
-          {([
-            { id: "factura" as DocumentType, label: "Factura", color: "emerald", icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" },
-            { id: "nota_credito" as DocumentType, label: "Nota de Credito", color: "blue", icon: "M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" },
-            { id: "nota_debito" as DocumentType, label: "Nota de Debito", color: "amber", icon: "M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" },
-          ]).map((dt) => (
-            <button key={dt.id} type="button" onClick={() => handleDocTypeChange(dt.id)}
-              className={`flex-1 flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition ${
-                docType === dt.id
-                  ? `bg-${dt.color}-500/10 text-${dt.color}-400 border border-${dt.color}-500/20`
-                  : "text-gray-500 hover:bg-white/5 hover:text-gray-300 border border-transparent"
-              }`}>
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={dt.icon} />
-              </svg>
-              {dt.label}
-            </button>
-          ))}
+        <div className="rounded-xl border border-white/10 bg-[#111827] p-2 space-y-2">
+          {/* Primary documents */}
+          <div className="flex gap-2">
+            {([
+              { id: "factura" as DocumentType, label: "Factura", color: "emerald", icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" },
+              { id: "nota_credito" as DocumentType, label: "Nota de Credito", color: "blue", icon: "M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" },
+              { id: "nota_debito" as DocumentType, label: "Nota de Debito", color: "amber", icon: "M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" },
+            ]).map((dt) => (
+              <button key={dt.id} type="button" onClick={() => handleDocTypeChange(dt.id)}
+                className={`flex-1 flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition ${
+                  docType === dt.id
+                    ? `bg-${dt.color}-500/10 text-${dt.color}-400 border border-${dt.color}-500/20`
+                    : "text-gray-500 hover:bg-white/5 hover:text-gray-300 border border-transparent"
+                }`}>
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={dt.icon} />
+                </svg>
+                {dt.label}
+              </button>
+            ))}
+          </div>
+          {/* Secondary documents */}
+          <div className="flex gap-2">
+            {([
+              { id: "guia_despacho" as DocumentType, label: "Guia de Despacho", color: "violet", icon: "M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" },
+              { id: "retencion_iva" as DocumentType, label: "Ret. IVA", color: "cyan", icon: "M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" },
+              { id: "retencion_islr" as DocumentType, label: "Ret. ISLR", color: "orange", icon: "M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" },
+            ]).map((dt) => (
+              <button key={dt.id} type="button" onClick={() => handleDocTypeChange(dt.id)}
+                className={`flex-1 flex items-center justify-center gap-2 rounded-lg py-2 text-xs font-medium transition ${
+                  docType === dt.id
+                    ? `bg-${dt.color}-500/10 text-${dt.color}-400 border border-${dt.color}-500/20`
+                    : "text-gray-500 hover:bg-white/5 hover:text-gray-300 border border-transparent"
+                }`}>
+                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={dt.icon} />
+                </svg>
+                {dt.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* ── BCV Exchange Rate Banner ── */}
@@ -1130,10 +1346,180 @@ export default function InvoiceForm({ token }: Props) {
           </div>
         )}
 
-        {/* ── Receptor / Customer (factura only, NC/ND auto-fills from ref) ── */}
-        {docType === "factura" && (
+        {/* ── Retencion IVA specific fields ── */}
+        {isRetIva && (
+          <div className="rounded-xl border border-cyan-500/20 bg-[#111827] p-5">
+            <h3 className="mb-3 text-sm font-semibold text-cyan-300">Datos de la Retencion de IVA</h3>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-gray-500">Periodo Fiscal (AAAAMM) *</label>
+                <input placeholder="202602" value={retIvaPeriodo}
+                  onChange={(e) => setRetIvaPeriodo(e.target.value.replace(/[^0-9]/g, "").slice(0, 6))} required
+                  maxLength={6}
+                  className="w-full rounded-lg bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-cyan-500 focus:outline-none" />
+                <p className="mt-1 text-[10px] text-gray-600">Formato: AAAAMM (ej: 202602 para febrero 2026)</p>
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-gray-500">Porcentaje de Retencion *</label>
+                <select value={retIvaPorcentaje} onChange={(e) => setRetIvaPorcentaje(Number(e.target.value))}
+                  className="w-full rounded-lg bg-[#0a0f1a] border border-white/10 px-3 py-2 text-sm text-white focus:border-cyan-500 focus:outline-none">
+                  <option value={75}>75% (Contribuyente ordinario)</option>
+                  <option value={100}>100% (Contribuyente especial)</option>
+                </select>
+              </div>
+            </div>
+            {refDoc && (
+              <div className="mt-3 rounded-lg bg-cyan-500/5 border border-cyan-500/10 px-3 py-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">IVA de la factura:</span>
+                  <span className="text-white font-medium">{refDoc.moneda} {fmtMoney(refDoc.total)}</span>
+                </div>
+                <div className="flex justify-between text-sm mt-1">
+                  <span className="text-cyan-400 font-medium">Monto a retener ({retIvaPorcentaje}%):</span>
+                  <span className="text-cyan-300 font-bold">{refDoc.moneda} {fmtMoney(refDoc.total * retIvaPorcentaje / 100)}</span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Retencion ISLR specific fields ── */}
+        {isRetIslr && (
+          <div className="rounded-xl border border-orange-500/20 bg-[#111827] p-5">
+            <h3 className="mb-3 text-sm font-semibold text-orange-300">Datos de la Retencion de ISLR</h3>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-gray-500">Concepto *</label>
+                <select value={retIslrConcepto} onChange={(e) => setRetIslrConcepto(e.target.value)} required
+                  className="w-full rounded-lg bg-[#0a0f1a] border border-white/10 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none">
+                  <option value="">Seleccionar concepto...</option>
+                  <option value="honorarios_profesionales">Honorarios profesionales</option>
+                  <option value="servicios">Servicios</option>
+                  <option value="comisiones">Comisiones</option>
+                  <option value="intereses">Intereses</option>
+                  <option value="alquileres">Alquileres</option>
+                  <option value="fletes">Fletes</option>
+                  <option value="publicidad">Publicidad y propaganda</option>
+                  <option value="otros">Otros</option>
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-gray-500">Porcentaje Retencion (%) *</label>
+                <input type="text" inputMode="decimal" placeholder="0.00" value={retIslrPorcentaje || ""}
+                  onChange={(e) => {
+                    const v = parseFloat(e.target.value.replace(",", "."));
+                    setRetIslrPorcentaje(isNaN(v) ? 0 : Math.min(100, Math.max(0, v)));
+                  }}
+                  className="w-full rounded-lg bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-orange-500 focus:outline-none" />
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-gray-500">Sustraendo</label>
+                <input type="text" inputMode="decimal" placeholder="0.00" value={retIslrSustraendo || ""}
+                  onChange={(e) => {
+                    const v = parseFloat(e.target.value.replace(",", "."));
+                    setRetIslrSustraendo(isNaN(v) ? 0 : Math.max(0, v));
+                  }}
+                  className="w-full rounded-lg bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-orange-500 focus:outline-none" />
+              </div>
+            </div>
+            {refDoc && (
+              <div className="mt-3 rounded-lg bg-orange-500/5 border border-orange-500/10 px-3 py-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Base imponible:</span>
+                  <span className="text-white font-medium">{refDoc.moneda} {fmtMoney(refDoc.total)}</span>
+                </div>
+                <div className="flex justify-between text-sm mt-1">
+                  <span className="text-gray-400">Calculo: {fmtMoney(refDoc.total)} x {retIslrPorcentaje}% - {fmtMoney(retIslrSustraendo)}</span>
+                  <span className="text-orange-300 font-bold">{refDoc.moneda} {fmtMoney(Math.max(0, refDoc.total * retIslrPorcentaje / 100 - retIslrSustraendo))}</span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Guia de Despacho: Destinatario ── */}
+        {isGD && (
+          <div className="rounded-xl border border-violet-500/20 bg-[#111827] p-5">
+            <h3 className="mb-3 text-sm font-semibold text-violet-300">Datos del Destinatario</h3>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-gray-500">RIF Destinatario *</label>
+                <input placeholder="J-12345678-9" value={gdDestinatario.rif}
+                  onChange={(e) => setGdDestinatario({ ...gdDestinatario, rif: e.target.value })} required
+                  className="w-full rounded-lg bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-violet-500 focus:outline-none" />
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-gray-500">Razon Social *</label>
+                <input placeholder="Nombre del destinatario" value={gdDestinatario.razon_social}
+                  onChange={(e) => setGdDestinatario({ ...gdDestinatario, razon_social: e.target.value })} required
+                  className="w-full rounded-lg bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-violet-500 focus:outline-none" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="mb-1 block text-[11px] font-medium text-gray-500">Direccion del Destinatario</label>
+                <input placeholder="Direccion fiscal del destinatario" value={gdDestinatario.direccion}
+                  onChange={(e) => setGdDestinatario({ ...gdDestinatario, direccion: e.target.value })}
+                  className="w-full rounded-lg bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-violet-500 focus:outline-none" />
+              </div>
+            </div>
+
+            <h4 className="mt-4 mb-2 text-xs font-semibold text-violet-400">Datos del Traslado</h4>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <label className="mb-1 block text-[11px] font-medium text-gray-500">Direccion de Destino *</label>
+                <input placeholder="Direccion donde se entrega la mercancia" value={gdDirDestino}
+                  onChange={(e) => setGdDirDestino(e.target.value)} required
+                  className="w-full rounded-lg bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-violet-500 focus:outline-none" />
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-gray-500">Motivo del Traslado</label>
+                <select value={gdMotivoTraslado} onChange={(e) => setGdMotivoTraslado(e.target.value)}
+                  className="w-full rounded-lg bg-[#0a0f1a] border border-white/10 px-3 py-2 text-sm text-white focus:border-violet-500 focus:outline-none">
+                  <option value="venta">Venta</option>
+                  <option value="consignacion">Consignacion</option>
+                  <option value="traslado_almacen">Traslado entre almacenes</option>
+                  <option value="devolucion">Devolucion</option>
+                  <option value="garantia">Garantia</option>
+                  <option value="reparacion">Reparacion</option>
+                  <option value="otros">Otros</option>
+                </select>
+              </div>
+            </div>
+
+            <h4 className="mt-4 mb-2 text-xs font-semibold text-violet-400">Datos del Transporte</h4>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-gray-500">Placa del Vehiculo</label>
+                <input placeholder="ABC123" value={gdTransporte.placa}
+                  onChange={(e) => setGdTransporte({ ...gdTransporte, placa: e.target.value.toUpperCase() })}
+                  className="w-full rounded-lg bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-violet-500 focus:outline-none" />
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-gray-500">Nombre del Chofer</label>
+                <input placeholder="Nombre completo" value={gdTransporte.chofer}
+                  onChange={(e) => setGdTransporte({ ...gdTransporte, chofer: e.target.value })}
+                  className="w-full rounded-lg bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-violet-500 focus:outline-none" />
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-gray-500">C.I. del Chofer</label>
+                <input placeholder="V-12345678" value={gdTransporte.ci_chofer}
+                  onChange={(e) => setGdTransporte({ ...gdTransporte, ci_chofer: e.target.value })}
+                  className="w-full rounded-lg bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-violet-500 focus:outline-none" />
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <label className="mb-1 block text-[11px] font-medium text-gray-500">Observaciones</label>
+              <textarea placeholder="Observaciones adicionales (opcional)" value={observaciones}
+                onChange={(e) => setObservaciones(e.target.value)}
+                className="w-full rounded-lg bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-violet-500 focus:outline-none" rows={2} />
+            </div>
+          </div>
+        )}
+
+        {/* ── Receptor / Customer (factura and GD) ── */}
+        {(docType === "factura" || isGD) && (
           <div className="rounded-xl border border-white/10 bg-[#111827] p-5">
-            <h3 className="mb-3 text-sm font-semibold text-gray-300">Datos del Cliente</h3>
+            <h3 className="mb-3 text-sm font-semibold text-gray-300">{isGD ? "Datos del Remitente" : "Datos del Cliente"}</h3>
 
             {/* Search bar */}
             <div className="relative mb-3" ref={custDropRef}>
@@ -1246,7 +1632,7 @@ export default function InvoiceForm({ token }: Props) {
           <div className="rounded-xl border border-white/10 bg-[#111827] p-5">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-gray-300">
-                {isND ? "Cargos Adicionales" : isNC ? "Items a Acreditar" : "Productos / Servicios"}
+                {isND ? "Cargos Adicionales" : isNC ? "Items a Acreditar" : isGD ? "Mercancia a Despachar" : "Productos / Servicios"}
               </h3>
               <button type="button" onClick={addItem}
                 className="rounded bg-aida-accent/10 px-3 py-1 text-xs font-medium text-aida-accent hover:bg-aida-accent/20 transition">
@@ -1457,7 +1843,7 @@ export default function InvoiceForm({ token }: Props) {
               </div>
             </div>
           ) : (
-            /* NC/ND - simplified payment panel */
+            /* Document info panel for non-factura types */
             <div className="rounded-xl border border-white/10 bg-[#111827] p-5">
               <h3 className="mb-3 text-sm font-semibold text-gray-300">Informacion del Documento</h3>
               <div className="space-y-2 text-sm text-gray-400">
@@ -1473,6 +1859,33 @@ export default function InvoiceForm({ token }: Props) {
                 )}
                 {isNC && <p><span className="text-gray-500">Motivo:</span> <span className="text-white">{motivo || "—"}</span></p>}
                 {isND && <p><span className="text-gray-500">Concepto:</span> <span className="text-white">{concepto || "—"}</span></p>}
+                {isGD && (
+                  <>
+                    <p><span className="text-gray-500">Destinatario:</span> <span className="text-white">{gdDestinatario.rif} — {gdDestinatario.razon_social}</span></p>
+                    <p><span className="text-gray-500">Destino:</span> <span className="text-white">{gdDirDestino || "—"}</span></p>
+                    <p><span className="text-gray-500">Motivo traslado:</span> <span className="text-white">{gdMotivoTraslado}</span></p>
+                    {gdTransporte.placa && <p><span className="text-gray-500">Transporte:</span> <span className="text-white">{gdTransporte.placa} — {gdTransporte.chofer}</span></p>}
+                  </>
+                )}
+                {isRetIva && (
+                  <>
+                    <p><span className="text-gray-500">Periodo fiscal:</span> <span className="text-white">{retIvaPeriodo || "—"}</span></p>
+                    <p><span className="text-gray-500">% Retencion:</span> <span className="text-white">{retIvaPorcentaje}%</span></p>
+                    {refDoc && (
+                      <p><span className="text-gray-500">Monto retenido:</span> <span className="text-cyan-400 font-medium">{refDoc.moneda} {fmtMoney(refDoc.total * retIvaPorcentaje / 100)}</span></p>
+                    )}
+                  </>
+                )}
+                {isRetIslr && (
+                  <>
+                    <p><span className="text-gray-500">Concepto:</span> <span className="text-white">{retIslrConcepto || "—"}</span></p>
+                    <p><span className="text-gray-500">% Retencion:</span> <span className="text-white">{retIslrPorcentaje}%</span></p>
+                    {retIslrSustraendo > 0 && <p><span className="text-gray-500">Sustraendo:</span> <span className="text-white">{fmtMoney(retIslrSustraendo)}</span></p>}
+                    {refDoc && (
+                      <p><span className="text-gray-500">Monto retenido:</span> <span className="text-orange-400 font-medium">{refDoc.moneda} {fmtMoney(Math.max(0, refDoc.total * retIslrPorcentaje / 100 - retIslrSustraendo))}</span></p>
+                    )}
+                  </>
+                )}
               </div>
               <div className="mt-3 flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2">
                 <svg className="h-4 w-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1566,6 +1979,58 @@ export default function InvoiceForm({ token }: Props) {
                       </div>
                     )}
                   </div>
+                )}
+              </div>
+            ) : (isRetIva || isRetIslr) && refDoc ? (
+              /* Retention totals */
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between text-gray-400">
+                  <span>Base (factura ref.):</span>
+                  <span>{refDoc.moneda} {fmtMoney(refDoc.total)}</span>
+                </div>
+                {isRetIva && (
+                  <>
+                    <div className="flex justify-between text-gray-400">
+                      <span>Porcentaje retencion:</span>
+                      <span>{retIvaPorcentaje}%</span>
+                    </div>
+                    <div className="border-t border-white/10 pt-2">
+                      <div className="flex justify-between text-lg font-bold text-white">
+                        <span>Monto a retener:</span>
+                        <span>{refDoc.moneda} {fmtMoney(refDoc.total * retIvaPorcentaje / 100)}</span>
+                      </div>
+                      {bcvRate && refDoc.moneda !== "VES" && (
+                        <div className="flex justify-end">
+                          <span className="text-sm text-gray-400">Bs. {fmtMoney(refDoc.total * retIvaPorcentaje / 100 * bcvRate)}</span>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+                {isRetIslr && (
+                  <>
+                    <div className="flex justify-between text-gray-400">
+                      <span>Porcentaje retencion:</span>
+                      <span>{retIslrPorcentaje}%</span>
+                    </div>
+                    {retIslrSustraendo > 0 && (
+                      <div className="flex justify-between text-gray-400">
+                        <span>Sustraendo:</span>
+                        <span>- {fmtMoney(retIslrSustraendo)}</span>
+                      </div>
+                    )}
+                    <div className="border-t border-white/10 pt-2">
+                      <div className="flex justify-between text-lg font-bold text-white">
+                        <span>Monto a retener:</span>
+                        <span>{refDoc.moneda} {fmtMoney(Math.max(0, refDoc.total * retIslrPorcentaje / 100 - retIslrSustraendo))}</span>
+                      </div>
+                      {bcvRate && refDoc.moneda !== "VES" && (
+                        <div className="flex justify-end">
+                          <span className="text-sm text-gray-400">Bs. {fmtMoney(Math.max(0, refDoc.total * retIslrPorcentaje / 100 - retIslrSustraendo) * bcvRate)}</span>
+                        </div>
+                      )}
+                    </div>
+                  </>
                 )}
               </div>
             ) : (
