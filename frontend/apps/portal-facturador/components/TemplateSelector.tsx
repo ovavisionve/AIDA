@@ -133,7 +133,7 @@ export default function TemplateSelector({ token }: { token: string }) {
             className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
               selectedDocType === dt.key
                 ? "bg-aida-accent/10 text-aida-cyan border border-aida-accent/20"
-                : "bg-white/5 text-gray-500 border border-white/10 hover:border-aida-accent/30 hover:text-gray-300"
+                : "bg-[#111827] text-gray-500 border border-white/10 hover:border-aida-accent/30 hover:text-gray-300"
             }`}
           >
             {dt.label}
@@ -166,7 +166,7 @@ export default function TemplateSelector({ token }: { token: string }) {
           return (
             <div
               key={tpl.id}
-              className={`group relative rounded-xl border-2 bg-white/5 overflow-hidden transition-all duration-300 hover:bg-white/10 ${
+              className={`group relative rounded-xl border-2 bg-[#111827] overflow-hidden transition-all duration-300 hover:bg-white/10 ${
                 isSelected
                   ? "border-aida-accent shadow-md shadow-aida-accent/15"
                   : "border-white/10 hover:border-aida-accent/50"

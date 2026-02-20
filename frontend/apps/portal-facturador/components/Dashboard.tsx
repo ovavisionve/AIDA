@@ -38,7 +38,7 @@ export default function Dashboard({ token }: Props) {
       )}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((s) => (
-          <div key={s.label} className="rounded-xl border border-white/10 bg-white/5 p-5">
+          <div key={s.label} className="rounded-xl border border-white/10 bg-[#111827] p-5">
             <p className="text-xs font-medium uppercase tracking-wide text-gray-500">{s.label}</p>
             <p className="mt-2 text-xl font-bold text-white">{s.value}</p>
           </div>
@@ -46,7 +46,7 @@ export default function Dashboard({ token }: Props) {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-white/10 bg-white/5 p-5">
+        <div className="rounded-xl border border-white/10 bg-[#111827] p-5">
           <h3 className="text-sm font-semibold text-gray-300">Top Clientes del Mes</h3>
           {data?.top_clientes?.length ? (
             <div className="mt-3 space-y-2">
@@ -62,7 +62,7 @@ export default function Dashboard({ token }: Props) {
           )}
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-white/5 p-5">
+        <div className="rounded-xl border border-white/10 bg-[#111827] p-5">
           <h3 className="text-sm font-semibold text-gray-300">Documentos Recientes</h3>
           {data?.documentos_recientes?.length ? (
             <div className="mt-3 space-y-2">

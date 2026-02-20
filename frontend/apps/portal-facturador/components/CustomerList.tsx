@@ -55,7 +55,7 @@ export default function CustomerList({ token }: Props) {
       <div className="flex items-center justify-between">
         <input placeholder="Buscar por RIF, nombre, email..."
           value={search} onChange={e => setSearch(e.target.value)}
-          className="w-80 rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none" />
+          className="w-80 rounded-lg bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none" />
         <button onClick={() => setShowForm(!showForm)}
           className="rounded-lg bg-aida-accent px-4 py-2 text-sm text-white hover:bg-aida-accent/80">
           + Nuevo Cliente
@@ -63,20 +63,20 @@ export default function CustomerList({ token }: Props) {
       </div>
 
       {showForm && (
-        <form onSubmit={handleCreate} className="rounded-xl border border-white/10 bg-white/5 p-5">
+        <form onSubmit={handleCreate} className="rounded-xl border border-white/10 bg-[#111827] p-5">
           <h3 className="mb-3 text-sm font-semibold text-white">Nuevo Cliente</h3>
           {createError && <div className="mb-3 rounded-lg bg-red-500/10 border border-red-500/20 p-2 text-sm text-red-400">{createError}</div>}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <input placeholder="RIF *" value={form.rif} onChange={e => setForm({...form, rif: e.target.value})} required
-              className="rounded bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500" />
+              className="rounded bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500" />
             <input placeholder="Razón Social *" value={form.razon_social} onChange={e => setForm({...form, razon_social: e.target.value})} required
-              className="col-span-2 rounded bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500" />
+              className="col-span-2 rounded bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500" />
             <input placeholder="Dirección fiscal *" value={form.direccion_fiscal} onChange={e => setForm({...form, direccion_fiscal: e.target.value})} required
-              className="col-span-2 rounded bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500" />
+              className="col-span-2 rounded bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500" />
             <input placeholder="Teléfono" value={form.telefono_principal} onChange={e => setForm({...form, telefono_principal: e.target.value})}
-              className="rounded bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500" />
+              className="rounded bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500" />
             <input placeholder="Email" type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})}
-              className="rounded bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500" />
+              className="rounded bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500" />
             <select value={form.condicion_pago} onChange={e => setForm({...form, condicion_pago: e.target.value})}
               className="rounded bg-[#0a0f1a] border border-white/10 px-3 py-2 text-sm text-white">
               <option value="contado">Contado</option>
@@ -86,7 +86,7 @@ export default function CustomerList({ token }: Props) {
             </select>
             <input type="number" step="0.01" placeholder="Límite crédito" value={form.limite_credito || ""}
               onChange={e => setForm({...form, limite_credito: parseFloat(e.target.value) || 0})}
-              className="rounded bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500" />
+              className="rounded bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500" />
           </div>
           <div className="mt-3 flex gap-2">
             <button type="submit" className="rounded bg-emerald-500/20 border border-emerald-500/30 px-4 py-1.5 text-sm text-emerald-400 hover:bg-emerald-500/30">Guardar</button>
@@ -95,9 +95,9 @@ export default function CustomerList({ token }: Props) {
         </form>
       )}
 
-      <div className="rounded-xl border border-white/10 bg-white/5 overflow-hidden">
+      <div className="rounded-xl border border-white/10 bg-[#111827] overflow-hidden">
         <table className="w-full text-left text-sm">
-          <thead className="border-b border-white/5 bg-white/[0.03] text-xs uppercase text-gray-500">
+          <thead className="border-b border-white/5 bg-[#0d1321] text-xs uppercase text-gray-500">
             <tr>
               <th className="px-4 py-3">RIF</th>
               <th className="px-4 py-3">Razón Social</th>

@@ -73,7 +73,7 @@ export default function ReportsSection({ token }: Props) {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {REPORTS.map(report => (
             <button key={report.id} onClick={() => setSelected(report.id)}
-              className="group rounded-xl border border-white/10 bg-white/5 p-5 text-left hover:bg-white/10 hover:border-aida-accent/30 transition-all">
+              className="group rounded-xl border border-white/10 bg-[#111827] p-5 text-left hover:bg-white/10 hover:border-aida-accent/30 transition-all">
               <div className="flex items-start gap-3">
                 <div className="rounded-lg bg-aida-accent/10 p-2 group-hover:bg-aida-accent/20 transition">
                   <svg className="h-5 w-5 text-aida-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -107,17 +107,17 @@ export default function ReportsSection({ token }: Props) {
       </div>
 
       {/* Parameters */}
-      <div className="rounded-xl border border-white/10 bg-white/5 p-5">
+      <div className="rounded-xl border border-white/10 bg-[#111827] p-5">
         <div className="flex flex-wrap items-end gap-4">
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-500">Fecha Desde</label>
             <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-              className="rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:border-aida-accent focus:outline-none focus:ring-2 focus:ring-aida-accent/20" />
+              className="rounded-lg bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white focus:border-aida-accent focus:outline-none focus:ring-2 focus:ring-aida-accent/20" />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-500">Fecha Hasta</label>
             <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
-              className="rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:border-aida-accent focus:outline-none focus:ring-2 focus:ring-aida-accent/20" />
+              className="rounded-lg bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white focus:border-aida-accent focus:outline-none focus:ring-2 focus:ring-aida-accent/20" />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-500">Formato</label>
@@ -142,7 +142,7 @@ export default function ReportsSection({ token }: Props) {
 
       {/* Results */}
       {reportData && (
-        <div className="rounded-xl border border-white/10 bg-white/5 p-5">
+        <div className="rounded-xl border border-white/10 bg-[#111827] p-5">
           {reportData.downloaded ? (
             <div className="text-center py-6">
               <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10">
@@ -157,7 +157,7 @@ export default function ReportsSection({ token }: Props) {
               <h4 className="text-sm font-semibold text-gray-300">Resumen del Periodo</h4>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {Object.entries(reportData.resumen).map(([key, val]) => (
-                  <div key={key} className="rounded-lg bg-white/[0.03] border border-white/5 p-3">
+                  <div key={key} className="rounded-lg bg-[#0d1321] border border-white/5 p-3">
                     <p className="text-[11px] text-gray-500 capitalize">{key.replace(/_/g, " ")}</p>
                     <p className="mt-1 text-lg font-bold text-white">
                       {typeof val === "number" ? val.toLocaleString("es-VE", { minimumFractionDigits: 2 }) : String(val)}
@@ -169,7 +169,7 @@ export default function ReportsSection({ token }: Props) {
               {reportData.items && (
                 <div className="mt-4 overflow-auto max-h-96">
                   <table className="w-full text-sm">
-                    <thead className="border-b border-white/5 bg-white/[0.03] text-xs uppercase text-gray-500 sticky top-0">
+                    <thead className="border-b border-white/5 bg-[#0d1321] text-xs uppercase text-gray-500 sticky top-0">
                       <tr>
                         <th className="px-3 py-2 text-left">Fecha</th>
                         <th className="px-3 py-2 text-left">N. Control</th>

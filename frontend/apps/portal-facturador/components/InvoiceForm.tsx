@@ -494,7 +494,7 @@ export default function InvoiceForm({ token }: Props) {
   // ══════════════════════════════════════════════════════════════
   if (result) {
     return (
-      <div className="mx-auto max-w-2xl rounded-xl border border-white/10 bg-white/5 p-6">
+      <div className="mx-auto max-w-2xl rounded-xl border border-white/10 bg-[#111827] p-6">
         <div className="mb-4 text-center">
           <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10">
             <svg className="h-8 w-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -503,7 +503,7 @@ export default function InvoiceForm({ token }: Props) {
           </div>
           <h2 className="text-xl font-bold text-white">Factura Emitida</h2>
         </div>
-        <div className="space-y-2 rounded-lg bg-white/[0.03] border border-white/5 p-4 text-sm text-gray-300">
+        <div className="space-y-2 rounded-lg bg-[#0d1321] border border-white/5 p-4 text-sm text-gray-300">
           <p><span className="font-medium text-white">N. Control:</span> {result.control_number}</p>
           <p><span className="font-medium text-white">N. Documento:</span> {result.document_number}</p>
           <p><span className="font-medium text-white">Cliente:</span> {result.receptor_razon_social}</p>
@@ -556,7 +556,7 @@ export default function InvoiceForm({ token }: Props) {
           </div>
 
           {/* Receptor */}
-          <div className="mb-4 rounded-lg bg-white/5 p-3 text-sm">
+          <div className="mb-4 rounded-lg bg-[#0d1321] p-3 text-sm">
             <p className="font-semibold text-white">Receptor</p>
             <p className="text-gray-400">{receptor.razon_social}</p>
             <p className="text-gray-400">RIF: {receptor.rif}</p>
@@ -712,7 +712,7 @@ export default function InvoiceForm({ token }: Props) {
         )}
 
         {/* ── Receptor / Customer ── */}
-        <div className="rounded-xl border border-white/10 bg-white/5 p-5">
+        <div className="rounded-xl border border-white/10 bg-[#111827] p-5">
           <h3 className="mb-3 text-sm font-semibold text-gray-300">Datos del Cliente</h3>
           <div className="relative mb-3" ref={custDropRef}>
             <div className="relative">
@@ -723,7 +723,7 @@ export default function InvoiceForm({ token }: Props) {
                 value={customerSearch}
                 onChange={(e) => handleCustomerSearchChange(e.target.value)}
                 onFocus={() => { if (customerResults.length > 0 && !customerId) setShowCustomerDD(true); }}
-                className="w-full rounded-lg bg-white/5 border border-white/10 pl-10 pr-10 py-2 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none"
+                className="w-full rounded-lg bg-[#111827] border border-white/10 pl-10 pr-10 py-2 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none"
               />
               {searchLoading && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -774,21 +774,21 @@ export default function InvoiceForm({ token }: Props) {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <input placeholder="RIF (ej: J-12345678-9)" value={receptor.rif}
               onChange={(e) => setReceptor({ ...receptor, rif: e.target.value })} required readOnly={!!customerId}
-              className={`rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none ${customerId ? "opacity-70 cursor-not-allowed" : ""}`} />
+              className={`rounded-lg bg-[#111827] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none ${customerId ? "opacity-70 cursor-not-allowed" : ""}`} />
             <input placeholder="Razon Social" value={receptor.razon_social}
               onChange={(e) => setReceptor({ ...receptor, razon_social: e.target.value })} required readOnly={!!customerId}
-              className={`rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none ${customerId ? "opacity-70 cursor-not-allowed" : ""}`} />
+              className={`rounded-lg bg-[#111827] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none ${customerId ? "opacity-70 cursor-not-allowed" : ""}`} />
             <input placeholder="Direccion fiscal" value={receptor.direccion}
               onChange={(e) => setReceptor({ ...receptor, direccion: e.target.value })} readOnly={!!customerId}
-              className={`rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none ${customerId ? "opacity-70 cursor-not-allowed" : ""}`} />
+              className={`rounded-lg bg-[#111827] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none ${customerId ? "opacity-70 cursor-not-allowed" : ""}`} />
             <input placeholder="Email (opcional)" type="email" value={receptor.email}
               onChange={(e) => setReceptor({ ...receptor, email: e.target.value })} readOnly={!!customerId}
-              className={`rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none ${customerId ? "opacity-70 cursor-not-allowed" : ""}`} />
+              className={`rounded-lg bg-[#111827] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none ${customerId ? "opacity-70 cursor-not-allowed" : ""}`} />
           </div>
         </div>
 
         {/* ── Products / Services ── */}
-        <div className="rounded-xl border border-white/10 bg-white/5 p-5">
+        <div className="rounded-xl border border-white/10 bg-[#111827] p-5">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-sm font-semibold text-gray-300">Productos / Servicios</h3>
             <button type="button" onClick={addItem}
@@ -799,7 +799,7 @@ export default function InvoiceForm({ token }: Props) {
 
           <div className="space-y-3">
             {items.map((item, i) => (
-              <div key={i} className="rounded-lg border border-white/5 bg-white/[0.02] p-3">
+              <div key={i} className="rounded-lg border border-white/5 bg-[#0b1120] p-3">
                 {/* Product search row */}
                 <div className="relative mb-2" ref={productDropdown === i ? prodDropRef : undefined}>
                   <div className="relative">
@@ -814,7 +814,7 @@ export default function InvoiceForm({ token }: Props) {
                         setProductDropdown(i);
                         setProductResults(productsCatalog.slice(0, 10));
                       }}
-                      className="w-full rounded bg-white/5 border border-white/10 pl-8 pr-3 py-1.5 text-xs text-white placeholder-gray-600 focus:border-aida-accent focus:outline-none"
+                      className="w-full rounded bg-[#111827] border border-white/10 pl-8 pr-3 py-1.5 text-xs text-white placeholder-gray-600 focus:border-aida-accent focus:outline-none"
                     />
                     {productSearchLoading && productDropdown === i && (
                       <div className="absolute right-2 top-1/2 -translate-y-1/2">
@@ -849,7 +849,7 @@ export default function InvoiceForm({ token }: Props) {
                     {i === 0 && <label className="mb-1 block text-[11px] text-gray-500">Descripcion</label>}
                     <input value={item.description} onChange={(e) => updateItem(i, "description", e.target.value)}
                       required placeholder="Producto o servicio"
-                      className="w-full rounded bg-white/5 border border-white/10 px-2 py-1.5 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none" />
+                      className="w-full rounded bg-[#111827] border border-white/10 px-2 py-1.5 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none" />
                   </div>
                   <div className="col-span-1">
                     {i === 0 && <label className="mb-1 block text-[11px] text-gray-500">Cant.</label>}
@@ -860,7 +860,7 @@ export default function InvoiceForm({ token }: Props) {
                         if (!isNaN(n) && n >= 0) updateItem(i, "quantity", n);
                         else if (v === "" || v === "0") updateItem(i, "quantity", 0);
                       }}
-                      className="w-full rounded bg-white/5 border border-white/10 px-2 py-1.5 text-sm text-white focus:border-aida-accent focus:outline-none" />
+                      className="w-full rounded bg-[#111827] border border-white/10 px-2 py-1.5 text-sm text-white focus:border-aida-accent focus:outline-none" />
                   </div>
                   <div className="col-span-2">
                     {i === 0 && <label className="mb-1 block text-[11px] text-gray-500">Precio ({moneda === "VES" ? "Bs." : "$"})</label>}
@@ -877,7 +877,7 @@ export default function InvoiceForm({ token }: Props) {
                       value={item.unit_price_text}
                       onChange={(e) => handlePriceChange(i, e.target.value)}
                       placeholder="0,00"
-                      className="w-full rounded bg-white/5 border border-white/10 px-2 py-1.5 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none" />
+                      className="w-full rounded bg-[#111827] border border-white/10 px-2 py-1.5 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none" />
                   </div>
                   <div className="col-span-2">
                     {i === 0 && <label className="mb-1 block text-[11px] text-gray-500">IVA</label>}
@@ -896,7 +896,7 @@ export default function InvoiceForm({ token }: Props) {
                         updateItem(i, "discount_percent", isNaN(v) ? 0 : Math.min(100, Math.max(0, v)));
                       }}
                       placeholder="0"
-                      className="w-full rounded bg-white/5 border border-white/10 px-2 py-1.5 text-sm text-white" />
+                      className="w-full rounded bg-[#111827] border border-white/10 px-2 py-1.5 text-sm text-white" />
                   </div>
                   <div className="col-span-1 flex items-center justify-between">
                     <div className="min-w-0">
@@ -922,7 +922,7 @@ export default function InvoiceForm({ token }: Props) {
         {/* ── Payment + Totals ── */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Payment config */}
-          <div className="rounded-xl border border-white/10 bg-white/5 p-5">
+          <div className="rounded-xl border border-white/10 bg-[#111827] p-5">
             <h3 className="mb-3 text-sm font-semibold text-gray-300">Forma de Pago</h3>
             <select value={formaPago} onChange={(e) => setFormaPago(e.target.value)}
               className="w-full rounded-lg bg-[#0a0f1a] border border-white/10 px-3 py-2 text-sm text-white">
@@ -961,11 +961,11 @@ export default function InvoiceForm({ token }: Props) {
 
             <textarea placeholder="Observaciones (opcional)" value={observaciones}
               onChange={(e) => setObservaciones(e.target.value)}
-              className="mt-3 w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500" rows={2} />
+              className="mt-3 w-full rounded-lg bg-[#111827] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500" rows={2} />
           </div>
 
           {/* Totals */}
-          <div className="rounded-xl border border-white/10 bg-white/5 p-5">
+          <div className="rounded-xl border border-white/10 bg-[#111827] p-5">
             <h3 className="mb-3 text-sm font-semibold text-gray-300">Totales</h3>
             <div className="space-y-2 text-sm">
               {/* Dual-line total helper */}

@@ -43,11 +43,15 @@ export default function Sidebar({ active, onNavigate, profile, onLogout }: Sideb
   const primaryRole = profile?.roles?.[0] || (profile?.is_superadmin ? "Super Admin" : "Usuario");
 
   return (
-    <aside className="flex w-56 flex-col aida-sidebar text-white">
+    <aside className="flex w-56 flex-col bg-[#070b14] border-r border-white/5 text-white">
       {/* Logo */}
       <div className="flex h-14 items-center gap-2.5 px-4 border-b border-white/5">
-        <img src="/logo-white.png" alt="AIDA" className="h-5" />
-        <span className="rounded-full bg-aida-cyan/20 px-2 py-0.5 text-[10px] font-medium text-aida-cyan">Facturador</span>
+        <div className="flex items-center gap-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-white.png" alt="AIDA" className="h-6" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+          <span className="text-base font-bold gradient-text-static">AIDA</span>
+        </div>
+        <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-[10px] font-medium text-cyan-400">Facturador</span>
       </div>
 
       {/* Company info */}

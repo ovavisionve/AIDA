@@ -149,10 +149,10 @@ export default function Home() {
   };
 
   return (
-    <div className="flex h-screen bg-transparent">
+    <div className="flex h-screen bg-[#0a0f1a]">
       <Sidebar active={section} onNavigate={setSection} profile={profile} onLogout={logout} />
-      <main className="flex-1 overflow-auto">
-        <header className="flex h-14 items-center justify-between bg-[#0a0f1a]/80 backdrop-blur-lg border-b border-white/5 px-6">
+      <main className="flex-1 overflow-auto bg-[#0d1220]">
+        <header className="sticky top-0 z-10 flex h-14 items-center justify-between bg-[#0a0f1a]/95 backdrop-blur-lg border-b border-white/5 px-6">
           <h2 className="font-semibold text-white">{sectionLabels[section]}</h2>
           <div className="flex items-center gap-3">
             {profile?.client && (

@@ -150,13 +150,13 @@ export default function DocumentsSection({ token }: Props) {
       )}
 
       {/* Filters */}
-      <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+      <div className="rounded-xl border border-white/10 bg-[#111827] p-4">
         <form onSubmit={handleSearch} className="flex flex-wrap items-end gap-3">
           <div className="flex-1 min-w-[200px]">
             <label className="mb-1 block text-[11px] font-medium text-gray-500">Buscar</label>
             <input value={search} onChange={e => setSearch(e.target.value)}
               placeholder="N. Control, documento, RIF, razon social..."
-              className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none focus:ring-2 focus:ring-aida-accent/20" />
+              className="w-full rounded-lg bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none focus:ring-2 focus:ring-aida-accent/20" />
           </div>
           <div>
             <label className="mb-1 block text-[11px] font-medium text-gray-500">Tipo</label>
@@ -182,12 +182,12 @@ export default function DocumentsSection({ token }: Props) {
           <div>
             <label className="mb-1 block text-[11px] font-medium text-gray-500">Desde</label>
             <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-              className="rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:border-aida-accent focus:outline-none" />
+              className="rounded-lg bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white focus:border-aida-accent focus:outline-none" />
           </div>
           <div>
             <label className="mb-1 block text-[11px] font-medium text-gray-500">Hasta</label>
             <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
-              className="rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:border-aida-accent focus:outline-none" />
+              className="rounded-lg bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white focus:border-aida-accent focus:outline-none" />
           </div>
           <button type="submit"
             className="rounded-lg bg-aida-accent px-4 py-2 text-sm font-medium text-white hover:bg-aida-accent/80 transition">
@@ -197,9 +197,9 @@ export default function DocumentsSection({ token }: Props) {
       </div>
 
       {/* Table */}
-      <div className="rounded-xl border border-white/10 bg-white/5 overflow-hidden">
+      <div className="rounded-xl border border-white/10 bg-[#111827] overflow-hidden">
         <table className="w-full text-left text-sm">
-          <thead className="border-b border-white/5 bg-white/[0.03] text-xs uppercase text-gray-500">
+          <thead className="border-b border-white/5 bg-[#0d1321] text-xs uppercase text-gray-500">
             <tr>
               <th className="px-4 py-3">Tipo</th>
               <th className="px-4 py-3">N. Control</th>
