@@ -659,7 +659,266 @@ export default function InvoiceForm({ token }: Props) {
   };
 
   // ═══════════════════════════════════════════════════════════════
-  // PLACEHOLDER — Phases 4-5 (render: success, preview, form)
+  // RENDER: Success result
+  // ═══════════════════════════════════════════════════════════════
+  if (result) {
+    const rDocType = result._docType || "factura";
+    const successLabel = rDocType === "factura" ? "Factura Emitida" : rDocType === "nota_credito" ? "Nota de Credito Emitida" : "Nota de Debito Emitida";
+    const successColor = rDocType === "factura" ? "emerald" : rDocType === "nota_credito" ? "blue" : "amber";
+
+    return (
+      <div className="mx-auto max-w-2xl rounded-xl border border-white/10 bg-[#111827] p-6">
+        <div className="mb-4 text-center">
+          <div className={`mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-${successColor}-500/10`}>
+            <svg className={`h-8 w-8 text-${successColor}-400`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold text-white">{successLabel}</h2>
+          <p className="text-sm text-gray-500 mt-1">Documento generado exitosamente con validacion SENIAT V1.4</p>
+        </div>
+        <div className="space-y-2 rounded-lg bg-[#0d1321] border border-white/5 p-4 text-sm text-gray-300">
+          {result.control_number && (
+            <p><span className="font-medium text-white">N. Control:</span> <span className="font-mono">{result.control_number}</span></p>
+          )}
+          {result.document_number && (
+            <p><span className="font-medium text-white">N. Documento:</span> <span className="font-mono">{result.document_number}</span></p>
+          )}
+          {result.numero && (
+            <p><span className="font-medium text-white">Numero:</span> <span className="font-mono">{result.numero}</span></p>
+          )}
+          {result.receptor_razon_social && (
+            <p><span className="font-medium text-white">Cliente:</span> {result.receptor_razon_social}</p>
+          )}
+          {result.receptor_rif && (
+            <p><span className="font-medium text-white">RIF:</span> {result.receptor_rif}</p>
+          )}
+          {result.factura_referencia && (
+            <p><span className="font-medium text-white">Factura referencia:</span> <span className="font-mono">{result.factura_referencia}</span></p>
+          )}
+          {result.total != null && (
+            <p><span className="font-medium text-white">Total:</span> {result.moneda || moneda} {Number(result.total).toLocaleString("es-VE", { minimumFractionDigits: 2 })}</p>
+          )}
+          {result.total != null && bcvRate && (
+            <p className="text-gray-500">
+              Equivalente: {moneda !== "VES" ? `Bs. ${fmtMoney(Number(result.total) * bcvRate)}` : `$ ${fmtMoney(Number(result.total) / bcvRate)}`}
+            </p>
+          )}
+          {result.monto_iva_16 > 0 && (
+            <p><span className="font-medium text-white">IVA 16%:</span> {result.moneda || moneda} {Number(result.monto_iva_16).toLocaleString("es-VE", { minimumFractionDigits: 2 })}</p>
+          )}
+          {result.monto_iva_8 > 0 && (
+            <p><span className="font-medium text-white">IVA 8%:</span> {result.moneda || moneda} {Number(result.monto_iva_8).toLocaleString("es-VE", { minimumFractionDigits: 2 })}</p>
+          )}
+          {result.monto_iva_31 > 0 && (
+            <p><span className="font-medium text-white">IVA 31%:</span> {result.moneda || moneda} {Number(result.monto_iva_31).toLocaleString("es-VE", { minimumFractionDigits: 2 })}</p>
+          )}
+          {result.tasa_cambio && (
+            <p><span className="font-medium text-white">Tasa BCV:</span> Bs. {Number(result.tasa_cambio).toLocaleString("es-VE", { minimumFractionDigits: 2 })} / 1 {result.moneda || moneda}</p>
+          )}
+          <p><span className="font-medium text-white">Estado:</span> <span className="rounded bg-emerald-500/10 px-2 py-0.5 text-emerald-400">{result.status || "emitido"}</span></p>
+        </div>
+        <div className="mt-4 flex gap-3">
+          {result.pdf_url && (
+            <a href={result.pdf_url} target="_blank" rel="noopener noreferrer"
+              className="rounded-lg bg-aida-accent px-4 py-2 text-sm text-white hover:bg-aida-accent/80 transition">
+              Descargar PDF
+            </a>
+          )}
+          <button onClick={resetForm}
+            className="rounded-lg border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5 transition">
+            Nuevo Documento
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // RENDER: Preview modal
+  // ═══════════════════════════════════════════════════════════════
+  const PreviewModal = () => {
+    if (!showPreview) return null;
+
+    const DualRow = ({ label, amount, sign, bold, color }: { label: string; amount: number; sign?: string; bold?: boolean; color?: string }) => {
+      const dual = dualAmount(amount);
+      const pre = sign || "";
+      return (
+        <div>
+          <div className={`flex justify-between ${bold ? "font-semibold text-white" : color || "text-gray-400"}`}>
+            <span>{label}</span>
+            <span>{pre}{moneda} {fmtMoney(amount)}</span>
+          </div>
+          {dual && <div className="flex justify-end"><span className="text-[11px] text-gray-500">{pre}{dual}</span></div>}
+        </div>
+      );
+    };
+
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={() => setShowPreview(false)}>
+        <div className="mx-4 max-h-[90vh] w-full max-w-2xl overflow-auto rounded-2xl border border-white/10 bg-[#0d1321] p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          {/* Header */}
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-white">Vista Previa: {docLabel}</h2>
+              {needsRef && refDoc && (
+                <p className="text-xs text-gray-500 mt-0.5">Ref: {refDoc.control_number} — {refDoc.receptor_razon_social}</p>
+              )}
+            </div>
+            <button onClick={() => setShowPreview(false)} className="text-gray-500 hover:text-white">
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* NC/ND specific info */}
+          {isNC && (
+            <div className="mb-3 rounded-lg bg-blue-500/10 border border-blue-500/20 px-3 py-2 text-sm">
+              <p className="text-blue-300"><span className="font-medium">Tipo:</span> {ncTipo === "total" ? "Credito Total" : "Credito Parcial"}</p>
+              <p className="text-blue-300"><span className="font-medium">Motivo:</span> {motivo}</p>
+              {ncTipo === "total" && refDoc && (
+                <p className="text-blue-400 text-xs mt-1">Se reversara el total de la factura: {refDoc.moneda} {fmtMoney(refDoc.total)}</p>
+              )}
+            </div>
+          )}
+          {isND && (
+            <div className="mb-3 rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-sm">
+              <p className="text-amber-300"><span className="font-medium">Concepto:</span> {concepto}</p>
+            </div>
+          )}
+
+          {/* Receptor */}
+          <div className="mb-4 rounded-lg bg-[#111827] border border-white/5 p-3 text-sm">
+            <p className="font-semibold text-white">Receptor</p>
+            <p className="text-gray-400">{receptor.razon_social}</p>
+            <p className="text-gray-400">RIF: {receptor.rif}</p>
+            {receptor.direccion && <p className="text-gray-400">{receptor.direccion}</p>}
+          </div>
+
+          {/* Items table (if applicable) */}
+          {showItems && (
+            <table className="mb-4 w-full text-sm">
+              <thead>
+                <tr className="border-b border-white/10 text-xs text-gray-500">
+                  <th className="py-2 text-left">Descripcion</th>
+                  <th className="py-2 text-right">Cant.</th>
+                  <th className="py-2 text-right">P.U.</th>
+                  <th className="py-2 text-center">IVA</th>
+                  <th className="py-2 text-right">Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((it, i) => {
+                  const lineSub = lineSubtotal(it);
+                  return (
+                    <tr key={i} className="border-b border-white/5 text-gray-300">
+                      <td className="py-2">{it.description || "(sin descripcion)"}</td>
+                      <td className="py-2 text-right">{it.quantity}</td>
+                      <td className="py-2 text-right">{fmtMoney(it.unit_price)}</td>
+                      <td className="py-2 text-center">{TAX_LABELS[it.tax_type] || it.tax_type}</td>
+                      <td className="py-2 text-right">{fmtMoney(lineSub)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+
+          {/* Totals */}
+          {showItems && (
+            <div className="space-y-1.5 text-sm mb-4">
+              <DualRow label="Subtotal bruto:" amount={calcGrossSubtotal()} />
+              {calcDiscount() > 0 && <DualRow label="Descuento:" amount={calcDiscount()} sign="- " color="text-red-400" />}
+              {calcBaseImponible16() > 0 && <DualRow label="Base imponible 16%:" amount={calcBaseImponible16()} />}
+              {calcIva16() > 0 && <DualRow label="IVA 16%:" amount={calcIva16()} />}
+              {calcBaseImponible8() > 0 && <DualRow label="Base imponible 8%:" amount={calcBaseImponible8()} />}
+              {calcIva8() > 0 && <DualRow label="IVA 8%:" amount={calcIva8()} />}
+              {calcBaseImponible31() > 0 && <DualRow label="Base imponible 31%:" amount={calcBaseImponible31()} />}
+              {calcIva31() > 0 && <DualRow label="IVA 31%:" amount={calcIva31()} />}
+              {calcBaseExenta() > 0 && <DualRow label="Exento:" amount={calcBaseExenta()} />}
+
+              <div className="border-t border-white/10 pt-1.5">
+                <DualRow label={`Total ${docLabel.toLowerCase()}:`} amount={calcTotalDocumento()} bold />
+              </div>
+
+              {isForeignCurrency && (
+                <>
+                  <DualRow label="IGTF 3% (pago en divisas):" amount={calcIgtf()} color="text-amber-400" />
+                  <div className="border-t border-white/10 pt-1.5">
+                    <div className="flex justify-between text-lg font-bold text-white">
+                      <span>Total a pagar:</span>
+                      <span>{moneda} {fmtMoney(calcTotalPagar())}</span>
+                    </div>
+                    {dualAmount(calcTotalPagar()) && (
+                      <div className="flex justify-end">
+                        <span className="text-sm font-medium text-gray-400">{dualAmount(calcTotalPagar())}</span>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {!isForeignCurrency && (
+                <div className="border-t border-white/10 pt-1.5">
+                  <div className="flex justify-between text-lg font-bold text-white">
+                    <span>Total a pagar:</span>
+                    <span>Bs. {fmtMoney(calcTotalDocumento())}</span>
+                  </div>
+                  {bcvRate && (
+                    <div className="flex justify-end">
+                      <span className="text-sm font-medium text-gray-400">$ {fmtMoney(calcTotalDocumento() / bcvRate)}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* BCV Rate */}
+          {bcvRate && (
+            <div className="mb-3 rounded-lg bg-blue-500/10 border border-blue-500/20 px-3 py-2 text-xs text-blue-300">
+              Tasa BCV: <span className="font-bold">Bs. {fmtMoney(bcvRate)} / $ 1</span> ({bcvDate})
+              {exchangeRates?.rates?.EUR && (
+                <span className="ml-3">EUR: Bs. {fmtMoney(exchangeRates.rates.EUR)}</span>
+              )}
+            </div>
+          )}
+
+          {/* Payment info (factura only) */}
+          {docType === "factura" && (
+            <div className="mb-3 text-xs text-gray-500">
+              <span>Forma de pago: {formaPago}</span> | <span>Condicion: {condicionPago}</span> | <span>Moneda: {moneda}</span>
+              {fechaVencimiento && <span> | Vence: {fechaVencimiento}</span>}
+            </div>
+          )}
+
+          {/* SENIAT badge */}
+          <div className="mb-4 flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2">
+            <svg className="h-4 w-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+            <span className="text-xs text-emerald-400 font-medium">Validacion SENIAT V1.4 — el documento sera verificado automaticamente al emitir</span>
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-3">
+            <button onClick={handleSubmit} disabled={loading}
+              className="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50 transition">
+              {loading ? "Emitiendo..." : `Confirmar y Emitir ${docLabel}`}
+            </button>
+            <button onClick={() => setShowPreview(false)} type="button"
+              className="rounded-lg border border-white/10 px-6 py-2.5 text-sm text-gray-300 hover:bg-white/5 transition">
+              Volver a editar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ═══════════════════════════════════════════════════════════════
+  // PLACEHOLDER — Phase 5 (render: main form)
   // ═══════════════════════════════════════════════════════════════
 
   return <div className="text-white text-center py-12">Cargando formulario...</div>;
