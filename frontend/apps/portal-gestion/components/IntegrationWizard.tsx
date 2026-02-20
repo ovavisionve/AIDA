@@ -3,6 +3,27 @@ import { useEffect, useState } from "react";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
+/* ── SENIAT V1.4 Document Types ── */
+const SENIAT_DOC_TYPES = [
+  { code: "01", name: "Factura", desc: "Documento fiscal de venta" },
+  { code: "02", name: "Nota de Crédito", desc: "Reduce/anula factura emitida" },
+  { code: "03", name: "Nota de Débito", desc: "Incrementa monto de factura" },
+  { code: "04", name: "Guía de Despacho", desc: "Traslado de mercancías" },
+  { code: "07", name: "Retención IVA", desc: "Comprobante retención IVA" },
+  { code: "08", name: "Retención ISLR", desc: "Comprobante retención ISLR" },
+];
+
+/* ── SENIAT V1.4 field mapping reference ── */
+const SENIAT_MAPPING_REF = [
+  { section: "encabezado.identificacionDocumento", fields: ["tipoDocumento", "numeroDocumento", "tipoProveedor", "tipoTransaccion", "fechaEmision", "horaEmision", "moneda", "tipoDePago", "tipoDeVenta"], required: true },
+  { section: "encabezado.comprador", fields: ["tipoIdentificacion", "numeroIdentificacion", "razonSocial", "direccion", "pais"], required: true },
+  { section: "encabezado.totales", fields: ["nroItems", "subtotal", "totalIVA", "montoTotalConIVA", "totalAPagar", "formasPago", "impuestosSubtotal"], required: true },
+  { section: "detalleItems[]", fields: ["numeroLinea", "indicadorBienoServicio", "descripcion", "cantidad", "unidadMedida", "precioUnitario", "precioItem", "tasaIVA", "valorIVA", "valorTotalItem"], required: true },
+  { section: "encabezado.sujetoRetenido", fields: ["tipoIdentificacion", "numeroIdentificacion", "razonSocial", "pais"], required: false },
+  { section: "detallesRetencion[]", fields: ["numeroLinea", "fechaDocumento", "tipoDocumento", "baseImponible", "porcentajeRetencion", "retenido", "moneda"], required: false },
+  { section: "imprenta (auto)", fields: ["snat", "nombre", "rif", "autorizacion", "numeroControl", "rangoInicial", "rangoFinal"], required: false },
+];
+
 interface Template {
   id: string;
   code: string;
@@ -59,12 +80,16 @@ export default function IntegrationWizard({ token }: { token: string }) {
       .catch(() => {});
   }, []);
 
+  const [selectedDocTypes, setSelectedDocTypes] = useState<string[]>(["01"]);
+  const [showMappingRef, setShowMappingRef] = useState(false);
+
   const categoryColors: Record<string, string> = {
     erp: "bg-blue-500/20 text-blue-400",
     ecommerce: "bg-green-500/20 text-green-400",
     contabilidad: "bg-purple-500/20 text-purple-400",
     custom: "bg-gray-500/20 text-gray-400",
     pos: "bg-orange-500/20 text-orange-400",
+    seniat: "bg-emerald-500/20 text-emerald-400",
   };
 
   const handleStep1 = async () => {
@@ -83,6 +108,7 @@ export default function IntegrationWizard({ token }: { token: string }) {
           name: connName,
           environment,
           project_id: projectId,
+          seniat_doc_types: selectedDocTypes,
         }),
       });
       const data = await res.json();
@@ -249,6 +275,35 @@ export default function IntegrationWizard({ token }: { token: string }) {
             </select>
           </div>
 
+          {/* SENIAT V1.4 Document Types */}
+          <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded text-xs font-semibold">SENIAT V1.4</span>
+              <h3 className="font-semibold text-gray-300 text-sm">Tipos de documento a integrar</h3>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {SENIAT_DOC_TYPES.map(dt => (
+                <label key={dt.code}
+                  className={`flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer transition text-sm ${
+                    selectedDocTypes.includes(dt.code)
+                      ? "border-emerald-500/40 bg-emerald-500/10 text-white"
+                      : "border-white/10 bg-white/[0.02] text-gray-400 hover:border-white/20"
+                  }`}>
+                  <input type="checkbox" checked={selectedDocTypes.includes(dt.code)}
+                    onChange={e => {
+                      if (e.target.checked) setSelectedDocTypes([...selectedDocTypes, dt.code]);
+                      else setSelectedDocTypes(selectedDocTypes.filter(c => c !== dt.code));
+                    }} className="rounded w-3.5 h-3.5" />
+                  <div>
+                    <span className="font-mono text-xs text-emerald-400 mr-1.5">{dt.code}</span>
+                    <span className="text-xs">{dt.name}</span>
+                  </div>
+                </label>
+              ))}
+            </div>
+            <p className="text-[11px] text-gray-500 mt-2">Seleccione los tipos de documento fiscal que el sistema externo enviará a AIDA.</p>
+          </div>
+
           <h3 className="font-semibold text-gray-300">Seleccione el sistema a integrar:</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {templates.map(t => (
@@ -318,12 +373,51 @@ export default function IntegrationWizard({ token }: { token: string }) {
       {step === 2 && (
         <div className="space-y-6">
           <div className="bg-green-500/10 border border-green-500/20 p-4 rounded-lg text-sm text-green-400">
-            El mapeo de campos viene pre-configurado segun el template. Puede personalizarlo si es necesario.
+            El mapeo de campos viene pre-configurado según el template. Los campos deben corresponder a la estructura SENIAT V1.4.
           </div>
+
+          {/* SENIAT V1.4 Reference Panel */}
+          <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 overflow-hidden">
+            <button onClick={() => setShowMappingRef(!showMappingRef)}
+              className="w-full flex items-center justify-between p-4 hover:bg-emerald-500/5 transition">
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded text-xs font-semibold">SENIAT V1.4</span>
+                <span className="text-sm text-gray-300">Referencia de campos requeridos</span>
+              </div>
+              <svg className={`w-4 h-4 text-gray-500 transition-transform ${showMappingRef ? "rotate-180" : ""}`}
+                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {showMappingRef && (
+              <div className="border-t border-emerald-500/10 p-4 space-y-3">
+                {SENIAT_MAPPING_REF.map(ref => (
+                  <div key={ref.section} className="rounded-lg bg-white/[0.03] p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="font-mono text-xs text-aida-cyan">{ref.section}</span>
+                      {ref.required
+                        ? <span className="text-[10px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded">Requerido</span>
+                        : <span className="text-[10px] bg-gray-500/20 text-gray-400 px-1.5 py-0.5 rounded">Condicional</span>}
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {ref.fields.map(f => (
+                        <span key={f} className="text-[10px] font-mono bg-white/10 text-gray-300 px-1.5 py-0.5 rounded">{f}</span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                <p className="text-[11px] text-gray-500">
+                  Su sistema externo debe mapear estos campos al formato SENIAT V1.4. El nodo <code className="text-emerald-400">imprenta</code> es generado automáticamente por AIDA.
+                </p>
+              </div>
+            )}
+          </div>
+
           <div className="bg-white/[0.03] rounded-lg p-4">
+            <h4 className="text-xs font-semibold text-gray-400 mb-2 uppercase">Mapeo actual del template</h4>
             <pre className="text-xs overflow-auto max-h-64 text-gray-300">{JSON.stringify(currentMapping, null, 2)}</pre>
           </div>
-          <p className="text-sm text-gray-500">El mapeo por defecto es adecuado para la mayoria de instalaciones. Modifique solo si su sistema tiene campos personalizados.</p>
+          <p className="text-sm text-gray-500">El mapeo por defecto es adecuado para la mayoría de instalaciones. Modifique solo si su sistema tiene campos personalizados.</p>
           <div className="flex gap-3">
             <button onClick={() => setStep(1)} className="border border-white/10 text-gray-300 px-4 py-2 rounded-lg text-sm hover:bg-white/5">← Atras</button>
             <button onClick={handleStep3} disabled={loading}
@@ -338,7 +432,7 @@ export default function IntegrationWizard({ token }: { token: string }) {
       {step === 3 && (
         <div className="space-y-6">
           <div className="bg-purple-500/10 border border-purple-500/20 p-4 rounded-lg text-sm text-purple-400">
-            Configure webhooks para recibir notificaciones cuando se emitan o anulen documentos fiscales.
+            Configure webhooks para recibir notificaciones de eventos SENIAT V1.4: emisión, anulación, retenciones y validación de documentos fiscales.
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">URL del Webhook (opcional)</label>
@@ -350,6 +444,8 @@ export default function IntegrationWizard({ token }: { token: string }) {
               <label className="block text-sm font-medium text-gray-300 mb-2">Eventos a escuchar:</label>
               <div className="grid grid-cols-2 gap-2">
                 {["document.emitted", "document.voided", "document.updated", "control_number.assigned", "control_number.low",
+                  "seniat.accepted", "seniat.rejected", "seniat.duplicate",
+                  "retention.iva", "retention.islr",
                   "sync.completed", "sync.failed", "integration.error"].map(evt => (
                   <label key={evt} className="flex items-center gap-2 text-sm text-gray-300">
                     <input type="checkbox" checked={webhookEvents.includes(evt)}
@@ -417,8 +513,21 @@ export default function IntegrationWizard({ token }: { token: string }) {
                 <div className="text-4xl mb-3">🔌</div>
                 <h3 className="text-lg font-semibold mb-2 text-white">Listo para probar la conexion</h3>
                 <p className="text-sm text-gray-500 mb-4">
-                  Se verificara la conectividad con el sistema externo usando las credenciales configuradas.
+                  Se verificará la conectividad con el sistema externo y la compatibilidad con SENIAT V1.4.
                 </p>
+                {selectedDocTypes.length > 0 && (
+                  <div className="flex items-center justify-center gap-2 mb-4 flex-wrap">
+                    <span className="text-xs text-gray-500">Tipos SENIAT:</span>
+                    {selectedDocTypes.map(dt => {
+                      const info = SENIAT_DOC_TYPES.find(d => d.code === dt);
+                      return (
+                        <span key={dt} className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded font-mono">
+                          {dt} {info?.name}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
                 <label className="flex items-center justify-center gap-2 mb-4 cursor-pointer">
                   <input type="checkbox" checked={activate} onChange={e => setActivate(e.target.checked)}
                     className="w-4 h-4 rounded" />
