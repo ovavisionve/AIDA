@@ -837,11 +837,24 @@ export default function InvoiceForm({ token }: Props) {
           <p><span className="font-medium text-white">Estado:</span> <span className="rounded bg-emerald-500/10 px-2 py-0.5 text-emerald-400">{result.status || "emitido"}</span></p>
         </div>
         <div className="mt-4 flex gap-3">
-          {result.pdf_url && (
-            <a href={result.pdf_url} target="_blank" rel="noopener noreferrer"
+          {result.id && (
+            <button
+              onClick={async () => {
+                try {
+                  const res = await fetch(`${apiUrl}/invoicing/documents/${result.id}/pdf`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                  });
+                  if (!res.ok) throw new Error("Error descargando PDF");
+                  const blob = await res.blob();
+                  const url = window.URL.createObjectURL(blob);
+                  window.open(url, "_blank");
+                } catch {
+                  alert("No se pudo descargar el PDF");
+                }
+              }}
               className="rounded-lg bg-aida-accent px-4 py-2 text-sm text-white hover:bg-aida-accent/80 transition">
               Descargar PDF
-            </a>
+            </button>
           )}
           <button onClick={resetForm}
             className="rounded-lg border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5 transition">

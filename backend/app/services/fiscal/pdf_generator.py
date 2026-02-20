@@ -9,6 +9,7 @@ Conforme a Providencia SNAT/2024/000102:
   - Art. 30: Formato de número de control
   - Art. 31: Tamaños mínimos de fuente (6pt imprenta, 8pt emisor/control)
 
+Diseñado para que al menos 20 items quepan en una sola página Letter.
 Soporta múltiples plantillas via layout_config (JSON) del modelo DocumentTemplate.
 """
 import io
@@ -18,7 +19,7 @@ import base64
 from datetime import datetime
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
-from reportlab.lib.units import mm
+from reportlab.lib.units import mm, pt
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Table, TableStyle, Spacer, HRFlowable, Image,
@@ -34,12 +35,19 @@ import barcode
 from barcode.writer import ImageWriter
 
 
+# ── Constants ──────────────────────────────────────────────────────────────
+PAGE_W, PAGE_H = letter  # 612pt × 792pt
+MARGIN_LR = 10 * mm      # 10mm left/right
+MARGIN_T = 8 * mm         # 8mm top
+MARGIN_B = 8 * mm         # 8mm bottom
+USABLE_W = PAGE_W - 2 * MARGIN_LR  # ~195mm
+
+
 # ── QR code y barcode helpers ──────────────────────────────────────────────
 
-def _generate_qr_image(data: str, size_mm: float = 25) -> Image | None:
-    """Genera una imagen QR como objeto Image de ReportLab."""
+def _generate_qr_image(data: str, size_mm: float = 18) -> Image | None:
     try:
-        qr = qrcode.QRCode(version=1, box_size=8, border=1, error_correction=qrcode.constants.ERROR_CORRECT_M)
+        qr = qrcode.QRCode(version=1, box_size=6, border=1, error_correction=qrcode.constants.ERROR_CORRECT_M)
         qr.add_data(data)
         qr.make(fit=True)
         img = qr.make_image(fill_color="black", back_color="white")
@@ -51,14 +59,13 @@ def _generate_qr_image(data: str, size_mm: float = 25) -> Image | None:
         return None
 
 
-def _generate_barcode_image(data: str, width_mm: float = 80, height_mm: float = 12) -> Image | None:
-    """Genera un código de barras Code128 como objeto Image de ReportLab."""
+def _generate_barcode_image(data: str, width_mm: float = 65, height_mm: float = 8) -> Image | None:
     try:
         code128 = barcode.get_barcode_class("code128")
         writer = ImageWriter()
         bar = code128(data, writer=writer)
         buf = io.BytesIO()
-        bar.write(buf, options={"module_width": 0.3, "module_height": 8, "font_size": 6, "text_distance": 2, "quiet_zone": 2})
+        bar.write(buf, options={"module_width": 0.25, "module_height": 6, "font_size": 5, "text_distance": 1, "quiet_zone": 1})
         buf.seek(0)
         return Image(buf, width=width_mm * mm, height=height_mm * mm)
     except Exception:
@@ -66,17 +73,15 @@ def _generate_barcode_image(data: str, width_mm: float = 80, height_mm: float = 
 
 
 def _build_qr_url(doc) -> str:
-    """Construye la URL de validación pública para el QR code."""
     control = _safe(doc, "control_number", "")
     uuid_doc = _safe(doc, "uuid_seniat", "")
-    # URL de validación pública
     base_url = "https://validacion.aida.com.ve"
     if control:
         return f"{base_url}/verificar?nc={control}&uuid={uuid_doc}"
     return f"{base_url}/verificar?uuid={uuid_doc}"
 
 
-# ── Defaults para plantilla (si no se provee layout_config) ───────────────
+# ── Defaults ───────────────────────────────────────────────────────────────
 
 DEFAULT_LAYOUT = {
     "header_color": "#4a6741",
@@ -97,27 +102,36 @@ DEFAULT_LAYOUT = {
 }
 
 
-# ── Utilidades de formato ─────────────────────────────────────────────────
+# ── Utilities ──────────────────────────────────────────────────────────────
 
-def _fmt_money_ve(val, moneda="VES"):
-    """Formato venezolano: puntos para miles, coma para decimales.
-    Ej: 1.234.567,89 Bs."""
+def _fmt_money(val, moneda="VES"):
+    """Venezuelan format: dots for thousands, comma for decimals."""
     if val is None:
         val = 0
     num = float(val)
-    # Formatear con 2 decimales
     parts = f"{abs(num):,.2f}".split(".")
     integer_part = parts[0].replace(",", ".")
-    decimal_part = parts[1]
-    formatted = f"{integer_part},{decimal_part}"
+    formatted = f"{integer_part},{parts[1]}"
     if num < 0:
         formatted = f"-{formatted}"
     suffix = {"VES": "Bs.", "USD": "$", "EUR": "€"}.get(moneda, moneda)
     return f"{formatted} {suffix}"
 
 
+def _fmt_money_short(val):
+    """Money without currency suffix, for table cells."""
+    if val is None:
+        val = 0
+    num = float(val)
+    parts = f"{abs(num):,.2f}".split(".")
+    integer_part = parts[0].replace(",", ".")
+    formatted = f"{integer_part},{parts[1]}"
+    if num < 0:
+        formatted = f"-{formatted}"
+    return formatted
+
+
 def _fmt_date(dt):
-    """Formato fecha DD/MM/AAAA."""
     if isinstance(dt, str):
         return dt[:10]
     if isinstance(dt, datetime):
@@ -131,20 +145,25 @@ def _fmt_date(dt):
 
 
 def _fmt_datetime(dt):
-    """Formato Art. 7 numeral 6: DDMMAAAA HH:MM:SS → se muestra DD/MM/AAAA HH:MM:SS."""
     if isinstance(dt, datetime):
         return dt.strftime("%d/%m/%Y %H:%M:%S")
     return _fmt_date(dt)
 
 
 def _safe(obj, attr, default=""):
-    """Obtener atributo seguro de un objeto."""
     val = getattr(obj, attr, default)
     return val if val is not None else default
 
 
+def _trunc(text, max_len):
+    """Truncate text to max_len characters."""
+    s = str(text) if text else ""
+    if len(s) <= max_len:
+        return s
+    return s[:max_len - 1] + "…"
+
+
 def _parse_layout(layout_config_str):
-    """Parsear layout_config JSON a dict, con fallback a defaults."""
     layout = dict(DEFAULT_LAYOUT)
     if layout_config_str:
         try:
@@ -155,74 +174,76 @@ def _parse_layout(layout_config_str):
     return layout
 
 
-# ── Estilos ───────────────────────────────────────────────────────────────
+# ── Styles ─────────────────────────────────────────────────────────────────
 
 def _build_styles(layout):
-    """Crear estilos de ReportLab basados en la configuración de plantilla."""
+    """Compact styles optimized for single-page invoices with 20+ items."""
     styles = getSampleStyleSheet()
     factor = float(layout.get("font_size_factor", 1.0))
     font = layout.get("font_family", "Helvetica")
     text_color = colors.HexColor(layout.get("text_color", "#1a1a1a"))
     header_color = colors.HexColor(layout.get("header_color", "#4a6741"))
 
+    # All styles use tight leading (1.2x font size)
+    def _fs(base):
+        return max(6, int(base * factor))
+
+    def _ld(base):
+        return max(7, int(base * factor * 1.2))
+
     styles.add(ParagraphStyle(
-        name="DocTitle", fontSize=int(14 * factor), fontName=f"{font}-Bold",
-        alignment=TA_CENTER, spaceAfter=2, textColor=header_color,
+        name="DocType", fontSize=_fs(11), fontName=f"{font}-Bold",
+        alignment=TA_CENTER, spaceAfter=0, spaceBefore=0, textColor=colors.white,
+        leading=_ld(11),
     ))
     styles.add(ParagraphStyle(
-        name="DocType", fontSize=int(12 * factor), fontName=f"{font}-Bold",
-        alignment=TA_CENTER, spaceAfter=2, textColor=colors.white,
+        name="HeaderInfo", fontSize=_fs(7), fontName=f"{font}-Bold",
+        alignment=TA_CENTER, spaceAfter=0, spaceBefore=0, textColor=colors.white,
+        leading=_ld(7),
     ))
     styles.add(ParagraphStyle(
-        name="SectionHead", fontSize=int(10 * factor), fontName=f"{font}-Bold",
-        spaceAfter=3, spaceBefore=6, textColor=header_color,
+        name="EmisLabel", fontSize=_fs(7), fontName=f"{font}-Bold",
+        leading=_ld(7), textColor=text_color, spaceBefore=0, spaceAfter=0,
     ))
     styles.add(ParagraphStyle(
-        name="CellLabel", fontSize=int(8 * factor), fontName=f"{font}-Bold",
-        leading=int(10 * factor), textColor=text_color,
+        name="EmisValue", fontSize=_fs(7), fontName=font,
+        leading=_ld(7), textColor=text_color, spaceBefore=0, spaceAfter=0,
     ))
     styles.add(ParagraphStyle(
-        name="CellValue", fontSize=int(8 * factor), fontName=font,
-        leading=int(10 * factor), textColor=text_color,
+        name="CellLabel", fontSize=_fs(6.5), fontName=f"{font}-Bold",
+        leading=_ld(6.5), textColor=text_color, spaceBefore=0, spaceAfter=0,
     ))
     styles.add(ParagraphStyle(
-        name="SmallBold", fontSize=int(8 * factor), fontName=f"{font}-Bold",
-        leading=int(10 * factor), textColor=text_color,
+        name="CellValue", fontSize=_fs(6.5), fontName=font,
+        leading=_ld(6.5), textColor=text_color, spaceBefore=0, spaceAfter=0,
     ))
     styles.add(ParagraphStyle(
-        name="SmallText", fontSize=int(8 * factor), fontName=font,
-        leading=int(10 * factor), textColor=text_color,
-    ))
-    # Art. 31: mínimo 6pt para imprenta, 8pt para emisor/control
-    styles.add(ParagraphStyle(
-        name="ImprentaText", fontSize=max(6, int(7 * factor)), fontName=font,
-        leading=max(8, int(9 * factor)), textColor=colors.HexColor("#555555"),
-        alignment=TA_CENTER,
+        name="SectionHead", fontSize=_fs(7), fontName=f"{font}-Bold",
+        spaceAfter=1, spaceBefore=2, textColor=header_color,
+        leading=_ld(7),
     ))
     styles.add(ParagraphStyle(
-        name="FooterText", fontSize=max(6, int(7 * factor)), fontName=font,
-        textColor=colors.HexColor("#888888"), alignment=TA_CENTER,
+        name="SmallBold", fontSize=_fs(6.5), fontName=f"{font}-Bold",
+        leading=_ld(6.5), textColor=text_color, spaceBefore=0, spaceAfter=0,
     ))
     styles.add(ParagraphStyle(
-        name="LegalText", fontSize=int(7 * factor), fontName=font,
-        leading=int(9 * factor), textColor=colors.HexColor("#333333"),
+        name="SmallText", fontSize=_fs(6.5), fontName=font,
+        leading=_ld(6.5), textColor=text_color, spaceBefore=0, spaceAfter=0,
     ))
     styles.add(ParagraphStyle(
-        name="TotalLabel", fontSize=int(9 * factor), fontName=font,
-        alignment=TA_RIGHT, textColor=text_color,
+        name="TinyText", fontSize=max(6, _fs(6)), fontName=font,
+        leading=max(7, _ld(6)), textColor=colors.HexColor("#555555"),
+        spaceBefore=0, spaceAfter=0, alignment=TA_CENTER,
     ))
     styles.add(ParagraphStyle(
-        name="TotalValue", fontSize=int(9 * factor), fontName=f"{font}-Bold",
-        alignment=TA_RIGHT, textColor=text_color,
-    ))
-    styles.add(ParagraphStyle(
-        name="GrandTotal", fontSize=int(11 * factor), fontName=f"{font}-Bold",
-        alignment=TA_RIGHT, textColor=header_color,
+        name="LegalText", fontSize=_fs(6), fontName=font,
+        leading=_ld(6), textColor=colors.HexColor("#333333"),
+        spaceBefore=0, spaceAfter=0,
     ))
     return styles
 
 
-# ── Generador principal ───────────────────────────────────────────────────
+# ── Main generator ─────────────────────────────────────────────────────────
 
 def generate_invoice_pdf(
     doc,
@@ -234,31 +255,17 @@ def generate_invoice_pdf(
     banner_position: str = "footer",
 ) -> bytes:
     """
-    Genera un PDF completo para un documento fiscal conforme SENIAT.
-
-    Args:
-        doc: objeto documento (Invoice, CreditNote, DebitNote, DispatchGuide, Withholding)
-        items: lista de DocumentItem
-        doc_type: 'factura', 'nota_credito', 'nota_debito', 'guia_despacho', 'retencion'
-        layout_config: dict o JSON string con configuración de plantilla
-        logo_path: ruta al logo del cliente (o None)
-        banner_path: ruta al banner publicitario (o None)
-        banner_position: 'header', 'footer', o 'none'
-
-    Returns:
-        bytes del PDF generado
+    Genera un PDF compacto para un documento fiscal conforme SENIAT.
+    Diseñado para que al menos 20 items quepan en una sola página.
     """
     layout = _parse_layout(layout_config)
     styles = _build_styles(layout)
 
-    margin_factor = float(layout.get("margins_factor", 1.0))
-    base_margin = 15 * mm * margin_factor
-
     buffer = io.BytesIO()
     pdf = SimpleDocTemplate(
         buffer, pagesize=letter,
-        leftMargin=base_margin, rightMargin=base_margin,
-        topMargin=base_margin, bottomMargin=20 * mm * margin_factor,
+        leftMargin=MARGIN_LR, rightMargin=MARGIN_LR,
+        topMargin=MARGIN_T, bottomMargin=MARGIN_B,
     )
 
     elements = []
@@ -266,113 +273,25 @@ def generate_invoice_pdf(
     hc = colors.HexColor(layout["header_color"])
     ac = colors.HexColor(layout["accent_color"])
     bc = colors.HexColor(layout["border_color"])
+    header_bg = colors.HexColor(layout["header_bg"])
+    thbg = colors.HexColor(layout["table_header_bg"])
+    thtxt = colors.HexColor(layout["table_header_text"])
+    alt_row = colors.HexColor(layout["table_alt_row"])
+    font = layout.get("font_family", "Helvetica")
+    factor = float(layout.get("font_size_factor", 1.0))
+    item_font_size = max(6, int(6.5 * factor))
 
-    # ── Banner en header ──────────────────────────────────────────────
+    # ── Banner header ──
     if banner_path and banner_position == "header" and os.path.isfile(banner_path):
         try:
-            banner_img = Image(banner_path, width=180 * mm, height=25 * mm)
-            banner_img.hAlign = "CENTER"
-            elements.append(banner_img)
-            elements.append(Spacer(1, 2 * mm))
+            elements.append(Image(banner_path, width=USABLE_W, height=18 * mm))
+            elements.append(Spacer(1, 1 * mm))
         except Exception:
             pass
 
-    # ── Encabezado: Logo + Datos Emisor + Tipo Documento ──────────────
-    _build_header(elements, doc, doc_type, layout, styles, logo_path)
-    elements.append(Spacer(1, 3 * mm))
-
-    # ── Receptor ──────────────────────────────────────────────────────
-    _build_receptor(elements, doc, layout, styles)
-    elements.append(Spacer(1, 2 * mm))
-
-    # ── Supervisor / Entrega (solo facturas) ──────────────────────────
-    if doc_type == "factura":
-        _build_supervisor_entrega(elements, doc, layout, styles)
-
-    # ── Referencia a factura original (NC/ND) ─────────────────────────
-    if doc_type in ("nota_credito", "nota_debito"):
-        _build_referencia_factura(elements, doc, doc_type, layout, styles)
-
-    # ── Leyenda "Sin derecho a Crédito Fiscal" (Guía de Despacho) ─────
-    if doc_type == "guia_despacho":
-        _build_leyenda_guia(elements, doc, layout, styles)
-
-    # ── Datos de transporte (Guía de Despacho) ────────────────────────
-    if doc_type == "guia_despacho":
-        _build_transporte(elements, doc, layout, styles)
-
-    # ── Retención (solo para retenciones) ─────────────────────────────
-    if doc_type == "retencion":
-        _build_retencion_detail(elements, doc, layout, styles, moneda)
-
-    # ── Tabla de ítems ────────────────────────────────────────────────
-    if doc_type != "retencion":
-        _build_items_table(elements, doc, items, doc_type, layout, styles, moneda)
-        elements.append(Spacer(1, 3 * mm))
-
-        # ── Totales ──────────────────────────────────────────────────
-        _build_totals(elements, doc, doc_type, layout, styles, moneda)
-        elements.append(Spacer(1, 3 * mm))
-
-    # ── Información de pago ───────────────────────────────────────────
-    if doc_type in ("factura",):
-        _build_payment_info(elements, doc, styles, moneda)
-
-    # ── IGTF Legal ────────────────────────────────────────────────────
-    _build_igtf_legend(elements, doc, doc_type, styles)
-
-    # ── Observaciones ─────────────────────────────────────────────────
-    obs = _safe(doc, "observaciones")
-    if obs:
-        elements.append(Paragraph(f"<b>Observaciones:</b> {obs}", styles["SmallText"]))
-        elements.append(Spacer(1, 2 * mm))
-
-    # ── QR code + Firma digital + Barcode ──────────────────────────────
-    _build_qr_firma_barcode(elements, doc, layout, styles)
-
-    # ── Imprenta Digital (Art. 7, numeral 14) ─────────────────────────
-    _build_imprenta_footer(elements, doc, layout, styles)
-
-    # ── Control range / Providencia ───────────────────────────────────
-    _build_control_providencia(elements, doc, styles)
-
-    # ── Banner en footer ──────────────────────────────────────────────
-    if banner_path and banner_position == "footer" and os.path.isfile(banner_path):
-        try:
-            elements.append(Spacer(1, 3 * mm))
-            banner_img = Image(banner_path, width=180 * mm, height=25 * mm)
-            banner_img.hAlign = "CENTER"
-            elements.append(banner_img)
-        except Exception:
-            pass
-
-    # ── Footer final ──────────────────────────────────────────────────
-    elements.append(Spacer(1, 3 * mm))
-    elements.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#cccccc")))
-    elements.append(Spacer(1, 2 * mm))
-    elements.append(Paragraph(
-        "Documento generado por AIDA Imprenta Digital — Sistema autorizado por SENIAT | "
-        "Verifique en: https://validacion.aida.com.ve",
-        styles["FooterText"],
-    ))
-    elements.append(Paragraph(
-        f"Generado: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}",
-        styles["FooterText"],
-    ))
-
-    pdf.build(elements)
-    return buffer.getvalue()
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# Secciones del PDF
-# ═══════════════════════════════════════════════════════════════════════════
-
-def _build_header(elements, doc, doc_type, layout, styles, logo_path):
-    """Encabezado: Logo (izq) + Emisor (centro) + Tipo/Control (der)."""
-    hc = colors.HexColor(layout["header_color"])
-    header_bg = colors.HexColor(layout["header_bg"])
-
+    # ═══════════════════════════════════════════════════════════════
+    # HEADER: Logo | Emisor | Document Type + Control
+    # ═══════════════════════════════════════════════════════════════
     type_labels = {
         "factura": "FACTURA",
         "nota_credito": "NOTA DE CRÉDITO",
@@ -382,556 +301,446 @@ def _build_header(elements, doc, doc_type, layout, styles, logo_path):
     }
     type_label = type_labels.get(doc_type, doc_type.upper())
 
-    # Columna izquierda: Logo
+    # Left: Logo or company name
     logo_cell = ""
     if logo_path and os.path.isfile(logo_path):
         try:
-            logo_cell = Image(logo_path, width=35 * mm, height=20 * mm)
+            logo_cell = Image(logo_path, width=28 * mm, height=16 * mm)
         except Exception:
-            logo_cell = Paragraph("LOGO", styles["CellLabel"])
+            logo_cell = Paragraph(f"<b>{_trunc(_safe(doc, 'emisor_razon_social', 'AIDA'), 30)}</b>", styles["EmisLabel"])
     else:
-        logo_cell = Paragraph(
-            f"<b>{_safe(doc, 'emisor_razon_social', 'AIDA')}</b>",
-            styles["CellLabel"],
-        )
+        logo_cell = Paragraph(f"<b>{_trunc(_safe(doc, 'emisor_razon_social', 'AIDA'), 30)}</b>", styles["EmisLabel"])
 
-    # Columna centro: Datos emisor (Art. 7, numeral 3 — mínimo 8pt)
-    emisor_lines = []
-    emisor_lines.append(f"<b>{_safe(doc, 'emisor_razon_social')}</b>")
-    emisor_lines.append(f"RIF: {_safe(doc, 'emisor_rif')}")
-    dir_emisor = _safe(doc, "emisor_direccion")
-    if dir_emisor:
-        emisor_lines.append(dir_emisor[:100])
-    tel_emisor = _safe(doc, "emisor_telefono")
-    ciudad = _safe(doc, "emisor_ciudad")
-    zp = _safe(doc, "emisor_zona_postal")
-    extras = []
-    if tel_emisor:
-        extras.append(f"Tel: {tel_emisor}")
-    if ciudad:
-        extras.append(ciudad)
-    if zp:
-        extras.append(f"Zona Postal: {zp}")
-    if extras:
-        emisor_lines.append(" | ".join(extras))
-    emisor_text = "<br/>".join(emisor_lines)
-    emisor_cell = Paragraph(emisor_text, styles["CellValue"])
+    # Center: Emisor data (compact)
+    emisor_parts = [f"<b>{_trunc(_safe(doc, 'emisor_razon_social'), 50)}</b>"]
+    emisor_parts.append(f"RIF: {_safe(doc, 'emisor_rif')}")
+    dir_e = _safe(doc, "emisor_direccion")
+    if dir_e:
+        emisor_parts.append(_trunc(dir_e, 80))
+    tel_e = _safe(doc, "emisor_telefono")
+    if tel_e:
+        emisor_parts.append(f"Tel: {tel_e}")
+    emisor_cell = Paragraph("<br/>".join(emisor_parts), styles["EmisValue"])
 
-    # Columna derecha: Tipo de documento + control + fecha
-    doc_number = _safe(doc, "document_number")
+    # Right: Document type box
     control = _safe(doc, "control_number")
+    doc_number = _safe(doc, "document_number")
     fecha = _fmt_datetime(_safe(doc, "fecha_emision"))
 
     right_data = [
         [Paragraph(f"<b>{type_label}</b>", styles["DocType"])],
-        [Paragraph(f"N° {doc_number}", styles["SmallBold"])],
-        [Paragraph(f"N° de Control: {control}", styles["SmallBold"])],
-        [Paragraph(f"Fecha: {fecha}", styles["SmallBold"])],
+        [Paragraph(f"N° {doc_number}", styles["HeaderInfo"])],
+        [Paragraph(f"Control: {control}", styles["HeaderInfo"])],
+        [Paragraph(f"Fecha: {fecha}", styles["HeaderInfo"])],
     ]
     right_table = Table(right_data, colWidths=["100%"])
     right_table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), hc),
+        ("BACKGROUND", (0, 1), (-1, -1), ac),
         ("ALIGN", (0, 0), (-1, -1), "CENTER"),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("PADDING", (0, 0), (-1, -1), 3),
+        ("PADDING", (0, 0), (-1, -1), 2),
         ("BOX", (0, 0), (-1, -1), 0.5, hc),
     ]))
 
-    # Ensamblar encabezado en tabla 3 columnas
     header_table = Table(
         [[logo_cell, emisor_cell, right_table]],
-        colWidths=["20%", "40%", "40%"],
+        colWidths=[0.18 * USABLE_W, 0.40 * USABLE_W, 0.42 * USABLE_W],
     )
     header_table.setStyle(TableStyle([
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
         ("BACKGROUND", (0, 0), (1, 0), header_bg),
-        ("PADDING", (0, 0), (-1, -1), 4),
-        ("BOX", (0, 0), (-1, -1), 1, hc),
+        ("PADDING", (0, 0), (-1, -1), 3),
+        ("BOX", (0, 0), (-1, -1), 0.5, hc),
     ]))
     elements.append(header_table)
+    elements.append(Spacer(1, 2 * mm))
 
-
-def _build_receptor(elements, doc, layout, styles):
-    """Sección Receptor / Adquiriente (Art. 7, numeral 7)."""
-    hc = colors.HexColor(layout["header_color"])
-
-    # Datos del receptor
-    data = [
-        [Paragraph("<b>DATOS DEL RECEPTOR / ADQUIRIENTE</b>", styles["SmallBold"]), "", ""],
+    # ═══════════════════════════════════════════════════════════════
+    # RECEPTOR (compact 2-row)
+    # ═══════════════════════════════════════════════════════════════
+    rec_data = [
+        [
+            Paragraph("<b>RECEPTOR</b>", ParagraphStyle("rh", parent=styles["SmallBold"], textColor=colors.white)),
+            "", "", "",
+        ],
         [
             Paragraph(f"<b>RIF:</b> {_safe(doc, 'receptor_rif')}", styles["CellValue"]),
-            Paragraph(f"<b>Razón Social:</b> {_safe(doc, 'receptor_razon_social')}", styles["CellValue"]),
-            Paragraph(f"<b>Tel:</b> {_safe(doc, 'receptor_telefono')}", styles["CellValue"]),
-        ],
-        [
-            Paragraph(f"<b>Dirección:</b> {_safe(doc, 'receptor_direccion', '')[:120]}", styles["CellValue"]),
+            Paragraph(f"<b>Razón Social:</b> {_trunc(_safe(doc, 'receptor_razon_social'), 50)}", styles["CellValue"]),
+            Paragraph(f"<b>Dir:</b> {_trunc(_safe(doc, 'receptor_direccion', ''), 60)}", styles["CellValue"]),
             Paragraph(f"<b>Email:</b> {_safe(doc, 'receptor_email')}", styles["CellValue"]),
-            "",
         ],
     ]
-
-    t = Table(data, colWidths=["35%", "40%", "25%"])
-    t.setStyle(TableStyle([
+    rec_table = Table(rec_data, colWidths=[0.18 * USABLE_W, 0.32 * USABLE_W, 0.32 * USABLE_W, 0.18 * USABLE_W])
+    rec_table.setStyle(TableStyle([
         ("SPAN", (0, 0), (-1, 0)),
         ("BACKGROUND", (0, 0), (-1, 0), hc),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor(layout["border_color"])),
-        ("PADDING", (0, 0), (-1, -1), 3),
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-    ]))
-    elements.append(t)
-
-
-def _build_supervisor_entrega(elements, doc, layout, styles):
-    """Sección Supervisor y Datos de Entrega (campos presentes en formatos oficiales)."""
-    sup_nombre = _safe(doc, "supervisor_nombre")
-    sup_cedula = _safe(doc, "supervisor_cedula")
-    ent_dir = _safe(doc, "entrega_direccion")
-    ent_fecha = _safe(doc, "entrega_fecha")
-    ent_resp = _safe(doc, "entrega_responsable")
-
-    if not any([sup_nombre, ent_dir]):
-        return
-
-    hc = colors.HexColor(layout["header_color"])
-
-    rows = []
-    if sup_nombre or sup_cedula:
-        rows.append([
-            Paragraph(f"<b>Supervisor:</b> {sup_nombre}", styles["CellValue"]),
-            Paragraph(f"<b>C.I.:</b> {sup_cedula}", styles["CellValue"]),
-            "",
-        ])
-    if ent_dir or ent_fecha or ent_resp:
-        rows.append([
-            Paragraph(f"<b>Dir. Entrega:</b> {ent_dir[:80] if ent_dir else ''}", styles["CellValue"]),
-            Paragraph(f"<b>Fecha Entrega:</b> {_fmt_date(ent_fecha)}", styles["CellValue"]),
-            Paragraph(f"<b>Responsable:</b> {ent_resp}", styles["CellValue"]),
-        ])
-
-    if rows:
-        elements.append(Spacer(1, 2 * mm))
-        t = Table(rows, colWidths=["40%", "30%", "30%"])
-        t.setStyle(TableStyle([
-            ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor(layout["border_color"])),
-            ("PADDING", (0, 0), (-1, -1), 3),
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ]))
-        elements.append(t)
-
-
-def _build_referencia_factura(elements, doc, doc_type, layout, styles):
-    """Referencia a factura original — para NC y ND (Art. 8)."""
-    hc = colors.HexColor(layout["header_color"])
-    label = "NOTA DE CRÉDITO" if doc_type == "nota_credito" else "NOTA DE DÉBITO"
-    motivo = _safe(doc, "motivo") if doc_type == "nota_credito" else _safe(doc, "concepto")
-
-    elements.append(Spacer(1, 2 * mm))
-    ref_data = [
-        [Paragraph(f"<b>APLICA A LA FACTURA</b>", styles["SmallBold"]), "", ""],
-        [
-            Paragraph(f"<b>Factura N°:</b> {_safe(doc, 'factura_numero')}", styles["CellValue"]),
-            Paragraph(f"<b>Control:</b> {_safe(doc, 'factura_control')}", styles["CellValue"]),
-            Paragraph(f"<b>Fecha:</b> {_fmt_date(_safe(doc, 'factura_fecha'))}", styles["CellValue"]),
-        ],
-        [
-            Paragraph(f"<b>Monto Original:</b> {_fmt_money_ve(_safe(doc, 'factura_monto', 0), _safe(doc, 'moneda', 'VES'))}", styles["CellValue"]),
-            Paragraph(f"<b>Motivo:</b> {motivo[:100] if motivo else ''}", styles["CellValue"]),
-            "",
-        ],
-    ]
-    t = Table(ref_data, colWidths=["35%", "35%", "30%"])
-    t.setStyle(TableStyle([
-        ("SPAN", (0, 0), (-1, 0)),
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#fff3cd")),
-        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor(layout["border_color"])),
-        ("PADDING", (0, 0), (-1, -1), 3),
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-    ]))
-    elements.append(t)
-
-
-def _build_leyenda_guia(elements, doc, layout, styles):
-    """Art. 10: Leyenda obligatoria en Guías de Despacho."""
-    leyenda = _safe(doc, "leyenda_sin_credito_fiscal", True)
-    if leyenda:
-        elements.append(Spacer(1, 2 * mm))
-        elements.append(Paragraph(
-            '<b>"SIN DERECHO A CRÉDITO FISCAL"</b>',
-            ParagraphStyle(
-                "LeyendaGuia", parent=styles["SmallBold"],
-                fontSize=10, alignment=TA_CENTER,
-                textColor=colors.HexColor("#dc2626"),
-                spaceBefore=4, spaceAfter=4,
-            ),
-        ))
-
-
-def _build_transporte(elements, doc, layout, styles):
-    """Datos de transporte para Guías de Despacho."""
-    transportista = _safe(doc, "transportista_nombre")
-    if not transportista:
-        return
-
-    hc = colors.HexColor(layout["header_color"])
-    elements.append(Spacer(1, 2 * mm))
-    data = [
-        [Paragraph("<b>DATOS DE TRANSPORTE</b>", styles["SmallBold"]), "", ""],
-        [
-            Paragraph(f"<b>Transportista:</b> {transportista}", styles["CellValue"]),
-            Paragraph(f"<b>RIF:</b> {_safe(doc, 'transportista_rif')}", styles["CellValue"]),
-            Paragraph(f"<b>Placa:</b> {_safe(doc, 'vehiculo_placa')}", styles["CellValue"]),
-        ],
-        [
-            Paragraph(f"<b>Destino:</b> {_safe(doc, 'ruta_destino', '')[:100]}", styles["CellValue"]),
-            Paragraph(f"<b>Motivo Traslado:</b> {_safe(doc, 'motivo_traslado', '')[:80]}", styles["CellValue"]),
-            "",
-        ],
-    ]
-    t = Table(data, colWidths=["40%", "30%", "30%"])
-    t.setStyle(TableStyle([
-        ("SPAN", (0, 0), (-1, 0)),
-        ("BACKGROUND", (0, 0), (-1, 0), hc),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor(layout["border_color"])),
-        ("PADDING", (0, 0), (-1, -1), 3),
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-    ]))
-    elements.append(t)
-
-
-def _build_retencion_detail(elements, doc, layout, styles, moneda):
-    """Detalle específico para Comprobantes de Retención (Art. 11)."""
-    hc = colors.HexColor(layout["header_color"])
-    elements.append(Spacer(1, 3 * mm))
-
-    tipo_ret = "IVA" if _safe(doc, "tipo") == "iva" else "ISLR"
-    data = [
-        [Paragraph(f"<b>DETALLE DE RETENCIÓN — {tipo_ret}</b>", styles["SmallBold"]), "", ""],
-        [
-            Paragraph(f"<b>Agente Retención:</b> {_safe(doc, 'agente_retencion_nombre')}", styles["CellValue"]),
-            Paragraph(f"<b>RIF:</b> {_safe(doc, 'agente_retencion_rif')}", styles["CellValue"]),
-            "",
-        ],
-        [
-            Paragraph(f"<b>Sujeto Retenido:</b> {_safe(doc, 'sujeto_retenido_nombre')}", styles["CellValue"]),
-            Paragraph(f"<b>RIF:</b> {_safe(doc, 'sujeto_retenido_rif')}", styles["CellValue"]),
-            Paragraph(f"<b>Período:</b> {_safe(doc, 'periodo_fiscal')}", styles["CellValue"]),
-        ],
-        [
-            Paragraph(f"<b>Factura N°:</b> {_safe(doc, 'factura_numero')}", styles["CellValue"]),
-            Paragraph(f"<b>Fecha Factura:</b> {_fmt_date(_safe(doc, 'factura_fecha'))}", styles["CellValue"]),
-            Paragraph(f"<b>Monto Factura:</b> {_fmt_money_ve(_safe(doc, 'monto_factura', 0), moneda)}", styles["CellValue"]),
-        ],
-        [
-            Paragraph(f"<b>Base Imponible:</b> {_fmt_money_ve(_safe(doc, 'base_imponible', 0), moneda)}", styles["CellValue"]),
-            Paragraph(f"<b>% Retención:</b> {float(_safe(doc, 'porcentaje_retencion', 0)):.2f}%", styles["CellValue"]),
-            Paragraph(f"<b>Monto Retenido:</b> {_fmt_money_ve(_safe(doc, 'monto_retenido', 0), moneda)}", styles["CellValue"]),
-        ],
-    ]
-    if _safe(doc, "concepto"):
-        data.append([
-            Paragraph(f"<b>Concepto:</b> {_safe(doc, 'concepto')}", styles["CellValue"]),
-            "", "",
-        ])
-
-    t = Table(data, colWidths=["40%", "30%", "30%"])
-    t.setStyle(TableStyle([
-        ("SPAN", (0, 0), (-1, 0)),
-        ("BACKGROUND", (0, 0), (-1, 0), hc),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor(layout["border_color"])),
-        ("PADDING", (0, 0), (-1, -1), 3),
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-    ]))
-    elements.append(t)
-    elements.append(Spacer(1, 4 * mm))
-
-
-def _build_items_table(elements, doc, items, doc_type, layout, styles, moneda):
-    """Tabla de ítems/detalle del documento (Art. 7, numerales 8-10)."""
-    hc = colors.HexColor(layout["header_color"])
-    thbg = colors.HexColor(layout["table_header_bg"])
-    thtxt = colors.HexColor(layout["table_header_text"])
-    alt_row = colors.HexColor(layout["table_alt_row"])
-    factor = float(layout.get("font_size_factor", 1.0))
-
-    elements.append(Paragraph("DETALLE DE ÍTEMS", styles["SectionHead"]))
-
-    # Columnas base
-    if doc_type == "guia_despacho":
-        header = ["#", "Código", "Descripción", "U.M.", "Cant.", "Peso", "Vol."]
-        col_widths = [20, 50, 150, 30, 40, 45, 45]
-    else:
-        header = ["#", "Código", "Descripción", "Cant.", "P. Unit.", "Desc.", "Alíc.", "Total"]
-        col_widths = [18, 50, 130, 35, 60, 42, 35, 65]
-
-    table_data = [header]
-
-    for item in items:
-        if doc_type == "guia_despacho":
-            row = [
-                str(_safe(item, "line_number", "")),
-                str(_safe(item, "product_code", ""))[:12],
-                str(_safe(item, "description", ""))[:50],
-                str(_safe(item, "unit_of_measure", "UND")),
-                f"{float(_safe(item, 'quantity', 0)):.2f}",
-                str(_safe(item, "peso", "")),
-                str(_safe(item, "volumen", "")),
-            ]
-        else:
-            row = [
-                str(_safe(item, "line_number", "")),
-                str(_safe(item, "product_code", ""))[:12],
-                str(_safe(item, "description", ""))[:50],
-                f"{float(_safe(item, 'quantity', 0)):.2f}",
-                _fmt_money_ve(_safe(item, "unit_price", 0), ""),
-                _fmt_money_ve(_safe(item, "discount_amount", 0), ""),
-                f"{float(_safe(item, 'tax_rate', 0)):.0f}%",
-                _fmt_money_ve(_safe(item, "total", 0), ""),
-            ]
-        table_data.append(row)
-
-    items_table = Table(table_data, colWidths=col_widths)
-    items_table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), thbg),
-        ("TEXTCOLOR", (0, 0), (-1, 0), thtxt),
-        ("FONTNAME", (0, 0), (-1, 0), f"{layout.get('font_family', 'Helvetica')}-Bold"),
-        ("FONTSIZE", (0, 0), (-1, -1), max(6, int(7 * factor))),
-        ("ALIGN", (0, 0), (-1, 0), "CENTER"),
-        ("ALIGN", (3, 1), (-1, -1), "RIGHT"),
-        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor(layout["border_color"])),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, alt_row]),
-        ("PADDING", (0, 0), (-1, -1), 3),
+        ("GRID", (0, 0), (-1, -1), 0.4, bc),
+        ("PADDING", (0, 0), (-1, -1), 2),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
     ]))
-    elements.append(items_table)
+    elements.append(rec_table)
+
+    # ═══════════════════════════════════════════════════════════════
+    # OPTIONAL SECTIONS (NC/ND reference, Dispatch guide, etc.)
+    # ═══════════════════════════════════════════════════════════════
+    if doc_type in ("nota_credito", "nota_debito"):
+        _build_referencia_compact(elements, doc, doc_type, layout, styles)
+
+    if doc_type == "guia_despacho":
+        elements.append(Spacer(1, 1 * mm))
+        elements.append(Paragraph(
+            '<b>"SIN DERECHO A CRÉDITO FISCAL"</b>',
+            ParagraphStyle("leg", parent=styles["SmallBold"], fontSize=9,
+                           alignment=TA_CENTER, textColor=colors.HexColor("#dc2626")),
+        ))
+        _build_transporte_compact(elements, doc, layout, styles)
+
+    if doc_type == "retencion":
+        _build_retencion_compact(elements, doc, layout, styles, moneda)
+
+    elements.append(Spacer(1, 1.5 * mm))
+
+    # ═══════════════════════════════════════════════════════════════
+    # ITEMS TABLE (compact — 20+ items on one page)
+    # ═══════════════════════════════════════════════════════════════
+    if doc_type != "retencion":
+        if doc_type == "guia_despacho":
+            headers = ["#", "Código", "Descripción", "U.M.", "Cant.", "Peso", "Vol."]
+            col_w = [16, 45, 160, 28, 38, 40, 40]
+            num_start = 3  # Right-align from column 3
+        else:
+            headers = ["#", "Código", "Descripción", "Cant.", "P.Unit.", "Desc.", "Alíc.", "Total"]
+            col_w = [14, 42, 140, 30, 55, 40, 28, 60]
+            num_start = 3
+
+        table_data = [headers]
+
+        for item in items:
+            if doc_type == "guia_despacho":
+                row = [
+                    str(_safe(item, "line_number", "")),
+                    _trunc(_safe(item, "product_code", ""), 10),
+                    _trunc(_safe(item, "description", ""), 45),
+                    str(_safe(item, "unit_of_measure", "UND")),
+                    f"{float(_safe(item, 'quantity', 0)):.2f}",
+                    str(_safe(item, "peso", "")),
+                    str(_safe(item, "volumen", "")),
+                ]
+            else:
+                row = [
+                    str(_safe(item, "line_number", "")),
+                    _trunc(_safe(item, "product_code", ""), 10),
+                    _trunc(_safe(item, "description", ""), 45),
+                    f"{float(_safe(item, 'quantity', 0)):.2f}",
+                    _fmt_money_short(_safe(item, "unit_price", 0)),
+                    _fmt_money_short(_safe(item, "discount_amount", 0)),
+                    f"{float(_safe(item, 'tax_rate', 0)):.0f}%",
+                    _fmt_money_short(_safe(item, "total", 0)),
+                ]
+            table_data.append(row)
+
+        items_table = Table(table_data, colWidths=col_w)
+        items_table.setStyle(TableStyle([
+            # Header row
+            ("BACKGROUND", (0, 0), (-1, 0), thbg),
+            ("TEXTCOLOR", (0, 0), (-1, 0), thtxt),
+            ("FONTNAME", (0, 0), (-1, 0), f"{font}-Bold"),
+            ("FONTSIZE", (0, 0), (-1, 0), item_font_size),
+            ("ALIGN", (0, 0), (-1, 0), "CENTER"),
+            # Data rows
+            ("FONTNAME", (0, 1), (-1, -1), font),
+            ("FONTSIZE", (0, 1), (-1, -1), item_font_size),
+            ("ALIGN", (num_start, 1), (-1, -1), "RIGHT"),
+            ("ALIGN", (0, 1), (0, -1), "CENTER"),  # Line number centered
+            # Grid and colors
+            ("GRID", (0, 0), (-1, -1), 0.3, bc),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, alt_row]),
+            # Tight padding for compact rows
+            ("TOPPADDING", (0, 0), (-1, -1), 1.5),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 1.5),
+            ("LEFTPADDING", (0, 0), (-1, -1), 2),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 2),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ]))
+        elements.append(items_table)
+        elements.append(Spacer(1, 2 * mm))
+
+        # ═══════════════════════════════════════════════════════════
+        # TOTALS (compact, right-aligned)
+        # ═══════════════════════════════════════════════════════════
+        _build_totals_compact(elements, doc, doc_type, layout, styles, moneda)
+
+    # ═══════════════════════════════════════════════════════════════
+    # PAYMENT INFO (one line)
+    # ═══════════════════════════════════════════════════════════════
+    if doc_type == "factura":
+        parts = []
+        fp = _safe(doc, "forma_pago")
+        if fp:
+            parts.append(f"<b>Pago:</b> {fp}")
+        cp = _safe(doc, "condicion_pago")
+        if cp:
+            parts.append(f"<b>Condición:</b> {cp}")
+        tc = _safe(doc, "tasa_cambio")
+        if tc and moneda != "VES":
+            parts.append(f"<b>Tasa:</b> 1 {moneda} = {float(tc):,.4f} VES")
+        if parts:
+            elements.append(Paragraph(" &nbsp;|&nbsp; ".join(parts), styles["SmallText"]))
+
+    # ── IGTF legal ──
+    monto_igtf = float(_safe(doc, "monto_igtf", 0))
+    if monto_igtf > 0 and doc_type != "retencion":
+        elements.append(Paragraph(
+            f"<b>IGTF:</b> Impuesto a las Grandes Transacciones Financieras — "
+            f"Alícuota {float(_safe(doc, 'porcentaje_igtf', 3)):.0f}% sobre pagos en divisas/criptoactivos.",
+            styles["LegalText"],
+        ))
+
+    # ── Observaciones ──
+    obs = _safe(doc, "observaciones")
+    if obs:
+        elements.append(Paragraph(f"<b>Obs:</b> {_trunc(obs, 200)}", styles["SmallText"]))
+
+    elements.append(Spacer(1, 1.5 * mm))
+
+    # ═══════════════════════════════════════════════════════════════
+    # QR + FIRMA + BARCODE (compact single row)
+    # ═══════════════════════════════════════════════════════════════
+    qr_url = _build_qr_url(doc)
+    qr_img = _generate_qr_image(qr_url, size_mm=16)
+    firma = _safe(doc, "firma_digital")
+    uuid_doc = _safe(doc, "uuid_seniat")
+
+    firma_parts = []
+    if uuid_doc:
+        firma_parts.append(f"<b>UUID:</b> {uuid_doc}")
+    if firma:
+        firma_parts.append(f"<b>SHA-256:</b> {firma}")
+
+    control_str = _safe(doc, "control_number", "")
+    barcode_img = _generate_barcode_image(control_str, width_mm=55, height_mm=7) if control_str else None
+
+    # Build QR | Firma | Barcode row
+    elements.append(HRFlowable(width="100%", thickness=0.3, color=colors.HexColor("#cccccc")))
+    qr_cell = qr_img or ""
+    firma_cell = Paragraph("<br/>".join(firma_parts), styles["SmallText"]) if firma_parts else ""
+    bar_cell = barcode_img or ""
+
+    if qr_img or firma_parts or barcode_img:
+        bottom_table = Table(
+            [[qr_cell, firma_cell, bar_cell]],
+            colWidths=[20 * mm, USABLE_W - 20 * mm - 60 * mm, 60 * mm],
+        )
+        bottom_table.setStyle(TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("PADDING", (0, 0), (-1, -1), 1),
+        ]))
+        elements.append(bottom_table)
+
+    # ═══════════════════════════════════════════════════════════════
+    # IMPRENTA FOOTER (Art. 7, numeral 14 — min 6pt)
+    # ═══════════════════════════════════════════════════════════════
+    imprenta_rif = _safe(doc, "imprenta_rif") or "J-50000000-0"
+    imprenta_razon = _safe(doc, "imprenta_razon_social") or "AIDA Imprenta Digital, C.A."
+
+    elements.append(HRFlowable(width="100%", thickness=0.3, color=colors.HexColor("#cccccc")))
+    elements.append(Paragraph(
+        f"Imprenta: {imprenta_razon} — RIF: {imprenta_rif} | "
+        f"AIDA Sistema Autorizado SENIAT | {datetime.now().strftime('%d/%m/%Y %H:%M')}",
+        styles["TinyText"],
+    ))
+
+    # Control range
+    rango_desde = _safe(doc, "control_rango_desde")
+    rango_hasta = _safe(doc, "control_rango_hasta")
+    if rango_desde and rango_hasta:
+        elements.append(Paragraph(
+            f"Rango: {rango_desde} — {rango_hasta}",
+            styles["TinyText"],
+        ))
+
+    # ── Banner footer ──
+    if banner_path and banner_position == "footer" and os.path.isfile(banner_path):
+        try:
+            elements.append(Spacer(1, 1 * mm))
+            elements.append(Image(banner_path, width=USABLE_W, height=15 * mm))
+        except Exception:
+            pass
+
+    pdf.build(elements)
+    return buffer.getvalue()
 
 
-def _build_totals(elements, doc, doc_type, layout, styles, moneda):
-    """Sección de totales con IGTF (Art. 7, numerales 11-13)."""
+# ═══════════════════════════════════════════════════════════════════════════
+# Compact section builders
+# ═══════════════════════════════════════════════════════════════════════════
+
+def _build_totals_compact(elements, doc, doc_type, layout, styles, moneda):
+    """Compact totals section — all in a small right-aligned block."""
     hc = colors.HexColor(layout["header_color"])
+    font = layout.get("font_family", "Helvetica")
+    factor = float(layout.get("font_size_factor", 1.0))
+    fs_label = max(6, int(7 * factor))
+    fs_total = max(7, int(8 * factor))
 
     subtotal = float(_safe(doc, "subtotal", 0))
     descuento = float(_safe(doc, "descuento", 0))
-    cargo_admin = float(_safe(doc, "cargo_administrativo", 0))
     base_imponible = float(_safe(doc, "base_imponible", 0) or subtotal)
     base_exenta = float(_safe(doc, "base_exenta", 0))
-    base_no_sujeta = float(_safe(doc, "base_no_sujeta", 0))
     iva_16 = float(_safe(doc, "monto_iva_16", 0) or _safe(doc, "monto_iva", 0) or 0)
     iva_8 = float(_safe(doc, "monto_iva_8", 0))
     total = float(_safe(doc, "total", 0))
-
-    # IGTF
     base_igtf = float(_safe(doc, "base_imponible_igtf", 0))
     monto_igtf = float(_safe(doc, "monto_igtf", 0))
     total_con_igtf = float(_safe(doc, "total_con_igtf", 0))
 
     rows = []
-    rows.append(["Subtotal:", _fmt_money_ve(subtotal, moneda)])
     if descuento > 0:
-        rows.append(["Descuento:", f"-{_fmt_money_ve(descuento, moneda)}"])
-    if cargo_admin > 0:
-        rows.append(["Cargo Administrativo:", _fmt_money_ve(cargo_admin, moneda)])
-    rows.append(["Base Imponible:", _fmt_money_ve(base_imponible, moneda)])
+        rows.append(["Subtotal:", _fmt_money(subtotal, moneda)])
+        rows.append(["Descuento:", f"-{_fmt_money(descuento, moneda)}"])
+    rows.append(["Base Imponible:", _fmt_money(base_imponible, moneda)])
     if base_exenta > 0:
-        rows.append(["Base Exenta:", _fmt_money_ve(base_exenta, moneda)])
-    if base_no_sujeta > 0:
-        rows.append(["Base No Sujeta:", _fmt_money_ve(base_no_sujeta, moneda)])
+        rows.append(["Exento:", _fmt_money(base_exenta, moneda)])
     if iva_16 > 0:
-        alicuota_16 = float(_safe(doc, "alicuota_iva_16", 16))
-        rows.append([f"IVA {alicuota_16:.0f}%:", _fmt_money_ve(iva_16, moneda)])
+        rows.append([f"IVA {float(_safe(doc, 'alicuota_iva_16', 16)):.0f}%:", _fmt_money(iva_16, moneda)])
     if iva_8 > 0:
-        alicuota_8 = float(_safe(doc, "alicuota_iva_8", 8))
-        rows.append([f"IVA {alicuota_8:.0f}%:", _fmt_money_ve(iva_8, moneda)])
-    rows.append(["TOTAL:", _fmt_money_ve(total, moneda)])
+        rows.append([f"IVA {float(_safe(doc, 'alicuota_iva_8', 8)):.0f}%:", _fmt_money(iva_8, moneda)])
+    rows.append(["TOTAL:", _fmt_money(total, moneda)])
 
-    # IGTF (si aplica)
     if monto_igtf > 0:
-        pct_igtf = float(_safe(doc, "porcentaje_igtf", 3))
-        rows.append(["", ""])  # Línea separadora visual
-        rows.append([f"Base Imponible IGTF:", _fmt_money_ve(base_igtf, moneda)])
-        rows.append([f"IGTF {pct_igtf:.0f}%:", _fmt_money_ve(monto_igtf, moneda)])
-        rows.append(["TOTAL A PAGAR (con IGTF):", _fmt_money_ve(total_con_igtf or (total + monto_igtf), moneda)])
+        rows.append([f"IGTF {float(_safe(doc, 'porcentaje_igtf', 3)):.0f}%:", _fmt_money(monto_igtf, moneda)])
+        rows.append(["TOTAL + IGTF:", _fmt_money(total_con_igtf or (total + monto_igtf), moneda)])
 
-    totals_table = Table(rows, colWidths=[140, 110])
+    totals_table = Table(rows, colWidths=[85, 90])
     style_cmds = [
         ("ALIGN", (0, 0), (0, -1), "RIGHT"),
         ("ALIGN", (1, 0), (1, -1), "RIGHT"),
-        ("FONTNAME", (0, 0), (-1, -1), layout.get("font_family", "Helvetica")),
-        ("FONTSIZE", (0, 0), (-1, -1), 9),
-        ("PADDING", (0, 0), (-1, -1), 2),
+        ("FONTNAME", (0, 0), (-1, -1), font),
+        ("FONTSIZE", (0, 0), (-1, -1), fs_label),
+        ("TOPPADDING", (0, 0), (-1, -1), 1),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
+        ("LEFTPADDING", (0, 0), (-1, -1), 2),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 2),
     ]
 
-    # Encontrar fila TOTAL y TOTAL CON IGTF para destacar
     for i, row in enumerate(rows):
         if row[0].startswith("TOTAL"):
-            style_cmds.append(("FONTNAME", (0, i), (-1, i), f"{layout.get('font_family', 'Helvetica')}-Bold"))
-            style_cmds.append(("FONTSIZE", (0, i), (-1, i), 10))
-            style_cmds.append(("LINEABOVE", (0, i), (-1, i), 1, hc))
+            style_cmds.append(("FONTNAME", (0, i), (-1, i), f"{font}-Bold"))
+            style_cmds.append(("FONTSIZE", (0, i), (-1, i), fs_total))
+            style_cmds.append(("LINEABOVE", (0, i), (-1, i), 0.5, hc))
             if "IGTF" in row[0]:
                 style_cmds.append(("TEXTCOLOR", (0, i), (-1, i), colors.HexColor("#dc2626")))
-                style_cmds.append(("FONTSIZE", (0, i), (-1, i), 11))
 
     totals_table.setStyle(TableStyle(style_cmds))
 
-    # Alinear a la derecha
-    container = Table([[Spacer(1, 1), totals_table]], colWidths=["50%", "50%"])
+    # Right-align the totals block
+    container = Table(
+        [[Spacer(1, 1), totals_table]],
+        colWidths=[USABLE_W - 175, 175],
+    )
     elements.append(container)
+    elements.append(Spacer(1, 1.5 * mm))
 
 
-def _build_payment_info(elements, doc, styles, moneda):
-    """Información de pago, tasa de cambio."""
-    forma_pago = _safe(doc, "forma_pago")
-    condicion_pago = _safe(doc, "condicion_pago")
-    tasa = _safe(doc, "tasa_cambio")
-
-    parts = []
-    if forma_pago:
-        parts.append(f"<b>Forma de pago:</b> {forma_pago}")
-    if condicion_pago:
-        parts.append(f"<b>Condición:</b> {condicion_pago}")
-    if tasa and moneda != "VES":
-        parts.append(f"<b>Tasa de cambio:</b> 1 {moneda} = {float(tasa):,.4f} VES")
-
-    if parts:
-        elements.append(Paragraph(" | ".join(parts), styles["SmallText"]))
-        elements.append(Spacer(1, 2 * mm))
-
-
-def _build_igtf_legend(elements, doc, doc_type, styles):
-    """Leyenda legal de IGTF si aplica."""
-    monto_igtf = float(_safe(doc, "monto_igtf", 0))
-    if monto_igtf <= 0:
-        return
-    if doc_type == "retencion":
-        return
-
-    pct = float(_safe(doc, "porcentaje_igtf", 3))
-    elements.append(Spacer(1, 2 * mm))
-    elements.append(Paragraph(
-        f"<b>IGTF:</b> Impuesto a las Grandes Transacciones Financieras. "
-        f"Alícuota del {pct:.0f}% aplicable a pagos en moneda extranjera o "
-        f"criptoactivos, conforme al Decreto con Rango, Valor y Fuerza de "
-        f"Ley de Impuesto a las Grandes Transacciones Financieras.",
-        styles["LegalText"],
-    ))
-    elements.append(Spacer(1, 2 * mm))
-
-
-def _build_qr_firma_barcode(elements, doc, layout, styles):
-    """QR code de validación, firma digital y código de barras."""
+def _build_referencia_compact(elements, doc, doc_type, layout, styles):
+    """Compact reference to original invoice for NC/ND."""
     hc = colors.HexColor(layout["header_color"])
-    elements.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#cccccc")))
+    bc = colors.HexColor(layout["border_color"])
+    motivo = _safe(doc, "motivo") if doc_type == "nota_credito" else _safe(doc, "concepto")
+
+    elements.append(Spacer(1, 1 * mm))
+    ref_data = [
+        [
+            Paragraph(f"<b>Factura N°:</b> {_safe(doc, 'factura_numero')}", styles["CellValue"]),
+            Paragraph(f"<b>Control:</b> {_safe(doc, 'factura_control')}", styles["CellValue"]),
+            Paragraph(f"<b>Motivo:</b> {_trunc(motivo, 60) if motivo else ''}", styles["CellValue"]),
+        ],
+    ]
+    t = Table(ref_data, colWidths=[0.25 * USABLE_W, 0.25 * USABLE_W, 0.50 * USABLE_W])
+    t.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#fff8e1")),
+        ("GRID", (0, 0), (-1, -1), 0.3, bc),
+        ("PADDING", (0, 0), (-1, -1), 2),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+    ]))
+    elements.append(t)
+
+
+def _build_transporte_compact(elements, doc, layout, styles):
+    """Compact transport data for dispatch guides."""
+    transportista = _safe(doc, "transportista_nombre")
+    if not transportista:
+        return
+
+    bc = colors.HexColor(layout["border_color"])
+    elements.append(Spacer(1, 1 * mm))
+    data = [[
+        Paragraph(f"<b>Transp:</b> {_trunc(transportista, 30)}", styles["CellValue"]),
+        Paragraph(f"<b>RIF:</b> {_safe(doc, 'transportista_rif')}", styles["CellValue"]),
+        Paragraph(f"<b>Placa:</b> {_safe(doc, 'vehiculo_placa')}", styles["CellValue"]),
+        Paragraph(f"<b>Destino:</b> {_trunc(_safe(doc, 'ruta_destino', ''), 40)}", styles["CellValue"]),
+    ]]
+    t = Table(data, colWidths=[0.30 * USABLE_W, 0.20 * USABLE_W, 0.15 * USABLE_W, 0.35 * USABLE_W])
+    t.setStyle(TableStyle([
+        ("GRID", (0, 0), (-1, -1), 0.3, bc),
+        ("PADDING", (0, 0), (-1, -1), 2),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+    ]))
+    elements.append(t)
+
+
+def _build_retencion_compact(elements, doc, layout, styles, moneda):
+    """Compact withholding detail."""
+    hc = colors.HexColor(layout["header_color"])
+    bc = colors.HexColor(layout["border_color"])
+    elements.append(Spacer(1, 1.5 * mm))
+
+    tipo_ret = "IVA" if _safe(doc, "tipo") == "iva" else "ISLR"
+    data = [
+        [Paragraph(f"<b>RETENCIÓN {tipo_ret}</b>",
+                   ParagraphStyle("rh2", parent=styles["SmallBold"], textColor=colors.white)),
+         "", ""],
+        [
+            Paragraph(f"<b>Agente:</b> {_trunc(_safe(doc, 'agente_retencion_nombre'), 40)}", styles["CellValue"]),
+            Paragraph(f"<b>Sujeto:</b> {_trunc(_safe(doc, 'sujeto_retenido_nombre'), 40)}", styles["CellValue"]),
+            Paragraph(f"<b>Período:</b> {_safe(doc, 'periodo_fiscal')}", styles["CellValue"]),
+        ],
+        [
+            Paragraph(f"<b>Base:</b> {_fmt_money(_safe(doc, 'base_imponible', 0), moneda)}", styles["CellValue"]),
+            Paragraph(f"<b>%Ret:</b> {float(_safe(doc, 'porcentaje_retencion', 0)):.2f}%", styles["CellValue"]),
+            Paragraph(f"<b>Retenido:</b> {_fmt_money(_safe(doc, 'monto_retenido', 0), moneda)}", styles["CellValue"]),
+        ],
+    ]
+    t = Table(data, colWidths=[0.40 * USABLE_W, 0.35 * USABLE_W, 0.25 * USABLE_W])
+    t.setStyle(TableStyle([
+        ("SPAN", (0, 0), (-1, 0)),
+        ("BACKGROUND", (0, 0), (-1, 0), hc),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("GRID", (0, 0), (-1, -1), 0.3, bc),
+        ("PADDING", (0, 0), (-1, -1), 2),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+    ]))
+    elements.append(t)
     elements.append(Spacer(1, 2 * mm))
-
-    # QR code image (apunta a URL de validación pública)
-    qr_url = _build_qr_url(doc)
-    qr_img = _generate_qr_image(qr_url, size_mm=22)
-
-    # Firma digital text
-    firma = _safe(doc, "firma_digital")
-    uuid_doc = _safe(doc, "uuid_seniat")
-
-    firma_lines = []
-    if uuid_doc:
-        firma_lines.append(f"<b>UUID:</b> {uuid_doc}")
-    if firma:
-        firma_lines.append(f"<b>Firma SHA-256:</b> {firma}")
-    firma_lines.append(f"<b>Verificar en:</b> {qr_url}")
-    firma_text = Paragraph("<br/>".join(firma_lines), styles["SmallText"])
-
-    if qr_img:
-        # QR a la izquierda, firma a la derecha
-        qr_firma_table = Table(
-            [[qr_img, firma_text]],
-            colWidths=[28 * mm, None],
-        )
-        qr_firma_table.setStyle(TableStyle([
-            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-            ("PADDING", (0, 0), (-1, -1), 2),
-        ]))
-        elements.append(qr_firma_table)
-    elif firma:
-        elements.append(firma_text)
-
-    elements.append(Spacer(1, 2 * mm))
-
-    # Barcode (Code128 con número de control)
-    control = _safe(doc, "control_number", "")
-    if control:
-        barcode_img = _generate_barcode_image(control, width_mm=75, height_mm=10)
-        if barcode_img:
-            barcode_img.hAlign = "CENTER"
-            elements.append(barcode_img)
-            elements.append(Spacer(1, 2 * mm))
-
-
-def _build_imprenta_footer(elements, doc, layout, styles):
-    """Datos de la Imprenta Digital (Art. 7, numeral 14 — mínimo 6pt)."""
-    imprenta_rif = _safe(doc, "imprenta_rif")
-    imprenta_razon = _safe(doc, "imprenta_razon_social")
-
-    if not imprenta_rif and not imprenta_razon:
-        # Usar datos de AIDA como imprenta por defecto
-        imprenta_rif = "J-50000000-0"
-        imprenta_razon = "AIDA Imprenta Digital, C.A."
-
-    imprenta_auth = _safe(doc, "imprenta_autorizacion")
-    imprenta_fecha = _safe(doc, "imprenta_fecha_autorizacion")
-
-    elements.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#cccccc")))
-    elements.append(Spacer(1, 2 * mm))
-
-    parts = [f"Imprenta: {imprenta_razon} — RIF: {imprenta_rif}"]
-    if imprenta_auth:
-        parts.append(f"Providencia N° {imprenta_auth}")
-    if imprenta_fecha:
-        parts.append(f"Fecha: {_fmt_date(imprenta_fecha)}")
-
-    elements.append(Paragraph(" | ".join(parts), styles["ImprentaText"]))
-
-
-def _build_control_providencia(elements, doc, styles):
-    """Rango de control asignado (Art. 7, numeral 5) y Providencia de referencia."""
-    rango_desde = _safe(doc, "control_rango_desde")
-    rango_hasta = _safe(doc, "control_rango_hasta")
-    fecha_asig = _safe(doc, "control_fecha_asignacion")
-    providencia = _safe(doc, "providencia_referencia")
-
-    parts = []
-    if rango_desde and rango_hasta:
-        parts.append(f"Rango de Control: Desde N° {rango_desde} Hasta N° {rango_hasta}")
-        if fecha_asig:
-            parts.append(f"Asignado: {_fmt_date(fecha_asig)}")
-
-    if providencia:
-        parts.append(f"Providencia: {providencia}")
-
-    if parts:
-        elements.append(Spacer(1, 1 * mm))
-        elements.append(Paragraph(" | ".join(parts), styles["ImprentaText"]))
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# Funciones de conveniencia (wrappers)
+# Convenience wrappers
 # ═══════════════════════════════════════════════════════════════════════════
 
 def generate_credit_note_pdf(doc, items, **kwargs) -> bytes:
-    """Genera PDF para Nota de Crédito."""
     return generate_invoice_pdf(doc, items, doc_type="nota_credito", **kwargs)
 
 
 def generate_debit_note_pdf(doc, items, **kwargs) -> bytes:
-    """Genera PDF para Nota de Débito."""
     return generate_invoice_pdf(doc, items, doc_type="nota_debito", **kwargs)
 
 
 def generate_dispatch_guide_pdf(doc, items, **kwargs) -> bytes:
-    """Genera PDF para Guía de Despacho."""
     return generate_invoice_pdf(doc, items, doc_type="guia_despacho", **kwargs)
 
 
 def generate_withholding_pdf(doc, **kwargs) -> bytes:
-    """Genera PDF para Comprobante de Retención."""
     return generate_invoice_pdf(doc, items=[], doc_type="retencion", **kwargs)
