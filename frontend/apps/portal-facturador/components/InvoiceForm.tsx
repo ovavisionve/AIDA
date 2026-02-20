@@ -918,8 +918,699 @@ export default function InvoiceForm({ token }: Props) {
   };
 
   // ═══════════════════════════════════════════════════════════════
-  // PLACEHOLDER — Phase 5 (render: main form)
+  // RENDER: Main form
   // ═══════════════════════════════════════════════════════════════
 
-  return <div className="text-white text-center py-12">Cargando formulario...</div>;
+  const DualRow = ({ label, amount, sign, bold, color }: { label: string; amount: number; sign?: string; bold?: boolean; color?: string }) => {
+    const dual = dualAmount(amount);
+    const pre = sign || "";
+    return (
+      <div>
+        <div className={`flex justify-between ${bold ? "font-semibold" : ""}`}>
+          <span className={bold ? "text-white" : "text-gray-500"}>{label}</span>
+          <span className={bold ? "text-white" : color || "text-gray-300"}>{pre}{moneda} {fmtMoney(amount)}</span>
+        </div>
+        {dual && <div className="flex justify-end"><span className="text-[11px] text-gray-500">{pre}{dual}</span></div>}
+      </div>
+    );
+  };
+
+  return (
+    <>
+      <PreviewModal />
+      <form onSubmit={handleFormSubmit} className="mx-auto max-w-4xl space-y-6">
+
+        {/* Error banner */}
+        {error && (
+          <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-400">
+            {error}
+          </div>
+        )}
+
+        {/* ── Document Type Tabs ── */}
+        <div className="flex gap-2 rounded-xl border border-white/10 bg-[#111827] p-2">
+          {([
+            { id: "factura" as DocumentType, label: "Factura", color: "emerald", icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" },
+            { id: "nota_credito" as DocumentType, label: "Nota de Credito", color: "blue", icon: "M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" },
+            { id: "nota_debito" as DocumentType, label: "Nota de Debito", color: "amber", icon: "M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" },
+          ]).map((dt) => (
+            <button key={dt.id} type="button" onClick={() => handleDocTypeChange(dt.id)}
+              className={`flex-1 flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition ${
+                docType === dt.id
+                  ? `bg-${dt.color}-500/10 text-${dt.color}-400 border border-${dt.color}-500/20`
+                  : "text-gray-500 hover:bg-white/5 hover:text-gray-300 border border-transparent"
+              }`}>
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={dt.icon} />
+              </svg>
+              {dt.label}
+            </button>
+          ))}
+        </div>
+
+        {/* ── BCV Exchange Rate Banner ── */}
+        <div className={`flex items-center justify-between rounded-xl border px-4 py-2.5 ${
+          bcvRate ? "border-blue-500/20 bg-blue-500/5" :
+          ratesLoading ? "border-white/10 bg-white/5" :
+          "border-amber-500/20 bg-amber-500/5"
+        }`}>
+          {bcvRate ? (
+            <>
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-xs font-semibold text-blue-400">Tasa BCV</span>
+                <span className="text-[10px] text-blue-400/50">({bcvDate})</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="rounded bg-blue-500/10 px-2.5 py-1 text-sm font-bold text-blue-200">
+                  $ 1 = Bs. {fmtMoney(bcvRate)}
+                </span>
+                {exchangeRates?.rates?.EUR && (
+                  <span className="rounded bg-blue-500/10 px-2 py-1 text-xs font-medium text-blue-300">
+                    EUR: Bs. {fmtMoney(exchangeRates.rates.EUR)}
+                  </span>
+                )}
+              </div>
+            </>
+          ) : ratesLoading ? (
+            <div className="flex items-center gap-2 w-full justify-center">
+              <div className="h-3 w-3 animate-spin rounded-full border-2 border-blue-400/30 border-t-blue-400" />
+              <span className="text-xs text-gray-400">Consultando tasa BCV...</span>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-amber-400" />
+                <span className="text-xs text-amber-300">{ratesError || "Tasa BCV no disponible"}</span>
+              </div>
+              <button type="button" onClick={() => fetchRates(0)}
+                className="rounded bg-amber-500/10 px-3 py-1 text-xs text-amber-300 hover:bg-amber-500/20 transition">
+                Reintentar
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* ── Invoice Reference (for NC/ND) ── */}
+        {needsRef && (
+          <div className="rounded-xl border border-white/10 bg-[#111827] p-5">
+            <h3 className="mb-3 text-sm font-semibold text-gray-300">
+              Factura de Referencia
+              <span className="ml-2 text-[10px] font-normal text-gray-500">(requerido para {docLabel})</span>
+            </h3>
+
+            {/* Search */}
+            <div className="relative mb-3" ref={refDropRef}>
+              <div className="relative">
+                <svg className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input placeholder="Buscar factura por N. Control, RIF o razon social..."
+                  value={refSearch}
+                  onChange={(e) => handleRefSearchChange(e.target.value)}
+                  onFocus={() => { if (refResults.length > 0 && !refId) setShowRefDD(true); }}
+                  className="w-full rounded-lg bg-[#111827] border border-white/10 pl-10 pr-10 py-2 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none" />
+                {refLoading && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-aida-accent" />
+                  </div>
+                )}
+                {refId && !refLoading && (
+                  <button type="button" onClick={clearInvoiceRef}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white">
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+
+              {/* Dropdown */}
+              {showRefDD && refResults.length > 0 && (
+                <div className="absolute z-50 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-white/10 bg-[#0d1321] shadow-xl">
+                  {refResults.map((doc) => (
+                    <button key={doc.id} type="button" onClick={() => selectInvoiceRef(doc)}
+                      className="flex w-full items-center justify-between px-4 py-2.5 text-left hover:bg-white/5 transition-colors">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-white">{doc.control_number}</p>
+                        <p className="text-xs text-gray-500">{doc.receptor_rif} — {doc.receptor_razon_social}</p>
+                      </div>
+                      <div className="ml-3 text-right shrink-0">
+                        <p className="text-sm font-medium text-emerald-400">{doc.moneda} {fmtMoney(doc.total)}</p>
+                        <p className="text-[10px] text-gray-500">{doc.fecha}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Selected invoice info */}
+            {refDoc && (
+              <div className="mb-3 rounded-lg bg-aida-accent/5 border border-aida-accent/20 px-3 py-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <svg className="h-4 w-4 text-aida-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="text-sm text-aida-accent">Factura seleccionada</span>
+                  </div>
+                  <span className="text-sm font-bold text-white">{refDoc.moneda} {fmtMoney(refDoc.total)}</span>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  {refDoc.control_number} | {refDoc.receptor_rif} — {refDoc.receptor_razon_social} | {refDoc.fecha}
+                </p>
+              </div>
+            )}
+
+            {/* NC: Tipo selector + Motivo */}
+            {isNC && (
+              <div className="space-y-3">
+                <div>
+                  <label className="mb-1.5 block text-[11px] font-medium text-gray-500">Tipo de Nota de Credito</label>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => setNcTipo("total")}
+                      className={`flex-1 rounded-lg py-2 text-sm font-medium transition ${
+                        ncTipo === "total" ? "bg-blue-500/10 text-blue-400 border border-blue-500/20" : "bg-[#0d1321] text-gray-500 border border-white/10 hover:text-gray-300"
+                      }`}>
+                      Total
+                    </button>
+                    <button type="button" onClick={() => setNcTipo("parcial")}
+                      className={`flex-1 rounded-lg py-2 text-sm font-medium transition ${
+                        ncTipo === "parcial" ? "bg-blue-500/10 text-blue-400 border border-blue-500/20" : "bg-[#0d1321] text-gray-500 border border-white/10 hover:text-gray-300"
+                      }`}>
+                      Parcial
+                    </button>
+                  </div>
+                  {ncTipo === "total" && (
+                    <p className="mt-1.5 text-[11px] text-blue-400/70">Se reversara el monto total de la factura original.</p>
+                  )}
+                  {ncTipo === "parcial" && (
+                    <p className="mt-1.5 text-[11px] text-blue-400/70">Ingrese los items especificos a acreditar abajo.</p>
+                  )}
+                </div>
+                <div>
+                  <label className="mb-1 block text-[11px] font-medium text-gray-500">Motivo de la Nota de Credito *</label>
+                  <textarea value={motivo} onChange={(e) => setMotivo(e.target.value)} required
+                    placeholder="Ej: Devolucion de mercancia, error en facturacion, descuento post-venta..."
+                    className="w-full rounded-lg bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-blue-500 focus:outline-none" rows={2} />
+                </div>
+              </div>
+            )}
+
+            {/* ND: Concepto */}
+            {isND && (
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-gray-500">Concepto de la Nota de Debito *</label>
+                <textarea value={concepto} onChange={(e) => setConcepto(e.target.value)} required
+                  placeholder="Ej: Intereses por mora, ajuste de precio, cargos adicionales..."
+                  className="w-full rounded-lg bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-amber-500 focus:outline-none" rows={2} />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Receptor / Customer (factura only, NC/ND auto-fills from ref) ── */}
+        {docType === "factura" && (
+          <div className="rounded-xl border border-white/10 bg-[#111827] p-5">
+            <h3 className="mb-3 text-sm font-semibold text-gray-300">Datos del Cliente</h3>
+
+            {/* Search bar */}
+            <div className="relative mb-3" ref={custDropRef}>
+              <div className="relative">
+                <svg className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input placeholder="Buscar cliente por RIF o nombre..."
+                  value={customerSearch}
+                  onChange={(e) => handleCustomerSearchChange(e.target.value)}
+                  onFocus={() => { if (customerResults.length > 0 && !customerId) setShowCustomerDD(true); }}
+                  className="w-full rounded-lg bg-[#111827] border border-white/10 pl-10 pr-10 py-2 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none" />
+                {searchLoading && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-aida-accent" />
+                  </div>
+                )}
+                {customerId && !searchLoading && (
+                  <button type="button" onClick={clearCustomer}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white">
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+
+              {/* Customer dropdown */}
+              {showCustomerDD && customerResults.length > 0 && (
+                <div className="absolute z-50 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-white/10 bg-[#0d1321] shadow-xl">
+                  {customerResults.map((c) => (
+                    <button key={c.id} type="button" onClick={() => selectCustomer(c)}
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-white/5 transition-colors">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-aida-accent/10 text-xs font-bold text-aida-accent">
+                        {c.razon_social.charAt(0)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-white">{c.razon_social}</p>
+                        <p className="truncate text-xs text-gray-500">{c.rif}{c.email ? ` · ${c.email}` : ""}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {showCustomerDD && customerSearch.length >= 2 && customerResults.length === 0 && !searchLoading && (
+                <div className="absolute z-50 mt-1 w-full rounded-lg border border-white/10 bg-[#0d1321] px-4 py-3 text-sm text-gray-500 shadow-xl">
+                  No se encontraron clientes. Ingrese los datos manualmente.
+                </div>
+              )}
+            </div>
+
+            {/* Selected customer badge */}
+            {customerId && (
+              <div className="mb-3 flex items-center gap-2 rounded-lg bg-aida-accent/5 border border-aida-accent/20 px-3 py-2">
+                <svg className="h-4 w-4 text-aida-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-sm text-aida-accent">Cliente seleccionado: {receptor.rif} — {receptor.razon_social}</span>
+              </div>
+            )}
+
+            {/* Manual fields */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-gray-500">RIF *</label>
+                <input placeholder="J-12345678-9" value={receptor.rif}
+                  onChange={(e) => setReceptor({ ...receptor, rif: e.target.value })} required readOnly={!!customerId}
+                  className={`w-full rounded-lg bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-aida-accent focus:outline-none ${customerId ? "opacity-70 cursor-not-allowed" : ""}`} />
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-gray-500">Razon Social *</label>
+                <input placeholder="Nombre de la empresa" value={receptor.razon_social}
+                  onChange={(e) => setReceptor({ ...receptor, razon_social: e.target.value })} required readOnly={!!customerId}
+                  className={`w-full rounded-lg bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-aida-accent focus:outline-none ${customerId ? "opacity-70 cursor-not-allowed" : ""}`} />
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-gray-500">Direccion Fiscal</label>
+                <input placeholder="Direccion fiscal del cliente" value={receptor.direccion}
+                  onChange={(e) => setReceptor({ ...receptor, direccion: e.target.value })} readOnly={!!customerId}
+                  className={`w-full rounded-lg bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-aida-accent focus:outline-none ${customerId ? "opacity-70 cursor-not-allowed" : ""}`} />
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-gray-500">Email</label>
+                <input placeholder="cliente@email.com" type="email" value={receptor.email}
+                  onChange={(e) => setReceptor({ ...receptor, email: e.target.value })} readOnly={!!customerId}
+                  className={`w-full rounded-lg bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-aida-accent focus:outline-none ${customerId ? "opacity-70 cursor-not-allowed" : ""}`} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── NC Total message ── */}
+        {isNC && ncTipo === "total" && refDoc && (
+          <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-5 text-center">
+            <svg className="mx-auto h-8 w-8 text-blue-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-sm text-blue-300">
+              Se emitira una Nota de Credito <span className="font-bold">Total</span> por el monto completo de la factura:
+            </p>
+            <p className="text-xl font-bold text-white mt-1">{refDoc.moneda} {fmtMoney(refDoc.total)}</p>
+            {bcvRate && refDoc.moneda !== "VES" && (
+              <p className="text-sm text-gray-500 mt-0.5">Bs. {fmtMoney(refDoc.total * bcvRate)}</p>
+            )}
+          </div>
+        )}
+
+        {/* ── Products / Services (factura, NC parcial, ND) ── */}
+        {showItems && (
+          <div className="rounded-xl border border-white/10 bg-[#111827] p-5">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-gray-300">
+                {isND ? "Cargos Adicionales" : isNC ? "Items a Acreditar" : "Productos / Servicios"}
+              </h3>
+              <button type="button" onClick={addItem}
+                className="rounded bg-aida-accent/10 px-3 py-1 text-xs font-medium text-aida-accent hover:bg-aida-accent/20 transition">
+                + Agregar linea
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {items.map((item, i) => (
+                <div key={i} className="rounded-lg border border-white/5 bg-[#0b1120] p-3">
+                  {/* Product search + UoM row */}
+                  <div className="flex gap-2 mb-2">
+                    <div className="flex-1 relative" ref={productDropdown === i ? prodDropRef : undefined}>
+                      <div className="relative">
+                        <svg className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <input
+                          placeholder="Buscar producto del catalogo..."
+                          value={productSearch[i] ?? ""}
+                          onChange={(e) => handleProductSearchChange(i, e.target.value)}
+                          onFocus={() => { setProductDropdown(i); setProductResults(productsCatalog.slice(0, 10)); }}
+                          className="w-full rounded bg-[#111827] border border-white/10 pl-8 pr-3 py-1.5 text-xs text-white placeholder-gray-600 focus:border-aida-accent focus:outline-none" />
+                        {productSearchLoading && productDropdown === i && (
+                          <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                            <div className="h-3 w-3 animate-spin rounded-full border border-white/20 border-t-aida-accent" />
+                          </div>
+                        )}
+                      </div>
+                      {productDropdown === i && productResults.length > 0 && (
+                        <div className="absolute z-50 mt-1 max-h-44 w-full overflow-auto rounded-lg border border-white/10 bg-[#0d1321] shadow-xl">
+                          {productResults.map((p) => (
+                            <button key={p.id} type="button" onClick={() => selectProduct(i, p)}
+                              className="flex w-full items-center justify-between px-3 py-2 text-left hover:bg-white/5 transition-colors">
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-xs font-medium text-white">{p.name}</p>
+                                <p className="truncate text-[10px] text-gray-500">
+                                  {p.code} · {p.tax_type === "gravado" ? "IVA 16%" : p.tax_type === "reducido" ? "IVA 8%" : p.tax_type === "adicional" ? "IVA 31%" : "Exento"}
+                                  {!p.is_service && ` · Stock: ${p.stock_actual}`}
+                                </p>
+                              </div>
+                              <span className="ml-2 shrink-0 text-xs font-medium text-emerald-400">
+                                {fmtMoney(p.sale_price_1)}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {/* UoM selector */}
+                    <select value={item.unit_of_measure}
+                      onChange={(e) => updateItem(i, "unit_of_measure", e.target.value)}
+                      className="w-20 rounded bg-[#111827] border border-white/10 px-1.5 py-1.5 text-xs text-white focus:border-aida-accent focus:outline-none">
+                      {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+                    </select>
+                  </div>
+
+                  {/* Item detail fields */}
+                  <div className="grid grid-cols-12 gap-2 items-end">
+                    {/* Description */}
+                    <div className="col-span-4">
+                      {i === 0 && <label className="mb-1 block text-[11px] text-gray-500">Descripcion *</label>}
+                      <input value={item.description} onChange={(e) => updateItem(i, "description", e.target.value)}
+                        required placeholder="Producto o servicio"
+                        className="w-full rounded bg-[#111827] border border-white/10 px-2 py-1.5 text-sm text-white placeholder-gray-600 focus:border-aida-accent focus:outline-none" />
+                    </div>
+
+                    {/* Quantity */}
+                    <div className="col-span-1">
+                      {i === 0 && <label className="mb-1 block text-[11px] text-gray-500">Cant.</label>}
+                      <input type="text" inputMode="decimal" value={item.quantity}
+                        onChange={(e) => {
+                          const v = e.target.value.replace(",", ".");
+                          const n = parseFloat(v);
+                          if (!isNaN(n) && n >= 0) updateItem(i, "quantity", n);
+                          else if (v === "" || v === "0") updateItem(i, "quantity", 0);
+                        }}
+                        className="w-full rounded bg-[#111827] border border-white/10 px-2 py-1.5 text-sm text-white focus:border-aida-accent focus:outline-none" />
+                    </div>
+
+                    {/* Price */}
+                    <div className="col-span-2">
+                      {i === 0 && <label className="mb-1 block text-[11px] text-gray-500">Precio ({moneda === "VES" ? "Bs." : "$"})</label>}
+                      {/* USD reference helper when VES */}
+                      {moneda === "VES" && bcvRate && (
+                        <div className="relative mb-1">
+                          <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-emerald-500">$</span>
+                          <input type="text" inputMode="decimal"
+                            placeholder="Ref. USD"
+                            onChange={(e) => handleUsdRefChange(i, e.target.value)}
+                            className="w-full rounded bg-emerald-500/5 border border-emerald-500/20 pl-6 pr-2 py-1 text-xs text-emerald-400 placeholder-emerald-800 focus:border-emerald-500/40 focus:outline-none" />
+                        </div>
+                      )}
+                      <input type="text" inputMode="decimal"
+                        value={item.unit_price_text}
+                        onChange={(e) => handlePriceChange(i, e.target.value)}
+                        placeholder="0,00"
+                        className="w-full rounded bg-[#111827] border border-white/10 px-2 py-1.5 text-sm text-white placeholder-gray-600 focus:border-aida-accent focus:outline-none" />
+                    </div>
+
+                    {/* IVA type */}
+                    <div className="col-span-2">
+                      {i === 0 && <label className="mb-1 block text-[11px] text-gray-500">IVA</label>}
+                      <select value={item.tax_type} onChange={(e) => updateItem(i, "tax_type", e.target.value)}
+                        className="w-full rounded bg-[#0a0f1a] border border-white/10 px-2 py-1.5 text-sm text-white focus:border-aida-accent focus:outline-none">
+                        <option value="G">G 16%</option>
+                        <option value="R">R 8%</option>
+                        <option value="A">A 31%</option>
+                        <option value="E">Exento</option>
+                      </select>
+                    </div>
+
+                    {/* Discount */}
+                    <div className="col-span-1">
+                      {i === 0 && <label className="mb-1 block text-[11px] text-gray-500">Desc%</label>}
+                      <input type="text" inputMode="decimal" value={item.discount_percent || ""}
+                        onChange={(e) => {
+                          const v = parseFloat(e.target.value.replace(",", "."));
+                          updateItem(i, "discount_percent", isNaN(v) ? 0 : Math.min(100, Math.max(0, v)));
+                        }}
+                        placeholder="0"
+                        className="w-full rounded bg-[#111827] border border-white/10 px-2 py-1.5 text-sm text-white focus:border-aida-accent focus:outline-none" />
+                    </div>
+
+                    {/* Line total + delete */}
+                    <div className="col-span-2 flex items-center justify-between">
+                      <div className="min-w-0">
+                        <span className="text-xs text-gray-400 font-medium block">
+                          {moneda === "VES" ? "Bs." : "$"} {fmtMoney(lineSubtotal(item))}
+                        </span>
+                        {dualAmount(lineSubtotal(item)) && (
+                          <span className="text-[10px] text-gray-600 block">{dualAmount(lineSubtotal(item))}</span>
+                        )}
+                      </div>
+                      {items.length > 1 && (
+                        <button type="button" onClick={() => removeItem(i)} className="ml-1 text-red-400 hover:text-red-300">
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Payment + Totals (side by side) ── */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+
+          {/* Payment config (factura only) */}
+          {docType === "factura" ? (
+            <div className="rounded-xl border border-white/10 bg-[#111827] p-5">
+              <h3 className="mb-3 text-sm font-semibold text-gray-300">Forma de Pago</h3>
+              <div className="space-y-3">
+                <div>
+                  <label className="mb-1 block text-[11px] font-medium text-gray-500">Metodo de Pago</label>
+                  <select value={formaPago} onChange={(e) => setFormaPago(e.target.value)}
+                    className="w-full rounded-lg bg-[#0a0f1a] border border-white/10 px-3 py-2 text-sm text-white focus:border-aida-accent focus:outline-none">
+                    <option value="efectivo">Efectivo</option>
+                    <option value="transferencia">Transferencia Bancaria</option>
+                    <option value="pago_movil">Pago Movil</option>
+                    <option value="tarjeta_debito">Tarjeta Debito</option>
+                    <option value="tarjeta_credito">Tarjeta Credito</option>
+                    <option value="divisas">Divisas (efectivo)</option>
+                    <option value="zelle">Zelle</option>
+                    <option value="cheque">Cheque</option>
+                    <option value="mixto">Mixto</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-[11px] font-medium text-gray-500">Condicion de Pago</label>
+                  <select value={condicionPago} onChange={(e) => setCondicionPago(e.target.value)}
+                    className="w-full rounded-lg bg-[#0a0f1a] border border-white/10 px-3 py-2 text-sm text-white focus:border-aida-accent focus:outline-none">
+                    <option value="contado">Contado</option>
+                    <option value="credito_15">Credito 15 dias</option>
+                    <option value="credito_30">Credito 30 dias</option>
+                    <option value="credito_60">Credito 60 dias</option>
+                    <option value="credito_90">Credito 90 dias</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-[11px] font-medium text-gray-500">Moneda</label>
+                  <select value={moneda} onChange={(e) => setMoneda(e.target.value)}
+                    className="w-full rounded-lg bg-[#0a0f1a] border border-white/10 px-3 py-2 text-sm text-white focus:border-aida-accent focus:outline-none">
+                    <option value="VES">Bolivares (VES)</option>
+                    <option value="USD">Dolares (USD)</option>
+                    <option value="EUR">Euros (EUR)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-[11px] font-medium text-gray-500">Fecha de Vencimiento</label>
+                  <input type="date" value={fechaVencimiento} onChange={(e) => setFechaVencimiento(e.target.value)}
+                    className="w-full rounded-lg bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white focus:border-aida-accent focus:outline-none" />
+                </div>
+
+                {isForeignCurrency && (
+                  <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-xs text-amber-300">
+                    Al pagar en {moneda}, se aplica el <span className="font-bold">IGTF del 3%</span> sobre el total (Art. 4, Ley IGTF).
+                  </div>
+                )}
+
+                <textarea placeholder="Observaciones (opcional)" value={observaciones}
+                  onChange={(e) => setObservaciones(e.target.value)}
+                  className="w-full rounded-lg bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-aida-accent focus:outline-none" rows={2} />
+              </div>
+            </div>
+          ) : (
+            /* NC/ND - simplified payment panel */
+            <div className="rounded-xl border border-white/10 bg-[#111827] p-5">
+              <h3 className="mb-3 text-sm font-semibold text-gray-300">Informacion del Documento</h3>
+              <div className="space-y-2 text-sm text-gray-400">
+                <p><span className="text-gray-500">Tipo:</span> <span className="text-white">{docLabel}</span></p>
+                {refDoc && (
+                  <>
+                    <p><span className="text-gray-500">Factura ref.:</span> <span className="text-white font-mono">{refDoc.control_number}</span></p>
+                    <p><span className="text-gray-500">Cliente:</span> <span className="text-white">{refDoc.receptor_razon_social}</span></p>
+                    <p><span className="text-gray-500">RIF:</span> <span className="text-white">{refDoc.receptor_rif}</span></p>
+                    <p><span className="text-gray-500">Moneda:</span> <span className="text-white">{refDoc.moneda}</span></p>
+                    <p><span className="text-gray-500">Total original:</span> <span className="text-white">{refDoc.moneda} {fmtMoney(refDoc.total)}</span></p>
+                  </>
+                )}
+                {isNC && <p><span className="text-gray-500">Motivo:</span> <span className="text-white">{motivo || "—"}</span></p>}
+                {isND && <p><span className="text-gray-500">Concepto:</span> <span className="text-white">{concepto || "—"}</span></p>}
+              </div>
+              <div className="mt-3 flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2">
+                <svg className="h-4 w-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+                <span className="text-xs text-emerald-400">Validacion SENIAT V1.4</span>
+              </div>
+            </div>
+          )}
+
+          {/* Totals panel */}
+          <div className="rounded-xl border border-white/10 bg-[#111827] p-5">
+            <h3 className="mb-3 text-sm font-semibold text-gray-300">Totales</h3>
+
+            {/* NC total: show original invoice amount */}
+            {isNC && ncTipo === "total" && refDoc ? (
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between text-gray-400">
+                  <span>Total factura original:</span>
+                  <span>{refDoc.moneda} {fmtMoney(refDoc.total)}</span>
+                </div>
+                <div className="border-t border-white/10 pt-2">
+                  <div className="flex justify-between text-lg font-bold text-white">
+                    <span>Total NC:</span>
+                    <span>{refDoc.moneda} {fmtMoney(refDoc.total)}</span>
+                  </div>
+                  {bcvRate && refDoc.moneda !== "VES" && (
+                    <div className="flex justify-end">
+                      <span className="text-sm text-gray-400">Bs. {fmtMoney(refDoc.total * bcvRate)}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : showItems ? (
+              /* Items-based totals (factura, NC parcial, ND) */
+              <div className="space-y-2 text-sm">
+                <DualRow label="Subtotal bruto:" amount={calcGrossSubtotal()} />
+                {calcDiscount() > 0 && <DualRow label="Descuento:" amount={calcDiscount()} sign="- " color="text-red-400" />}
+                {calcBaseImponible16() > 0 && <DualRow label="Base imponible 16%:" amount={calcBaseImponible16()} />}
+                {calcIva16() > 0 && <DualRow label="IVA 16%:" amount={calcIva16()} />}
+                {calcBaseImponible8() > 0 && <DualRow label="Base imponible 8%:" amount={calcBaseImponible8()} />}
+                {calcIva8() > 0 && <DualRow label="IVA 8%:" amount={calcIva8()} />}
+                {calcBaseImponible31() > 0 && <DualRow label="Base imponible 31%:" amount={calcBaseImponible31()} />}
+                {calcIva31() > 0 && <DualRow label="IVA 31%:" amount={calcIva31()} />}
+                {calcBaseExenta() > 0 && <DualRow label="Exento:" amount={calcBaseExenta()} />}
+
+                <div className="border-t border-white/5 pt-2">
+                  <DualRow label={`Total ${docLabel.toLowerCase()}:`} amount={calcTotalDocumento()} bold />
+                </div>
+
+                {isForeignCurrency && docType === "factura" && (
+                  <>
+                    <DualRow label="IGTF 3% (pago en divisas):" amount={calcIgtf()} color="text-amber-400" />
+                    <div className="border-t border-white/5 pt-2">
+                      <div className="flex justify-between text-lg font-bold">
+                        <span className="text-white">Total a pagar:</span>
+                        <span className="text-white">{moneda} {fmtMoney(calcTotalPagar())}</span>
+                      </div>
+                      {dualAmount(calcTotalPagar()) && (
+                        <div className="flex justify-end">
+                          <span className="text-sm font-medium text-gray-400">{dualAmount(calcTotalPagar())}</span>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                {!isForeignCurrency && moneda === "VES" && (
+                  <div className="border-t border-white/5 pt-2">
+                    <div className="flex justify-between text-lg font-bold">
+                      <span className="text-white">Total a pagar:</span>
+                      <span className="text-white">Bs. {fmtMoney(calcTotalDocumento())}</span>
+                    </div>
+                    {bcvRate && (
+                      <div className="flex justify-end">
+                        <span className="text-sm font-medium text-gray-400">$ {fmtMoney(calcTotalDocumento() / bcvRate)}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {isForeignCurrency && docType !== "factura" && (
+                  <div className="border-t border-white/5 pt-2">
+                    <div className="flex justify-between text-lg font-bold">
+                      <span className="text-white">Total:</span>
+                      <span className="text-white">{moneda} {fmtMoney(calcTotalDocumento())}</span>
+                    </div>
+                    {dualAmount(calcTotalDocumento()) && (
+                      <div className="flex justify-end">
+                        <span className="text-sm font-medium text-gray-400">{dualAmount(calcTotalDocumento())}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">Seleccione una factura de referencia.</p>
+            )}
+
+            {/* BCV rate in totals */}
+            {bcvRate && (
+              <div className="mt-3 rounded-lg bg-blue-500/10 border border-blue-500/20 px-3 py-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="text-xs font-semibold text-blue-300">Tasa BCV</span>
+                  </div>
+                  <span className="text-sm font-bold text-blue-200">Bs. {fmtMoney(bcvRate)} / $ 1</span>
+                </div>
+                {bcvDate && <p className="mt-0.5 text-right text-[10px] text-blue-400/60">Actualizado: {bcvDate}</p>}
+                {exchangeRates?.rates?.EUR && (
+                  <div className="flex items-center justify-between mt-1 pt-1 border-t border-blue-500/10">
+                    <span className="text-[11px] text-blue-400/80">EUR</span>
+                    <span className="text-xs text-blue-300">Bs. {fmtMoney(exchangeRates.rates.EUR)} / 1 EUR</span>
+                  </div>
+                )}
+              </div>
+            )}
+            {!bcvRate && !ratesLoading && (
+              <div className="mt-2 rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-xs text-amber-300">
+                Tasa BCV no disponible.
+                <button type="button" onClick={() => fetchRates(0)} className="ml-2 underline hover:text-amber-200">Reintentar</button>
+              </div>
+            )}
+
+            {/* Submit button */}
+            <div className="mt-4">
+              <button type="submit" disabled={loading}
+                className="w-full rounded-lg bg-aida-accent py-2.5 text-sm font-medium text-white hover:bg-aida-accent/80 disabled:opacity-50 transition">
+                Previsualizar {docLabel}
+              </button>
+              <p className="mt-2 text-center text-[10px] text-gray-600">
+                Se mostrara una vista previa antes de emitir
+              </p>
+            </div>
+          </div>
+        </div>
+      </form>
+    </>
+  );
 }
