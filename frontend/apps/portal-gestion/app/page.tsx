@@ -12,11 +12,13 @@ import AIChat from "@/components/AIChat";
 import AgentChat from "@/components/AgentChat";
 import AnalyticsDashboard from "@/components/AnalyticsDashboard";
 import ReportsPanel from "@/components/ReportsPanel";
+import SeniatReference from "@/components/SeniatReference";
+import SeniatValidator from "@/components/SeniatValidator";
 import LoginForm from "@/components/LoginForm";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
-type Section = "dashboard" | "wizard" | "connections" | "webhooks" | "errors" | "templates" | "projects" | "ai-chat" | "agent-chat" | "analytics" | "reports";
+type Section = "dashboard" | "wizard" | "connections" | "webhooks" | "errors" | "templates" | "projects" | "ai-chat" | "agent-chat" | "analytics" | "reports" | "seniat-reference" | "seniat-validator";
 
 export default function Home() {
   const [token, setToken] = useState<string | null>(null);
@@ -78,6 +80,8 @@ export default function Home() {
       case "errors": return <ErrorManager token={token} />;
       case "templates": return <TemplateGallery token={token} />;
       case "projects": return <ProjectList token={token} />;
+      case "seniat-reference": return <SeniatReference token={token} />;
+      case "seniat-validator": return <SeniatValidator token={token} />;
       default: return <AIChat token={token} />;
     }
   };
