@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from .catalogs import ALICUOTAS_IVA, MONEDA_CURSO_LEGAL
+from .catalogs import ALICUOTAS_IVA, MONEDA_CURSO_LEGAL, CODIGOS_IVA_GRAVADOS
 
 
 # Mapeo de formas de pago internas → código SENIAT (Catálogo 10)
@@ -142,36 +142,58 @@ def build_seniat_json(
         v["baseImponibleImp"] = round(v["baseImponibleImp"], 2)
         v["valorTotalImp"] = round(v["valorTotalImp"], 2)
 
-    # ── Totales ──
-    monto_gravado = getattr(totales, "gravado_16", 0) + getattr(totales, "gravado_8", 0)
-    monto_exento = getattr(totales, "exento", 0)
-    subtotal_val = getattr(totales, "subtotal", 0)
-    total_iva = getattr(totales, "iva_16", 0) + getattr(totales, "iva_8", 0)
-    total_con_iva = subtotal_val + total_iva
-    total_igtf = getattr(totales, "igtf", 0)
-    total_pagar = getattr(totales, "total", 0)
+    # ── Totales (derivados de impuestosSubtotal para consistencia con validador) ──
+    monto_gravado = round(sum(
+        v["baseImponibleImp"] for k, v in imp_subtotales.items()
+        if k in CODIGOS_IVA_GRAVADOS
+    ), 2)
+    monto_exento = round(sum(
+        v["baseImponibleImp"] for k, v in imp_subtotales.items()
+        if k == "E"
+    ), 2)
+    monto_percibido = round(sum(
+        v["baseImponibleImp"] for k, v in imp_subtotales.items()
+        if k == "P"
+    ), 2)
+    subtotal_val = round(monto_gravado + monto_exento + monto_percibido, 2)
+
+    total_iva = round(sum(
+        v["valorTotalImp"] for k, v in imp_subtotales.items()
+        if k in CODIGOS_IVA_GRAVADOS or k == "P"
+    ), 2)
+
+    total_con_iva = round(subtotal_val + total_iva, 2)
+    total_igtf = round(getattr(totales, "monto_igtf", 0), 2)
+    total_pagar = round(total_con_iva + total_igtf, 2)
 
     forma_seniat = FORMA_PAGO_MAP.get(forma_pago, "99")
 
+    formas_pago_entry: dict = {
+        "descripcion": forma_pago,
+        "forma": forma_seniat,
+        "monto": round(total_pagar, 2),
+        "moneda": moneda,
+    }
+    if moneda != MONEDA_CURSO_LEGAL and tasa_cambio:
+        formas_pago_entry["tipoCambio"] = tasa_cambio
+
     totales_dict = {
         "nroItems": len(detalle_items),
-        "montoGravadoTotal": round(monto_gravado, 2),
-        "montoExentoTotal": round(monto_exento, 2),
-        "subtotal": round(subtotal_val, 2),
-        "totalIVA": round(total_iva, 2),
-        "montoTotalConIVA": round(total_con_iva, 2),
-        "totalAPagar": round(total_pagar, 2),
+        "montoGravadoTotal": monto_gravado,
+        "montoExentoTotal": monto_exento,
+        "subtotal": subtotal_val,
+        "totalIVA": total_iva,
+        "montoTotalConIVA": total_con_iva,
+        "totalAPagar": total_pagar,
         "impuestosSubtotal": list(imp_subtotales.values()),
-        "formasPago": [{
-            "descripcion": forma_pago,
-            "forma": forma_seniat,
-            "monto": round(total_pagar, 2),
-            "moneda": moneda,
-        }],
+        "formasPago": [formas_pago_entry],
     }
 
+    if monto_percibido > 0:
+        totales_dict["montoPercibidoTotal"] = monto_percibido
+
     if total_igtf > 0:
-        totales_dict["totalIGTF"] = round(total_igtf, 2)
+        totales_dict["totalIGTF"] = total_igtf
 
     # ── Build full document ──
     doc: dict = {
@@ -201,10 +223,15 @@ def build_seniat_json(
     }
 
     # ── Totales otra moneda (si aplica) ──
+    # Cuando el documento es en moneda extranjera (e.g. USD), los totales
+    # principales están en esa moneda. totalesOtraMoneda muestra el
+    # equivalente en VES. El validador espera: otra_val = totales_val / tipoCambio,
+    # por lo que tipoCambio debe ser el recíproco de la tasa BCV.
     if moneda != MONEDA_CURSO_LEGAL and tasa_cambio:
-        otra = {
+        tc_reciprocal = round(1.0 / tasa_cambio, 8)
+        otra: dict = {
             "moneda": MONEDA_CURSO_LEGAL,
-            "tipoCambio": tasa_cambio,
+            "tipoCambio": tc_reciprocal,
             "montoGravadoTotal": round(monto_gravado * tasa_cambio, 2),
             "montoExentoTotal": round(monto_exento * tasa_cambio, 2),
             "subtotal": round(subtotal_val * tasa_cambio, 2),
@@ -221,6 +248,8 @@ def build_seniat_json(
                 for s in imp_subtotales.values()
             ],
         }
+        if total_igtf > 0:
+            otra["totalIGTF"] = round(total_igtf * tasa_cambio, 2)
         doc["encabezado"]["totalesOtraMoneda"] = otra
 
     # ── Info adicional ──
