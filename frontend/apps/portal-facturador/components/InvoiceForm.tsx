@@ -446,7 +446,220 @@ export default function InvoiceForm({ token }: Props) {
   };
 
   // ═══════════════════════════════════════════════════════════════
-  // PLACEHOLDER — Phases 3-5 (calculations, submit, render)
+  // CALCULATIONS (G=16%, R=8%, A=31%, E=0%)
+  // ═══════════════════════════════════════════════════════════════
+  const lineSubtotal = (it: LineItem) =>
+    it.quantity * it.unit_price * (1 - it.discount_percent / 100);
+
+  const calcSubtotal = () =>
+    items.reduce((acc, it) => acc + lineSubtotal(it), 0);
+
+  const calcGrossSubtotal = () =>
+    items.reduce((acc, it) => acc + it.quantity * it.unit_price, 0);
+
+  const calcDiscount = () => calcGrossSubtotal() - calcSubtotal();
+
+  const calcBase = (taxCode: string) =>
+    items.reduce((acc, it) => it.tax_type === taxCode ? acc + lineSubtotal(it) : acc, 0);
+
+  const calcBaseImponible16 = () => calcBase("G");
+  const calcBaseImponible8 = () => calcBase("R");
+  const calcBaseImponible31 = () => calcBase("A");
+  const calcBaseExenta = () => calcBase("E");
+
+  const calcIva = (taxCode: string) => calcBase(taxCode) * (TAX_RATES[taxCode] || 0);
+  const calcIva16 = () => calcIva("G");
+  const calcIva8 = () => calcIva("R");
+  const calcIva31 = () => calcIva("A");
+  const calcIvaTotal = () => calcIva16() + calcIva8() + calcIva31();
+
+  const calcTotalDocumento = () => calcSubtotal() + calcIvaTotal();
+  const calcIgtf = () => isForeignCurrency ? calcTotalDocumento() * IGTF_RATE : 0;
+  const calcTotalPagar = () => calcTotalDocumento() + calcIgtf();
+
+  const getRate = (currency: string): number | null => {
+    if (!exchangeRates?.rates) return null;
+    return exchangeRates.rates[currency] || null;
+  };
+
+  const calcVesEquivalent = (amount: number): number | null => {
+    const rate = getRate(moneda);
+    if (!rate || moneda === "VES") return null;
+    return amount * rate;
+  };
+
+  const calcForeignEquivalent = (amountVes: number): number | null => {
+    if (moneda !== "VES") return null;
+    const rate = getRate("USD");
+    if (!rate) return null;
+    return amountVes / rate;
+  };
+
+  const dualAmount = (amount: number): string | null => {
+    if (moneda === "VES") {
+      const foreign = calcForeignEquivalent(amount);
+      return foreign !== null ? `$ ${fmtMoney(foreign)}` : null;
+    }
+    const ves = calcVesEquivalent(amount);
+    return ves !== null ? `Bs. ${fmtMoney(ves)}` : null;
+  };
+
+  // ═══════════════════════════════════════════════════════════════
+  // BUILD PAYLOAD & SUBMIT
+  // ═══════════════════════════════════════════════════════════════
+  const buildItemsPayload = () =>
+    items.map((it) => ({
+      product_id: it.product_id || undefined,
+      product_code: it.product_code || undefined,
+      description: it.description,
+      quantity: it.quantity,
+      unit_price: it.unit_price,
+      tax_type: it.tax_type,
+      discount_percent: it.discount_percent,
+      unit_of_measure: it.unit_of_measure,
+    }));
+
+  const handleSubmit = async () => {
+    setLoading(true);
+    setError("");
+    setResult(null);
+    setShowPreview(false);
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+
+    try {
+      let endpoint = "";
+      let payload: any = {};
+
+      if (docType === "factura") {
+        endpoint = `${apiUrl}/invoicing/invoices`;
+        payload = {
+          customer_id: customerId || undefined,
+          receptor_rif: receptor.rif,
+          receptor_razon_social: receptor.razon_social,
+          receptor_direccion: receptor.direccion || "N/A",
+          receptor_email: receptor.email || undefined,
+          items: buildItemsPayload(),
+          forma_pago: formaPago,
+          condicion_pago: condicionPago,
+          moneda,
+          tasa_cambio: isForeignCurrency ? getRate(moneda) : undefined,
+          fecha_vencimiento: fechaVencimiento || undefined,
+          observaciones: observaciones || undefined,
+        };
+      } else if (docType === "nota_credito") {
+        endpoint = `${apiUrl}/invoicing/credit-notes`;
+        payload = {
+          invoice_id: refId,
+          tipo: ncTipo,
+          motivo,
+          ...(ncTipo === "parcial" ? { items: buildItemsPayload() } : {}),
+        };
+      } else if (docType === "nota_debito") {
+        endpoint = `${apiUrl}/invoicing/debit-notes`;
+        payload = {
+          invoice_id: refId,
+          concepto,
+          items: buildItemsPayload(),
+        };
+      }
+
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+
+      if (!res.ok) {
+        let detail = `Error ${res.status}`;
+        try {
+          const data = await res.json();
+          if (data.detail) {
+            detail = typeof data.detail === "string"
+              ? data.detail
+              : Array.isArray(data.detail)
+                ? data.detail.map((d: any) => d.msg || JSON.stringify(d)).join("; ")
+                : JSON.stringify(data.detail);
+          }
+        } catch {
+          const text = await res.text().catch(() => "");
+          if (text) detail += `: ${text.slice(0, 300)}`;
+        }
+        setError(detail);
+        return;
+      }
+
+      const data = await res.json();
+      setResult({ ...data, _docType: docType });
+    } catch (err: any) {
+      clearTimeout(timeout);
+      if (err?.name === "AbortError") {
+        setError("La solicitud tardo demasiado (>30s). El servidor puede estar procesando.");
+      } else if (err?.message?.includes("Failed to fetch") || err?.message?.includes("NetworkError")) {
+        setError(`Error de conexion: el servidor no respondio. Verifique que el backend este activo (${apiUrl})`);
+      } else {
+        setError(`Error inesperado: ${err?.message || String(err)}`);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ═══════════════════════════════════════════════════════════════
+  // FORM VALIDATION
+  // ═══════════════════════════════════════════════════════════════
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    // NC/ND require invoice reference
+    if (needsRef && !refId) {
+      setError(`Debe seleccionar la factura de referencia para emitir una ${docLabel}.`);
+      return;
+    }
+    if (isNC && !motivo.trim()) {
+      setError("Debe ingresar el motivo de la Nota de Credito.");
+      return;
+    }
+    if (isND && !concepto.trim()) {
+      setError("Debe ingresar el concepto de la Nota de Debito.");
+      return;
+    }
+
+    // Factura needs receptor
+    if (docType === "factura") {
+      if (!receptor.rif || !receptor.razon_social) {
+        setError("Datos del receptor incompletos: RIF y razon social son requeridos.");
+        return;
+      }
+    }
+
+    // Items validation (factura always, NC parcial, ND always)
+    if (showItems) {
+      if (items.some((it) => !it.description || it.quantity <= 0)) {
+        setError("Todos los items deben tener descripcion y cantidad mayor a 0.");
+        return;
+      }
+      if (items.some((it) => it.unit_price <= 0)) {
+        setError("Todos los items deben tener un precio unitario mayor a 0.");
+        return;
+      }
+    }
+
+    // Foreign currency needs BCV rate
+    if (docType === "factura" && isForeignCurrency && !getRate(moneda)) {
+      setError(`No se pudo obtener la tasa de cambio del BCV para ${moneda}. Intente recargar.`);
+      return;
+    }
+
+    setShowPreview(true);
+  };
+
+  // ═══════════════════════════════════════════════════════════════
+  // PLACEHOLDER — Phases 4-5 (render: success, preview, form)
   // ═══════════════════════════════════════════════════════════════
 
   return <div className="text-white text-center py-12">Cargando formulario...</div>;
