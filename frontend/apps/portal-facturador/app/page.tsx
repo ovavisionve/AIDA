@@ -135,7 +135,7 @@ export default function Home() {
   }
 
   const sectionLabels: Record<Section, string> = {
-    dashboard: "Dashboard", "nueva-factura": "Nueva Factura", productos: "Productos",
+    dashboard: "Dashboard", "nueva-factura": "Nuevo Documento", productos: "Productos",
     clientes: "Clientes", documentos: "Documentos", reportes: "Reportes",
     plantillas: "Plantillas",
   };
