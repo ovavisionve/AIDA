@@ -17,7 +17,7 @@ from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.models.clients import Client
-from app.models.documents import Invoice, CreditNote, DebitNote, DocumentItem
+from app.models.documents import Invoice, CreditNote, DebitNote, DispatchGuide, DocumentItem
 from app.models.templates import DocumentTemplate, ClientTemplatePreference, ClientBanner
 from app.services.fiscal.api_auth import get_client_from_api_key
 from app.services.fiscal.pdf_generator import generate_invoice_pdf
@@ -38,7 +38,7 @@ router = APIRouter()
 
 async def _find_document(db: AsyncSession, doc_id: uuid.UUID, client_id: uuid.UUID):
     """Busca un documento por ID en todas las tablas, retorna (doc, type, items)."""
-    for Model, dtype in [(Invoice, "factura"), (CreditNote, "nota_credito"), (DebitNote, "nota_debito")]:
+    for Model, dtype in [(Invoice, "factura"), (CreditNote, "nota_credito"), (DebitNote, "nota_debito"), (DispatchGuide, "guia_despacho")]:
         result = await db.execute(
             select(Model).options(selectinload(Model.items))
             .where(Model.id == doc_id, Model.client_id == client_id)
@@ -112,6 +112,8 @@ async def _collect_documents_for_export(
         models.append((CreditNote, "nota_credito"))
     if not tipo or tipo == "nota_debito":
         models.append((DebitNote, "nota_debito"))
+    if not tipo or tipo == "guia_despacho":
+        models.append((DispatchGuide, "guia_despacho"))
 
     for Model, dtype in models:
         query = select(Model).where(Model.client_id == client_id)

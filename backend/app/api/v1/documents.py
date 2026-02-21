@@ -226,7 +226,7 @@ async def download_document_pdf(
                 break
     else:
         # Superadmin: search all models
-        for Model, dtype in [(Invoice, "factura"), (CreditNote, "nota_credito"), (DebitNote, "nota_debito")]:
+        for Model, dtype in [(Invoice, "factura"), (CreditNote, "nota_credito"), (DebitNote, "nota_debito"), (DispatchGuide, "guia_despacho")]:
             result = await db.execute(
                 select(Model).options(selectinload(Model.items)).where(Model.id == doc_id)
             )
@@ -286,7 +286,7 @@ async def download_document_xml(
             if doc:
                 break
     else:
-        for Model, dtype in [(Invoice, "factura"), (CreditNote, "nota_credito"), (DebitNote, "nota_debito")]:
+        for Model, dtype in [(Invoice, "factura"), (CreditNote, "nota_credito"), (DebitNote, "nota_debito"), (DispatchGuide, "guia_despacho")]:
             result = await db.execute(
                 select(Model).options(selectinload(Model.items)).where(Model.id == doc_id)
             )
