@@ -293,22 +293,37 @@ class DispatchGuide(Base, UUIDMixin, TimestampMixin, AuditFieldsMixin):
 
 
 class Withholding(Base, UUIDMixin, TimestampMixin, AuditFieldsMixin):
-    """Comprobantes de Retención — Art. 11, Providencia SNAT/2024/000102."""
+    """
+    Comprobantes de Retención RECIBIDOS — Art. 11, Providencia SNAT/2024/000102.
+
+    IMPORTANTE: Las retenciones de IVA e ISLR las emite el COMPRADOR (agente de
+    retención / Sujeto Pasivo Especial), NO el vendedor. Como AIDA es una
+    plataforma de VENTAS, los comprobantes de retención se REGISTRAN como
+    documentos recibidos del cliente del usuario (quien actúa como agente de
+    retención cuando paga la factura de venta).
+
+    Flujo correcto:
+    1. El usuario emite una factura de venta a su cliente
+    2. El cliente (si es SPE) retiene IVA/ISLR al momento del pago
+    3. El cliente emite un comprobante de retención al usuario
+    4. El usuario REGISTRA ese comprobante aquí para su declaración fiscal
+    """
     __tablename__ = "withholdings"
 
     client_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("clients.id"), nullable=False, index=True)
-    # Art. 11: formato AAAAMMSSSSSSSS (14 caracteres)
+    # Número del comprobante (asignado por el agente de retención)
     document_number: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     tipo: Mapped[str] = mapped_column(String(10), nullable=False)  # 'iva' or 'islr'
 
+    # Factura de venta asociada (la factura que el usuario emitió y sobre la cual le retuvieron)
     invoice_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("invoices.id"), nullable=False)
 
-    # Agente de retención
+    # Agente de retención (el CLIENTE/COMPRADOR que retuvo — es un SPE)
     agente_retencion_rif: Mapped[str] = mapped_column(String(20), nullable=False)
     agente_retencion_nombre: Mapped[str] = mapped_column(String(255), nullable=False)
     agente_retencion_direccion: Mapped[str | None] = mapped_column(Text)
 
-    # Sujeto retenido (proveedor)
+    # Sujeto retenido (el USUARIO/VENDEDOR — a quien le retuvieron)
     sujeto_retenido_rif: Mapped[str] = mapped_column(String(20), nullable=False)
     sujeto_retenido_nombre: Mapped[str] = mapped_column(String(255), nullable=False)
     sujeto_retenido_direccion: Mapped[str | None] = mapped_column(Text)
@@ -324,16 +339,12 @@ class Withholding(Base, UUIDMixin, TimestampMixin, AuditFieldsMixin):
     porcentaje_retencion: Mapped[float] = mapped_column(Numeric(5, 2), nullable=False)
     monto_retenido: Mapped[float] = mapped_column(Numeric(18, 2), nullable=False)
 
-    # Referencia factura/nota débito
+    # Referencia factura/nota débito original
     factura_numero: Mapped[str | None] = mapped_column(String(50))
     factura_fecha: Mapped[date | None] = mapped_column(Date)
 
     concepto: Mapped[str | None] = mapped_column(String(100))  # For ISLR: concept code
-    status: Mapped[str] = mapped_column(String(20), default="emitido", nullable=False)
-
-    # Imprenta Digital
-    imprenta_rif: Mapped[str | None] = mapped_column(String(20))
-    imprenta_razon_social: Mapped[str | None] = mapped_column(String(255))
+    status: Mapped[str] = mapped_column(String(20), default="registrado", nullable=False)
 
     pdf_url: Mapped[str | None] = mapped_column(String(500))
     xml_url: Mapped[str | None] = mapped_column(String(500))

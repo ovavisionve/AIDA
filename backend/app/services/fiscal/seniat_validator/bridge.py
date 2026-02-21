@@ -70,6 +70,12 @@ def build_seniat_json(
     monto_factura_afectada: float | None = None,
     serie_factura_afectada: str | None = None,
     comentario_factura_afectada: str | None = None,
+    # Campos de guía de despacho
+    transportista_nombre: str | None = None,
+    transportista_rif: str | None = None,
+    vehiculo_placa: str | None = None,
+    ruta_destino: str | None = None,
+    motivo_traslado: str | None = None,
 ) -> dict:
     """
     Construye el dict JSON Genérico SENIAT V1.4 a partir de datos internos.
@@ -272,6 +278,33 @@ def build_seniat_json(
         if total_igtf > 0:
             otra["totalIGTF"] = round(total_igtf * tasa_cambio, 2)
         doc["encabezado"]["totalesOtraMoneda"] = otra
+
+    # ── Guía de Despacho (tipo 04) ──
+    if tipo_seniat == "04":
+        # Extraer nombre y CI del conductor del formato "Nombre (CI: xxxxx)"
+        conductor_nombre = transportista_nombre or ""
+        conductor_ci = ""
+        if conductor_nombre and "(CI:" in conductor_nombre:
+            parts = conductor_nombre.split("(CI:")
+            conductor_nombre = parts[0].strip()
+            conductor_ci = parts[1].replace(")", "").strip()
+
+        guia_node: dict = {
+            "esGuiaDespacho": "SI",
+            "motivoTraslado": motivo_traslado or "venta",
+            "origenProducto": emisor_direccion or "N/A",
+            "destinoProducto": ruta_destino or receptor_direccion or "N/A",
+            "nombreCompleto": conductor_nombre or "N/A",
+            "tipoIdentificacion": "V",
+        }
+        if conductor_ci:
+            guia_node["numeroIdentificacion"] = conductor_ci
+        if vehiculo_placa:
+            guia_node["numeroPlaca"] = vehiculo_placa
+        if transportista_rif:
+            guia_node["razonSocial"] = transportista_rif
+
+        doc["guiaDespacho"] = guia_node
 
     # ── Info adicional ──
     if observaciones:

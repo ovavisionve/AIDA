@@ -305,18 +305,18 @@ class GuiaDespacho(BaseModel):
     origenProducto: Optional[str] = None
     pesoOVolumenTotal: Optional[str] = None
     destinoProducto: Optional[str] = None
+    # Conductor
     nombreCompleto: Optional[str] = None
     tipoIdentificacion: Optional[str] = None
-    numeroIdentificacion: Optional[int] = None
+    numeroIdentificacion: Optional[int | str] = None
     tipoLicencia: Optional[str] = None
     infoContacto: Optional[str] = None
+    # Vehículo
     tipoVehiculo: Optional[str] = None
     numeroTransporte: Optional[str] = None
-    numeroPlaca: Optional[str] = None
+    numeroPlaca: Optional[int | str] = None
+    # Transportista (empresa)
     razonSocial: Optional[str] = None
-    numeroIdentificacionTransportista: Optional[int] = Field(
-        None, alias="numeroIdentificacion"
-    )
     domicilioFiscal: Optional[str] = None
 
 

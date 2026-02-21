@@ -115,14 +115,19 @@ export default function InvoiceForm({ token }: Props) {
   const [gdDirDestino, setGdDirDestino] = useState("");
   const [gdMotivoTraslado, setGdMotivoTraslado] = useState("venta");
 
-  // ── Retencion IVA ──
+  // ── Retenciones RECIBIDAS (el comprador/SPE retiene al pagarle al usuario) ──
+  // IVA
   const [retIvaPeriodo, setRetIvaPeriodo] = useState(""); // YYYYMM
   const [retIvaPorcentaje, setRetIvaPorcentaje] = useState(75);
-
-  // ── Retencion ISLR ──
+  // ISLR
   const [retIslrConcepto, setRetIslrConcepto] = useState("");
   const [retIslrPorcentaje, setRetIslrPorcentaje] = useState(0);
   const [retIslrSustraendo, setRetIslrSustraendo] = useState(0);
+  // Datos comunes de retención recibida
+  const [retNumeroComprobante, setRetNumeroComprobante] = useState("");
+  const [retFechaRetencion, setRetFechaRetencion] = useState("");
+  const [retAgenteRif, setRetAgenteRif] = useState("");
+  const [retAgenteNombre, setRetAgenteNombre] = useState("");
 
   // ── Receptor / Customer ──
   const [receptor, setReceptor] = useState({ rif: "", razon_social: "", direccion: "", email: "" });
@@ -178,7 +183,7 @@ export default function InvoiceForm({ token }: Props) {
   const bcvDate = exchangeRates?.date || "";
   const docLabels: Record<DocumentType, string> = {
     factura: "Factura", nota_credito: "Nota de Credito", nota_debito: "Nota de Debito",
-    guia_despacho: "Guia de Despacho", retencion_iva: "Retencion IVA", retencion_islr: "Retencion ISLR",
+    guia_despacho: "Guia de Despacho", retencion_iva: "Ret. IVA Recibida", retencion_islr: "Ret. ISLR Recibida",
   };
   const docLabel = docLabels[docType];
 
@@ -501,6 +506,7 @@ export default function InvoiceForm({ token }: Props) {
       setGdDirDestino(""); setGdMotivoTraslado("venta");
       setRetIvaPeriodo(""); setRetIvaPorcentaje(75);
       setRetIslrConcepto(""); setRetIslrPorcentaje(0); setRetIslrSustraendo(0);
+      setRetNumeroComprobante(""); setRetFechaRetencion(""); setRetAgenteRif(""); setRetAgenteNombre("");
       setError("");
     }
   };
@@ -517,6 +523,7 @@ export default function InvoiceForm({ token }: Props) {
     setGdDirDestino(""); setGdMotivoTraslado("venta");
     setRetIvaPeriodo(""); setRetIvaPorcentaje(75);
     setRetIslrConcepto(""); setRetIslrPorcentaje(0); setRetIslrSustraendo(0);
+    setRetNumeroComprobante(""); setRetFechaRetencion(""); setRetAgenteRif(""); setRetAgenteNombre("");
     setError("");
   };
 
@@ -660,20 +667,37 @@ export default function InvoiceForm({ token }: Props) {
           observaciones: observaciones || undefined,
         };
       } else if (docType === "retencion_iva") {
-        endpoint = `${apiUrl}/invoicing/iva-withholdings`;
+        endpoint = `${apiUrl}/invoicing/withholdings/register`;
+        const montoRetenidoIva = refDoc ? refDoc.total * retIvaPorcentaje / 100 : 0;
         payload = {
           invoice_id: refId,
+          tipo: "iva",
+          numero_comprobante: retNumeroComprobante,
+          fecha_retencion: retFechaRetencion,
           periodo_fiscal: retIvaPeriodo,
+          agente_rif: retAgenteRif,
+          agente_nombre: retAgenteNombre,
+          base_imponible: refDoc ? refDoc.total : 0,
           porcentaje_retencion: retIvaPorcentaje,
+          monto_retenido: montoRetenidoIva,
           observaciones: observaciones || undefined,
         };
       } else if (docType === "retencion_islr") {
-        endpoint = `${apiUrl}/invoicing/islr-withholdings`;
+        endpoint = `${apiUrl}/invoicing/withholdings/register`;
+        const montoRetenidoIslr = refDoc ? Math.max(0, refDoc.total * retIslrPorcentaje / 100 - retIslrSustraendo) : 0;
         payload = {
           invoice_id: refId,
-          concepto: retIslrConcepto,
+          tipo: "islr",
+          numero_comprobante: retNumeroComprobante,
+          fecha_retencion: retFechaRetencion,
+          periodo_fiscal: retIvaPeriodo,
+          agente_rif: retAgenteRif,
+          agente_nombre: retAgenteNombre,
+          base_imponible: refDoc ? refDoc.total : 0,
           porcentaje_retencion: retIslrPorcentaje,
-          sustraendo: retIslrSustraendo,
+          monto_retenido: montoRetenidoIslr,
+          concepto: retIslrConcepto,
+          sustraendo: retIslrSustraendo || undefined,
           observaciones: observaciones || undefined,
         };
       }
@@ -758,6 +782,22 @@ export default function InvoiceForm({ token }: Props) {
       }
     }
 
+    // Validaciones comunes para retenciones recibidas
+    if (isRetIva || isRetIslr) {
+      if (!retNumeroComprobante.trim()) {
+        setError("Debe ingresar el numero del comprobante de retencion recibido.");
+        return;
+      }
+      if (!retFechaRetencion) {
+        setError("Debe ingresar la fecha del comprobante de retencion.");
+        return;
+      }
+      if (!retAgenteRif.trim() || !retAgenteNombre.trim()) {
+        setError("Debe ingresar el RIF y nombre del agente de retencion (su cliente que retuvo).");
+        return;
+      }
+    }
+
     // Retencion IVA validations
     if (isRetIva) {
       if (!retIvaPeriodo.trim()) {
@@ -818,7 +858,7 @@ export default function InvoiceForm({ token }: Props) {
     const rDocType = result._docType || "factura";
     const successLabelMap: Record<string, string> = {
       factura: "Factura Emitida", nota_credito: "Nota de Credito Emitida", nota_debito: "Nota de Debito Emitida",
-      guia_despacho: "Guia de Despacho Emitida", retencion_iva: "Comprobante de Retencion IVA Emitido", retencion_islr: "Comprobante de Retencion ISLR Emitido",
+      guia_despacho: "Guia de Despacho Emitida", retencion_iva: "Retencion IVA Registrada", retencion_islr: "Retencion ISLR Registrada",
     };
     const successColorMap: Record<string, string> = {
       factura: "emerald", nota_credito: "blue", nota_debito: "amber",
@@ -836,7 +876,7 @@ export default function InvoiceForm({ token }: Props) {
             </svg>
           </div>
           <h2 className="text-xl font-bold text-white">{successLabel}</h2>
-          <p className="text-sm text-gray-500 mt-1">Documento generado exitosamente con validacion SENIAT V1.4</p>
+          <p className="text-sm text-gray-500 mt-1">{rDocType === "retencion_iva" || rDocType === "retencion_islr" ? "Comprobante de retencion registrado exitosamente" : "Documento generado exitosamente con validacion SENIAT V1.4"}</p>
         </div>
         <div className="space-y-2 rounded-lg bg-[#0d1321] border border-white/5 p-4 text-sm text-gray-300">
           {result.control_number && (
@@ -972,7 +1012,9 @@ export default function InvoiceForm({ token }: Props) {
           )}
           {isRetIva && (
             <div className="mb-3 rounded-lg bg-cyan-500/10 border border-cyan-500/20 px-3 py-2 text-sm space-y-1">
-              <p className="text-cyan-300 font-medium">Retencion de IVA</p>
+              <p className="text-cyan-300 font-medium">Registrar Retencion de IVA Recibida</p>
+              <p className="text-cyan-300"><span className="font-medium">Comprobante N°:</span> {retNumeroComprobante}</p>
+              <p className="text-cyan-300"><span className="font-medium">Agente de retencion:</span> {retAgenteRif} — {retAgenteNombre}</p>
               <p className="text-cyan-300"><span className="font-medium">Periodo fiscal:</span> {retIvaPeriodo}</p>
               <p className="text-cyan-300"><span className="font-medium">Porcentaje retencion:</span> {retIvaPorcentaje}%</p>
               {refDoc && <p className="text-cyan-300"><span className="font-medium">Base imponible:</span> {refDoc.moneda} {fmtMoney(refDoc.total)}</p>}
@@ -981,7 +1023,9 @@ export default function InvoiceForm({ token }: Props) {
           )}
           {isRetIslr && (
             <div className="mb-3 rounded-lg bg-orange-500/10 border border-orange-500/20 px-3 py-2 text-sm space-y-1">
-              <p className="text-orange-300 font-medium">Retencion de ISLR</p>
+              <p className="text-orange-300 font-medium">Registrar Retencion de ISLR Recibida</p>
+              <p className="text-orange-300"><span className="font-medium">Comprobante N°:</span> {retNumeroComprobante}</p>
+              <p className="text-orange-300"><span className="font-medium">Agente de retencion:</span> {retAgenteRif} — {retAgenteNombre}</p>
               <p className="text-orange-300"><span className="font-medium">Concepto:</span> {retIslrConcepto}</p>
               <p className="text-orange-300"><span className="font-medium">Porcentaje:</span> {retIslrPorcentaje}%</p>
               {retIslrSustraendo > 0 && <p className="text-orange-300"><span className="font-medium">Sustraendo:</span> {fmtMoney(retIslrSustraendo)}</p>}
@@ -1173,7 +1217,7 @@ export default function InvoiceForm({ token }: Props) {
           <div className="flex gap-3">
             <button onClick={handleSubmit} disabled={loading}
               className="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50 transition">
-              {loading ? "Emitiendo..." : `Confirmar y Emitir ${docLabel}`}
+              {loading ? (isRetIva || isRetIslr ? "Registrando..." : "Emitiendo...") : (isRetIva || isRetIslr ? `Confirmar y Registrar ${docLabel}` : `Confirmar y Emitir ${docLabel}`)}
             </button>
             <button onClick={() => setShowPreview(false)} type="button"
               className="rounded-lg border border-white/10 px-6 py-2.5 text-sm text-gray-300 hover:bg-white/5 transition">
@@ -1241,8 +1285,8 @@ export default function InvoiceForm({ token }: Props) {
           <div className="flex gap-2">
             {([
               { id: "guia_despacho" as DocumentType, label: "Guia de Despacho", color: "violet", icon: "M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" },
-              { id: "retencion_iva" as DocumentType, label: "Ret. IVA", color: "cyan", icon: "M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" },
-              { id: "retencion_islr" as DocumentType, label: "Ret. ISLR", color: "orange", icon: "M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" },
+              { id: "retencion_iva" as DocumentType, label: "Reg. Ret. IVA", color: "cyan", icon: "M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" },
+              { id: "retencion_islr" as DocumentType, label: "Reg. Ret. ISLR", color: "orange", icon: "M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" },
             ]).map((dt) => (
               <button key={dt.id} type="button" onClick={() => handleDocTypeChange(dt.id)}
                 className={`flex-1 flex items-center justify-center gap-2 rounded-lg py-2 text-xs font-medium transition ${
@@ -1421,6 +1465,41 @@ export default function InvoiceForm({ token }: Props) {
           </div>
         )}
 
+        {/* ── Datos comunes de retención recibida (IVA o ISLR) ── */}
+        {(isRetIva || isRetIslr) && (
+          <div className="rounded-xl border border-white/10 bg-[#111827] p-5">
+            <h3 className="mb-1 text-sm font-semibold text-gray-200">Datos del Comprobante Recibido</h3>
+            <p className="mb-3 text-[11px] text-gray-500">Las retenciones las emite su cliente (agente de retencion/SPE) al pagarle. Registre aqui el comprobante que recibio.</p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-gray-500">N° Comprobante *</label>
+                <input placeholder="Ej: 20260200000001" value={retNumeroComprobante}
+                  onChange={(e) => setRetNumeroComprobante(e.target.value)} required
+                  className="w-full rounded-lg bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-blue-500 focus:outline-none" />
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-gray-500">Fecha del Comprobante *</label>
+                <input type="date" value={retFechaRetencion}
+                  onChange={(e) => setRetFechaRetencion(e.target.value)} required
+                  className="w-full rounded-lg bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none" />
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-gray-500">RIF del Agente de Retencion *</label>
+                <input placeholder="J-12345678-9" value={retAgenteRif}
+                  onChange={(e) => setRetAgenteRif(e.target.value)} required
+                  className="w-full rounded-lg bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-blue-500 focus:outline-none" />
+                <p className="mt-1 text-[10px] text-gray-600">Su cliente que actua como agente de retencion (SPE)</p>
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-gray-500">Nombre del Agente *</label>
+                <input placeholder="Razon social del agente" value={retAgenteNombre}
+                  onChange={(e) => setRetAgenteNombre(e.target.value)} required
+                  className="w-full rounded-lg bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-blue-500 focus:outline-none" />
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ── Retencion IVA specific fields ── */}
         {isRetIva && (
           <div className="rounded-xl border border-cyan-500/20 bg-[#111827] p-5">
@@ -1450,7 +1529,7 @@ export default function InvoiceForm({ token }: Props) {
                   <span className="text-white font-medium">{refDoc.moneda} {fmtMoney(refDoc.total)}</span>
                 </div>
                 <div className="flex justify-between text-sm mt-1">
-                  <span className="text-cyan-400 font-medium">Monto a retener ({retIvaPorcentaje}%):</span>
+                  <span className="text-cyan-400 font-medium">Monto retenido ({retIvaPorcentaje}%):</span>
                   <span className="text-cyan-300 font-bold">{refDoc.moneda} {fmtMoney(refDoc.total * retIvaPorcentaje / 100)}</span>
                 </div>
               </div>

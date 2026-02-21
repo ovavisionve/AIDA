@@ -105,6 +105,17 @@ async def emitir_documento(
 
     # 4c. Validación SENIAT V1.4 pre-emisión
     try:
+        # Campos extra para guía de despacho
+        guia_kwargs: dict = {}
+        if request.tipo_documento == "guia_despacho":
+            guia_kwargs = {
+                "transportista_nombre": request.transportista,
+                "transportista_rif": request.transportista_rif,
+                "vehiculo_placa": request.vehiculo_placa,
+                "ruta_destino": request.ruta_destino,
+                "motivo_traslado": request.motivo_traslado,
+            }
+
         seniat_json = build_seniat_json(
             tipo_documento=request.tipo_documento,
             emisor_rif=emisor_rif,
@@ -120,12 +131,13 @@ async def emitir_documento(
             forma_pago=request.pagos[0].forma if request.pagos else "efectivo",
             observaciones=request.observaciones,
             **factura_afectada_kwargs,
+            **guia_kwargs,
         )
         validator = SeniatValidator()
         seniat_result = validator.validate(seniat_json)
         if not seniat_result.is_valid:
             error_msgs = [
-                f"[{e.code}] {e.field}: {e.message}"
+                f"[{e.code}] {e.field}: {e.message}" + (f" ({e.detail})" if getattr(e, 'detail', None) else "")
                 for e in seniat_result.errors
             ]
             raise DocumentEmissionError(

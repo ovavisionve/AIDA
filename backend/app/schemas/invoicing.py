@@ -89,6 +89,39 @@ class DispatchGuideCreate(BaseModel):
     observaciones: str | None = None
 
 
+class WithholdingRegister(BaseModel):
+    """
+    Registrar un comprobante de retención RECIBIDO.
+
+    Las retenciones las emite el COMPRADOR (agente de retención / SPE),
+    no el vendedor. El usuario de AIDA registra aquí el comprobante que
+    su cliente le entregó al momento de pagarle una factura de venta.
+    """
+    # Factura de venta sobre la cual retuvieron
+    invoice_id: uuid.UUID = Field(..., description="ID de la factura de venta asociada")
+
+    # Datos del comprobante recibido
+    tipo: str = Field(..., description="'iva' o 'islr'")
+    numero_comprobante: str = Field(..., description="Número del comprobante de retención (emitido por el agente)")
+    fecha_retencion: date = Field(..., description="Fecha de emisión del comprobante")
+    periodo_fiscal: str = Field(..., description="Periodo fiscal AAAAMM (ej: 202602)")
+
+    # Datos del agente de retención (el cliente/comprador que retuvo)
+    agente_rif: str = Field(..., description="RIF del agente de retención (el cliente que pagó)")
+    agente_nombre: str = Field(..., description="Razón social del agente de retención")
+
+    # Montos
+    base_imponible: float = Field(..., gt=0, description="Base imponible sobre la que se retuvo")
+    porcentaje_retencion: float = Field(..., gt=0, le=100, description="Porcentaje de retención aplicado")
+    monto_retenido: float = Field(..., gt=0, description="Monto efectivamente retenido")
+
+    # ISLR specific
+    concepto: str | None = Field(None, description="Concepto de retención ISLR (según Decreto 1808)")
+    sustraendo: float | None = Field(None, description="Sustraendo aplicado (solo ISLR)")
+
+    observaciones: str | None = None
+
+
 class InvoiceFullResponse(BaseModel):
     """Respuesta completa de factura con número de control."""
     id: uuid.UUID

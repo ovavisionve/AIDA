@@ -22,10 +22,10 @@ from app.models.security import User
 from app.models.clients import Client, ClientUser
 from app.models.customers import Customer
 from app.models.products import Product
-from app.models.documents import Invoice, CreditNote, DebitNote, DispatchGuide
+from app.models.documents import Invoice, CreditNote, DebitNote, DispatchGuide, Withholding
 from app.schemas.invoicing import (
     InvoiceCreate, CreditNoteCreate, DebitNoteCreate, DispatchGuideCreate,
-    InvoiceFullResponse, FacturadorDashboard,
+    InvoiceFullResponse, FacturadorDashboard, WithholdingRegister,
 )
 from app.schemas.fiscal import (
     EmitirDocumentoRequest, FiscalReceptor, FiscalItem, FiscalPago,
@@ -1293,3 +1293,145 @@ async def generate_report(
             return report_data
 
     return report_data
+
+
+# ═══════════════════════════════════════════════════════════════════
+# RETENCIONES RECIBIDAS (IVA / ISLR)
+# ═══════════════════════════════════════════════════════════════════
+
+@router.post("/withholdings/register", status_code=201)
+async def register_withholding(
+    data: WithholdingRegister,
+    request: Request,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Registrar un comprobante de retención RECIBIDO.
+
+    Las retenciones de IVA e ISLR las emite el COMPRADOR (agente de retención),
+    no el vendedor. Este endpoint permite al usuario registrar el comprobante
+    que su cliente (SPE) le entregó al pagarle una factura.
+    """
+    client = await _get_client(user, db)
+
+    # Verificar que la factura existe y pertenece al cliente
+    inv_result = await db.execute(
+        select(Invoice).where(Invoice.id == data.invoice_id, Invoice.client_id == client.id)
+    )
+    invoice = inv_result.scalar_one_or_none()
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Factura de venta no encontrada")
+
+    if data.tipo not in ("iva", "islr"):
+        raise HTTPException(status_code=400, detail="Tipo de retención debe ser 'iva' o 'islr'")
+
+    # Verificar que no exista ya un comprobante con el mismo número
+    existing = await db.execute(
+        select(Withholding).where(
+            Withholding.document_number == data.numero_comprobante,
+            Withholding.client_id == client.id,
+        )
+    )
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail=f"Ya existe un comprobante con número {data.numero_comprobante}")
+
+    withholding = Withholding(
+        client_id=client.id,
+        document_number=data.numero_comprobante,
+        tipo=data.tipo,
+        invoice_id=invoice.id,
+        # El agente de retención es el CLIENTE del usuario (quien pagó y retuvo)
+        agente_retencion_rif=data.agente_rif,
+        agente_retencion_nombre=data.agente_nombre,
+        # El sujeto retenido es el USUARIO (a quien le retuvieron)
+        sujeto_retenido_rif=client.rif,
+        sujeto_retenido_nombre=client.razon_social,
+        sujeto_retenido_direccion=client.direccion_fiscal,
+        fecha_emision=datetime.combine(data.fecha_retencion, datetime.min.time(), tzinfo=timezone.utc),
+        periodo_fiscal=data.periodo_fiscal,
+        monto_factura=float(invoice.total),
+        base_imponible=data.base_imponible,
+        porcentaje_retencion=data.porcentaje_retencion,
+        monto_retenido=data.monto_retenido,
+        factura_numero=invoice.document_number,
+        factura_fecha=invoice.fecha_emision.date() if invoice.fecha_emision else None,
+        concepto=data.concepto,
+        status="registrado",
+        created_by_user_id=user.id,
+        created_by_ip=request.client.host if request.client else None,
+    )
+    db.add(withholding)
+    await db.flush()
+
+    await log_audit(
+        db, user.id, "register_withholding", "withholding", str(withholding.id),
+        details=f"Tipo:{data.tipo} Agente:{data.agente_rif} Monto:{data.monto_retenido}",
+        request=request, client_id=client.id,
+    )
+
+    return {
+        "success": True,
+        "id": str(withholding.id),
+        "document_number": data.numero_comprobante,
+        "tipo": data.tipo,
+        "agente_rif": data.agente_rif,
+        "agente_nombre": data.agente_nombre,
+        "monto_retenido": data.monto_retenido,
+        "factura_referencia": invoice.document_number,
+        "message": f"Comprobante de retención de {data.tipo.upper()} registrado exitosamente",
+    }
+
+
+@router.get("/withholdings")
+async def list_withholdings(
+    request: Request,
+    tipo: str | None = Query(None, description="Filtrar por tipo: iva, islr"),
+    periodo: str | None = Query(None, description="Filtrar por periodo fiscal: AAAAMM"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Listar comprobantes de retención recibidos."""
+    client = await _get_client(user, db)
+
+    query = select(Withholding).where(Withholding.client_id == client.id)
+    count_query = select(func.count()).select_from(Withholding).where(Withholding.client_id == client.id)
+
+    if tipo:
+        query = query.where(Withholding.tipo == tipo)
+        count_query = count_query.where(Withholding.tipo == tipo)
+    if periodo:
+        query = query.where(Withholding.periodo_fiscal == periodo)
+        count_query = count_query.where(Withholding.periodo_fiscal == periodo)
+
+    total = (await db.execute(count_query)).scalar() or 0
+
+    query = query.order_by(Withholding.fecha_emision.desc())
+    query = query.offset((page - 1) * page_size).limit(page_size)
+    result = await db.execute(query)
+    withholdings = result.scalars().all()
+
+    return {
+        "items": [
+            {
+                "id": str(w.id),
+                "document_number": w.document_number,
+                "tipo": w.tipo,
+                "agente_rif": w.agente_retencion_rif,
+                "agente_nombre": w.agente_retencion_nombre,
+                "factura_numero": w.factura_numero,
+                "periodo_fiscal": w.periodo_fiscal,
+                "base_imponible": float(w.base_imponible),
+                "porcentaje_retencion": float(w.porcentaje_retencion),
+                "monto_retenido": float(w.monto_retenido),
+                "fecha_emision": w.fecha_emision.isoformat() if w.fecha_emision else None,
+                "status": w.status,
+            }
+            for w in withholdings
+        ],
+        "total": total,
+        "page": page,
+        "pages": math.ceil(total / page_size) if total > 0 else 0,
+    }
