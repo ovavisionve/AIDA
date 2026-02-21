@@ -289,7 +289,7 @@ class Viajes(BaseModel):
 # =============================================================================
 # InfoAdicional
 # =============================================================================
-class InfoAdicional(BaseModel):
+class InfoAdicionalItem(BaseModel):
     campo: Optional[str] = None
     valor: Optional[str] = None
 
@@ -368,7 +368,7 @@ class DocumentoElectronico(BaseModel):
     detalleItems: Optional[list[DetalleItem]] = None
     detallesRetencion: Optional[list[DetalleRetencion]] = None
     viajes: Optional[Viajes] = None
-    InfoAdicional: Optional[list[InfoAdicional]] = None
+    InfoAdicional: Optional[list[InfoAdicionalItem]] = None
     guiaDespacho: Optional[GuiaDespacho] = None
     transporte: Optional[Transporte] = None
     imprenta: Optional[Imprenta] = None
