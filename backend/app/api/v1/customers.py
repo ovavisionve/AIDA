@@ -73,6 +73,43 @@ async def list_customers(
     )
 
 
+@router.get("/autocomplete")
+async def autocomplete_customers(
+    q: str = Query("", description="Texto de búsqueda"),
+    limit: int = Query(50, ge=1, le=200),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Búsqueda rápida para autocompletado — sin count, solo campos esenciales."""
+    client_id = await _get_client_id(user, db)
+    query = (
+        select(
+            Customer.id, Customer.rif, Customer.razon_social,
+            Customer.nombre_comercial, Customer.direccion_fiscal,
+            Customer.email, Customer.telefono_principal, Customer.condicion_pago,
+        )
+        .where(Customer.client_id == client_id, Customer.is_active == True)
+    )
+    if q and len(q) >= 2:
+        query = query.where(
+            or_(
+                Customer.rif.ilike(f"{q}%"),
+                Customer.razon_social.ilike(f"%{q}%"),
+                Customer.nombre_comercial.ilike(f"%{q}%"),
+            )
+        )
+    result = await db.execute(query.order_by(Customer.razon_social).limit(limit))
+    return [
+        {
+            "id": str(r.id), "rif": r.rif, "razon_social": r.razon_social,
+            "nombre_comercial": r.nombre_comercial, "direccion_fiscal": r.direccion_fiscal,
+            "email": r.email, "telefono_principal": r.telefono_principal,
+            "condicion_pago": r.condicion_pago,
+        }
+        for r in result.all()
+    ]
+
+
 @router.get("/{customer_id}", response_model=CustomerResponse)
 async def get_customer(
     customer_id: uuid.UUID,

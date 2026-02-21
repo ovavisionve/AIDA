@@ -106,6 +106,45 @@ async def list_products(
     )
 
 
+@router.get("/autocomplete")
+async def autocomplete_products(
+    q: str = Query("", description="Texto de búsqueda"),
+    limit: int = Query(100, ge=1, le=500),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Búsqueda rápida para autocompletado — sin count, solo campos esenciales."""
+    client_id = await _get_client_id(user, db)
+    query = (
+        select(
+            Product.id, Product.code, Product.name, Product.barcode,
+            Product.sale_price_1, Product.cost_price, Product.tax_type,
+            Product.tax_rate, Product.stock_actual, Product.is_service,
+            Product.unit_of_measure,
+        )
+        .where(Product.client_id == client_id, Product.is_active == True)
+    )
+    if q and len(q) >= 1:
+        query = query.where(
+            or_(
+                Product.code.ilike(f"{q}%"),
+                Product.name.ilike(f"%{q}%"),
+                Product.barcode.ilike(f"{q}%"),
+            )
+        )
+    result = await db.execute(query.order_by(Product.name).limit(limit))
+    return [
+        {
+            "id": str(r.id), "code": r.code, "name": r.name,
+            "sale_price_1": float(r.sale_price_1), "cost_price": float(r.cost_price),
+            "tax_type": r.tax_type, "tax_rate": float(r.tax_rate),
+            "stock_actual": float(r.stock_actual), "is_service": r.is_service,
+            "unit_of_measure": r.unit_of_measure,
+        }
+        for r in result.all()
+    ]
+
+
 @router.get("/{product_id}", response_model=ProductResponse)
 async def get_product(
     product_id: uuid.UUID,

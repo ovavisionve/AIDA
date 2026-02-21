@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 
 interface Props { token: string }
 
@@ -8,23 +8,50 @@ export default function CustomerList({ token }: Props) {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
   const [customers, setCustomers] = useState<any[]>([]);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const [createError, setCreateError] = useState("");
   const [form, setForm] = useState({ rif: "", razon_social: "", direccion_fiscal: "", email: "", telefono_principal: "", condicion_pago: "contado", limite_credito: 0 });
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const ctrlRef = useRef<AbortController | null>(null);
 
-  const load = () => {
-    const params = search ? `?search=${search}` : "";
-    fetch(`${apiUrl}/customers${params}`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => {
-        if (!r.ok) throw new Error(`Error ${r.status}`);
-        return r.json();
-      })
-      .then(d => { setCustomers(d.items || []); setError(""); })
-      .catch((err) => setError(err.message || "Error al cargar clientes"));
+  // Debounce search input (400ms)
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => setDebouncedSearch(value), 400);
   };
 
-  useEffect(() => { load(); }, [search, token]);
+  const load = useCallback(async (retries = 2) => {
+    ctrlRef.current?.abort();
+    const ctrl = new AbortController();
+    ctrlRef.current = ctrl;
+    setLoading(true);
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const params = debouncedSearch ? `?search=${encodeURIComponent(debouncedSearch)}` : "";
+        const res = await fetch(`${apiUrl}/customers${params}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          signal: ctrl.signal,
+        });
+        if (!res.ok) throw new Error(`Error ${res.status}`);
+        const d = await res.json();
+        setCustomers(d.items || []);
+        setError("");
+        setLoading(false);
+        return;
+      } catch (err: any) {
+        if (err?.name === "AbortError") { setLoading(false); return; }
+        if (attempt === retries) setError(err.message || "Error al cargar clientes");
+        else await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+      }
+    }
+    setLoading(false);
+  }, [apiUrl, token, debouncedSearch]);
+
+  useEffect(() => { load(); }, [load]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,7 +81,7 @@ export default function CustomerList({ token }: Props) {
       )}
       <div className="flex items-center justify-between">
         <input placeholder="Buscar por RIF, nombre, email..."
-          value={search} onChange={e => setSearch(e.target.value)}
+          value={search} onChange={e => handleSearchChange(e.target.value)}
           className="w-80 rounded-lg bg-[#0d1321] border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none" />
         <button onClick={() => setShowForm(!showForm)}
           className="rounded-lg bg-aida-accent px-4 py-2 text-sm text-white hover:bg-aida-accent/80">

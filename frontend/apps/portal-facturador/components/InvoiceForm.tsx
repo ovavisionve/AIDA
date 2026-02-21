@@ -213,37 +213,44 @@ export default function InvoiceForm({ token }: Props) {
   useEffect(() => { fetchRates(); }, [fetchRates]);
 
   // ═══════════════════════════════════════════════════════════════
-  // FETCH: Preload products catalog
+  // FETCH: Preload products + customers (with retry & abort)
   // ═══════════════════════════════════════════════════════════════
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch(`${apiUrl}/products?page_size=100`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setProductsCatalog(data.items || []);
-        }
-      } catch (err) { console.error("Error loading products:", err); }
-    })();
-  }, [apiUrl, token]);
+  const [customersAll, setCustomersAll] = useState<CustomerResult[]>([]);
+  const abortRef = useRef<Record<string, AbortController>>({});
 
-  // ═══════════════════════════════════════════════════════════════
-  // FETCH: Preload customers
-  // ═══════════════════════════════════════════════════════════════
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch(`${apiUrl}/customers?page_size=10`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const d = await res.json();
-          setCustomerResults(d.items || []);
+    let cancelled = false;
+    const fetchWithRetry = async (url: string, retries = 3): Promise<any[]> => {
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+          const ctrl = new AbortController();
+          const key = url.split("?")[0];
+          abortRef.current[key]?.abort();
+          abortRef.current[key] = ctrl;
+          const res = await fetch(url, {
+            headers: { Authorization: `Bearer ${token}` },
+            signal: ctrl.signal,
+          });
+          if (res.ok) return await res.json();
+        } catch (err: any) {
+          if (err?.name === "AbortError") return [];
+          if (attempt < retries) await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
         }
-      } catch (err) { console.error("Error loading customers:", err); }
+      }
+      return [];
+    };
+
+    (async () => {
+      const [prods, custs] = await Promise.all([
+        fetchWithRetry(`${apiUrl}/products/autocomplete?limit=200`),
+        fetchWithRetry(`${apiUrl}/customers/autocomplete?limit=100`),
+      ]);
+      if (cancelled) return;
+      if (Array.isArray(prods)) setProductsCatalog(prods);
+      if (Array.isArray(custs)) { setCustomersAll(custs); setCustomerResults(custs); }
     })();
+
+    return () => { cancelled = true; };
   }, [apiUrl, token]);
 
   // Close dropdowns on outside click
@@ -311,21 +318,42 @@ export default function InvoiceForm({ token }: Props) {
   // CUSTOMER SEARCH
   // ═══════════════════════════════════════════════════════════════
   const searchCustomers = useCallback(async (query: string) => {
-    if (query.length < 2) { setCustomerResults([]); setShowCustomerDD(false); return; }
+    if (query.length < 2) {
+      setCustomerResults(customersAll.length ? customersAll : []);
+      setShowCustomerDD(false);
+      return;
+    }
+    // Local-first: filter from preloaded data instantly
+    const q = query.toLowerCase();
+    const local = customersAll.filter(c =>
+      c.rif.toLowerCase().includes(q) ||
+      c.razon_social.toLowerCase().includes(q) ||
+      (c.nombre_comercial || "").toLowerCase().includes(q)
+    );
+    if (local.length > 0) {
+      setCustomerResults(local);
+      setShowCustomerDD(true);
+      setSearchLoading(false);
+      return;
+    }
+    // Fallback: search server if no local matches
     setSearchLoading(true);
     try {
+      const ctrl = new AbortController();
+      abortRef.current["cust-search"]?.abort();
+      abortRef.current["cust-search"] = ctrl;
       const res = await fetch(
-        `${apiUrl}/customers?search=${encodeURIComponent(query)}&page_size=10`,
-        { headers: { Authorization: `Bearer ${token}` } },
+        `${apiUrl}/customers/autocomplete?q=${encodeURIComponent(query)}&limit=20`,
+        { headers: { Authorization: `Bearer ${token}` }, signal: ctrl.signal },
       );
       if (res.ok) {
         const data = await res.json();
-        setCustomerResults(data.items || []);
+        setCustomerResults(data || []);
         setShowCustomerDD(true);
       }
-    } catch { /* network error */ }
+    } catch { /* network error or abort */ }
     finally { setSearchLoading(false); }
-  }, [apiUrl, token]);
+  }, [apiUrl, token, customersAll]);
 
   const handleCustomerSearchChange = (value: string) => {
     setCustomerSearch(value);
@@ -360,20 +388,35 @@ export default function InvoiceForm({ token }: Props) {
   // ═══════════════════════════════════════════════════════════════
   const searchProducts = useCallback(async (query: string) => {
     if (query.length < 1) {
-      setProductResults(productsCatalog.slice(0, 10));
+      setProductResults(productsCatalog.slice(0, 20));
       return;
     }
+    // Local-first: filter from preloaded catalog instantly
+    const q = query.toLowerCase();
+    const local = productsCatalog.filter(p =>
+      p.code.toLowerCase().includes(q) ||
+      p.name.toLowerCase().includes(q)
+    );
+    if (local.length > 0) {
+      setProductResults(local.slice(0, 20));
+      setProductSearchLoading(false);
+      return;
+    }
+    // Fallback: search server only if no local matches
     setProductSearchLoading(true);
     try {
+      const ctrl = new AbortController();
+      abortRef.current["prod-search"]?.abort();
+      abortRef.current["prod-search"] = ctrl;
       const res = await fetch(
-        `${apiUrl}/products?search=${encodeURIComponent(query)}&page_size=10`,
-        { headers: { Authorization: `Bearer ${token}` } },
+        `${apiUrl}/products/autocomplete?q=${encodeURIComponent(query)}&limit=20`,
+        { headers: { Authorization: `Bearer ${token}` }, signal: ctrl.signal },
       );
       if (res.ok) {
         const data = await res.json();
-        setProductResults(data.items || []);
+        setProductResults(data || []);
       }
-    } catch { /* network error */ }
+    } catch { /* network error or abort */ }
     finally { setProductSearchLoading(false); }
   }, [apiUrl, token, productsCatalog]);
 
@@ -381,7 +424,7 @@ export default function InvoiceForm({ token }: Props) {
     setProductSearch({ ...productSearch, [lineIdx]: value });
     setProductDropdown(lineIdx);
     if (prodTimerRef.current) clearTimeout(prodTimerRef.current);
-    prodTimerRef.current = setTimeout(() => searchProducts(value), 250);
+    prodTimerRef.current = setTimeout(() => searchProducts(value), 300);
   };
 
   const selectProduct = (lineIdx: number, p: ProductResult) => {
