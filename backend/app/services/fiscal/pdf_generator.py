@@ -905,12 +905,17 @@ def generate_withholding_pdf(
     # ═══════════════════════════════════════════════════════════════
     item_font_size = max(6, int(6.5 * factor))
 
+    # Cell style for wrappable text inside table
+    cell_style = ParagraphStyle("cell", parent=styles["SmallText"], fontSize=item_font_size,
+                                leading=item_font_size + 2, spaceBefore=0, spaceAfter=0)
+
     if tipo_ret == "IVA":
         headers = ["Oper.", "N° Factura", "Fecha Fact.", "Monto Fact.", "Base Imp.", "IVA Causado", "% Ret.", "IVA Retenido"]
         col_w = [28, 60, 52, 62, 62, 58, 32, 62]
     else:
-        headers = ["Oper.", "N° Factura", "Fecha Fact.", "Monto Fact.", "Base Imp.", "Concepto", "% Ret.", "ISLR Retenido"]
-        col_w = [28, 60, 52, 62, 62, 58, 32, 62]
+        # ISLR: Concepto necesita más espacio — quitar Base Imp. (redundante con Monto Fact.)
+        headers = ["Oper.", "N° Factura", "Fecha Fact.", "Monto Fact.", "Concepto", "% Ret.", "ISLR Retenido"]
+        col_w = [28, 58, 50, 58, 120, 32, 70]
 
     table_data = [headers]
 
@@ -926,8 +931,9 @@ def generate_withholding_pdf(
         impuesto_causado = _fmt_money_short(_safe(doc, "impuesto_causado", 0))
         row = ["1", factura_num, factura_fecha, monto_factura, base_imp, impuesto_causado, pct_ret, monto_ret]
     else:
-        concepto = _safe(doc, "concepto", "")
-        row = ["1", factura_num, factura_fecha, monto_factura, base_imp, concepto, pct_ret, monto_ret]
+        concepto_text = _safe(doc, "concepto", "")
+        concepto_p = Paragraph(_trunc(concepto_text, 60), cell_style)
+        row = ["1", factura_num, factura_fecha, monto_factura, concepto_p, pct_ret, monto_ret]
 
     table_data.append(row)
 
