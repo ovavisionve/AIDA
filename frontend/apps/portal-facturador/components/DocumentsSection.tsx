@@ -93,25 +93,6 @@ export default function DocumentsSection({ token }: Props) {
     loadDocs();
   };
 
-  const handleVoid = async (docId: string, tipo: string) => {
-    if (!confirm("¿Anular este documento? Esta acción no se puede deshacer.")) return;
-    try {
-      const motivo = encodeURIComponent("Anulación solicitada por facturador");
-      const res = await fetch(`${apiUrl}/invoicing/invoices/${docId}/void?motivo=${motivo}`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        setActionMsg("Documento anulado exitosamente");
-        loadDocs();
-      } else {
-        const data = await res.json().catch(() => ({}));
-        setActionMsg(data.detail || "Error al anular documento");
-      }
-    } catch { setActionMsg("Error de conexión al anular"); }
-    setTimeout(() => setActionMsg(""), 4000);
-  };
-
   const handleResendEmail = async (docId: string) => {
     try {
       const res = await fetch(`${apiUrl}/invoicing/invoices/${docId}/send-email`, {
@@ -263,14 +244,6 @@ export default function DocumentsSection({ token }: Props) {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
                       </svg>
                     </button>
-                    {doc.status === "emitido" && (
-                      <button onClick={() => handleVoid(doc.id, doc.tipo)} title="Anular"
-                        className="rounded p-1 text-gray-500 hover:bg-red-500/10 hover:text-red-400 transition">
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                        </svg>
-                      </button>
-                    )}
                   </div>
                 </td>
               </tr>
