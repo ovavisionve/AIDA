@@ -43,6 +43,8 @@ async def emitir_documento(
     request: EmitirDocumentoRequest,
     user_id: uuid.UUID | None = None,
     ip_address: str | None = None,
+    cached_client: Client | None = None,
+    skip_notifications: bool = False,
 ) -> EmitirDocumentoResponse:
     """
     Emite un documento fiscal completo.
@@ -62,9 +64,12 @@ async def emitir_documento(
     # 1. Validar
     _validar_request(request)
 
-    # 2. Obtener datos del emisor
-    result = await db.execute(select(Client).where(Client.id == client_id))
-    client = result.scalar_one_or_none()
+    # 2. Obtener datos del emisor (usa cache si viene del batch)
+    if cached_client is not None:
+        client = cached_client
+    else:
+        result = await db.execute(select(Client).where(Client.id == client_id))
+        client = result.scalar_one_or_none()
     if not client:
         raise DocumentEmissionError("CLIENT_NOT_FOUND", "Cliente no encontrado")
 
@@ -249,8 +254,8 @@ async def emitir_documento(
         xml_bytes = generate_document_xml(doc, doc_items, request.tipo_documento)
         await storage.save(xml_bytes, str(client_id), "xml", f"{request.tipo_documento}_{nc}.xml")
 
-        # Email al receptor
-        if request.receptor.email:
+        # Email al receptor (skip en batch — se envía como tarea de fondo)
+        if request.receptor.email and not skip_notifications:
             try:
                 from app.services.notifications.email_service import get_email_service
                 await get_email_service().send_document_email(

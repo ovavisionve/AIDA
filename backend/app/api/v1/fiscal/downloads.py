@@ -7,15 +7,16 @@ Endpoints de descarga, exportación y procesamiento batch de documentos fiscales
 - POST /fiscal/emit-batch         → Emitir múltiples documentos
 - POST /fiscal/send-email/{id}    → Reenviar documento por email
 """
+import asyncio
 import uuid
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 from fastapi.responses import Response
 from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.database import get_db
+from app.database import get_db, async_session
 from app.models.clients import Client
 from app.models.documents import Invoice, CreditNote, DebitNote, DispatchGuide, Withholding, DocumentItem
 from app.models.templates import DocumentTemplate, ClientTemplatePreference, ClientBanner
@@ -408,14 +409,51 @@ class BatchEmitRequest(BaseModel):
     enviar_email: bool = False
 
 
+_BATCH_CONCURRENCY = 10  # máximo de emisiones simultáneas
+
+
+async def _background_send_emails(email_tasks: list[dict]):
+    """Envía emails de documentos batch en paralelo como tarea de fondo."""
+    email_svc = get_email_service()
+
+    async def _send_one(task: dict):
+        try:
+            async with async_session() as db:
+                doc, doc_type, items = await _find_document(
+                    db, task["document_id"], task["client_id"],
+                )
+                if doc:
+                    pdf_bytes = generate_invoice_pdf(doc, items, doc_type)
+                    xml_bytes = generate_document_xml(doc, items, doc_type)
+                    await email_svc.send_document_email(
+                        to=task["email"],
+                        doc_type=doc_type,
+                        numero_control=task["numero_control"],
+                        emisor_razon=doc.emisor_razon_social,
+                        receptor_razon=doc.receptor_razon_social,
+                        total=float(doc.total),
+                        moneda=getattr(doc, "moneda", "VES"),
+                        pdf_bytes=pdf_bytes,
+                        xml_bytes=xml_bytes,
+                    )
+        except Exception:
+            pass  # Email failure should never propagate
+
+    await asyncio.gather(*[_send_one(t) for t in email_tasks])
+
+
 @router.post(
     "/emit-batch",
     summary="Emision masiva de documentos",
-    description="Emite multiples documentos fiscales en una sola operacion. Maximo 50 documentos por lote.",
+    description=(
+        "Emite multiples documentos fiscales en paralelo. "
+        "Maximo 50 documentos por lote. Los emails se envian como tarea de fondo."
+    ),
 )
 async def emit_batch(
     data: BatchEmitRequest,
     request: Request,
+    background_tasks: BackgroundTasks,
     client: Client = Depends(get_client_from_api_key),
     db: AsyncSession = Depends(get_db),
 ):
@@ -427,86 +465,116 @@ async def emit_batch(
 
     from app.schemas.fiscal import EmitirDocumentoRequest, ReceptorData, FiscalItemRequest
 
-    results = []
-    errors = []
+    ip_address = request.client.host if request.client else None
+    sem = asyncio.Semaphore(_BATCH_CONCURRENCY)
 
-    for i, doc_data in enumerate(data.documentos):
-        try:
-            # Build request
-            fiscal_items = []
-            for item in doc_data.items:
-                fiscal_items.append(FiscalItemRequest(
-                    descripcion=item.get("descripcion", ""),
-                    cantidad=item.get("cantidad", 1),
-                    precio_unitario=item.get("precio_unitario", 0),
-                    tipo_impuesto=item.get("tipo_impuesto", "gravado"),
-                    codigo=item.get("codigo"),
-                    unidad=item.get("unidad", "UND"),
-                ))
+    async def _emit_one(i: int, doc_data: BatchEmitItem) -> dict:
+        """Emite un documento con su propia sesión de BD."""
+        async with sem:
+            async with async_session() as session:
+                try:
+                    fiscal_items = [
+                        FiscalItemRequest(
+                            descripcion=item.get("descripcion", ""),
+                            cantidad=item.get("cantidad", 1),
+                            precio_unitario=item.get("precio_unitario", 0),
+                            tipo_impuesto=item.get("tipo_impuesto", "gravado"),
+                            codigo=item.get("codigo"),
+                            unidad=item.get("unidad", "UND"),
+                        )
+                        for item in doc_data.items
+                    ]
 
-            emit_request = EmitirDocumentoRequest(
-                tipo_documento=doc_data.tipo_documento,
-                receptor=ReceptorData(
-                    rif=doc_data.receptor_rif,
-                    razon_social=doc_data.receptor_razon_social,
-                    direccion=doc_data.receptor_direccion,
-                    email=doc_data.receptor_email,
-                ),
-                items=fiscal_items,
-                moneda=doc_data.moneda,
-                condicion_pago=doc_data.condicion_pago,
-                observaciones=doc_data.observaciones,
-            )
-
-            result = await emitir_documento(
-                db=db,
-                client_id=client.id,
-                request=emit_request,
-                ip_address=request.client.host if request.client else None,
-            )
-
-            results.append({
-                "index": i,
-                "success": True,
-                "document_id": str(result.document_id),
-                "numero_control": result.numero_control,
-                "total": result.totales.total,
-            })
-
-            # Send email if requested
-            if data.enviar_email and doc_data.receptor_email:
-                doc, doc_type, items = await _find_document(db, result.document_id, client.id)
-                if doc:
-                    pdf_bytes = generate_invoice_pdf(doc, items, doc_type)
-                    xml_bytes = generate_document_xml(doc, items, doc_type)
-                    email_svc = get_email_service()
-                    await email_svc.send_document_email(
-                        to=doc_data.receptor_email,
-                        doc_type=doc_type,
-                        numero_control=result.numero_control,
-                        emisor_razon=doc.emisor_razon_social,
-                        receptor_razon=doc.receptor_razon_social,
-                        total=float(doc.total),
-                        moneda=getattr(doc, "moneda", "VES"),
-                        pdf_bytes=pdf_bytes,
-                        xml_bytes=xml_bytes,
+                    emit_request = EmitirDocumentoRequest(
+                        tipo_documento=doc_data.tipo_documento,
+                        receptor=ReceptorData(
+                            rif=doc_data.receptor_rif,
+                            razon_social=doc_data.receptor_razon_social,
+                            direccion=doc_data.receptor_direccion,
+                            email=doc_data.receptor_email,
+                        ),
+                        items=fiscal_items,
+                        moneda=doc_data.moneda,
+                        condicion_pago=doc_data.condicion_pago,
+                        observaciones=doc_data.observaciones,
                     )
 
-        except DocumentEmissionError as e:
-            errors.append({"index": i, "success": False, "error": e.message, "details": e.details})
-        except Exception as e:
-            errors.append({"index": i, "success": False, "error": str(e)})
+                    result = await emitir_documento(
+                        db=session,
+                        client_id=client.id,
+                        request=emit_request,
+                        ip_address=ip_address,
+                        cached_client=client,
+                        skip_notifications=True,
+                    )
+                    await session.commit()
 
+                    return {
+                        "index": i,
+                        "success": True,
+                        "document_id": str(result.document_id),
+                        "numero_control": result.numero_control,
+                        "total": result.totales.total,
+                        "_email": doc_data.receptor_email,
+                    }
+                except DocumentEmissionError as e:
+                    await session.rollback()
+                    return {
+                        "index": i,
+                        "success": False,
+                        "error": e.message,
+                        "details": e.details,
+                    }
+                except Exception as e:
+                    await session.rollback()
+                    return {"index": i, "success": False, "error": str(e)}
+
+    # --- Emisión en paralelo ---
+    all_outcomes = await asyncio.gather(
+        *[_emit_one(i, doc_data) for i, doc_data in enumerate(data.documentos)]
+    )
+
+    results = [r for r in all_outcomes if r.get("success")]
+    errors = [r for r in all_outcomes if not r.get("success")]
+
+    # --- Emails como tarea de fondo (no bloquea la respuesta) ---
+    if data.enviar_email:
+        email_tasks = [
+            {
+                "document_id": uuid.UUID(r["document_id"]),
+                "client_id": client.id,
+                "email": r["_email"],
+                "numero_control": r["numero_control"],
+            }
+            for r in results
+            if r.get("_email")
+        ]
+        if email_tasks:
+            background_tasks.add_task(_background_send_emails, email_tasks)
+
+    # --- Auditoría ---
     await log_audit(
         db, None, "batch_emit", "documents",
         details=f"total={len(data.documentos)}, success={len(results)}, errors={len(errors)}",
         request=request, client_id=client.id,
     )
 
+    # Limpiar campos internos antes de responder
+    clean_results = [
+        {
+            "index": r["index"],
+            "success": True,
+            "document_id": r["document_id"],
+            "numero_control": r["numero_control"],
+            "total": r["total"],
+        }
+        for r in results
+    ]
+
     return {
         "total": len(data.documentos),
         "success_count": len(results),
         "error_count": len(errors),
-        "results": results,
+        "results": clean_results,
         "errors": errors,
     }
