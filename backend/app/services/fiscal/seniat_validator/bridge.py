@@ -64,6 +64,12 @@ def build_seniat_json(
     forma_pago: str = "efectivo",
     fecha_emision: datetime | None = None,
     observaciones: str | None = None,
+    # Campos de factura afectada (requeridos para NC/ND)
+    numero_factura_afectada: int | None = None,
+    fecha_factura_afectada: str | None = None,
+    monto_factura_afectada: float | None = None,
+    serie_factura_afectada: str | None = None,
+    comentario_factura_afectada: str | None = None,
 ) -> dict:
     """
     Construye el dict JSON Genérico SENIAT V1.4 a partir de datos internos.
@@ -196,16 +202,31 @@ def build_seniat_json(
         totales_dict["totalIGTF"] = total_igtf
 
     # ── Build full document ──
+    ident_doc: dict = {
+        "tipoDocumento": tipo_seniat,
+        "numeroDocumento": 0,  # Placeholder: assigned during emission
+        "tipoTransaccion": "01",
+        "fechaEmision": fecha.strftime("%d/%m/%Y"),
+        "horaEmision": fecha.strftime("%I:%M:%S %p").lower(),
+        "moneda": moneda,
+    }
+
+    # Campos de factura afectada (requeridos para NC tipo 02 y ND tipo 03)
+    if tipo_seniat in ("02", "03"):
+        if numero_factura_afectada is not None:
+            ident_doc["numeroFacturaAfectada"] = numero_factura_afectada
+        if fecha_factura_afectada:
+            ident_doc["fechaFacturaAfectada"] = fecha_factura_afectada
+        if monto_factura_afectada is not None:
+            ident_doc["montoFacturaAfectada"] = str(round(monto_factura_afectada, 2))
+        if serie_factura_afectada:
+            ident_doc["serieFacturaAfectada"] = serie_factura_afectada
+        if comentario_factura_afectada:
+            ident_doc["comentarioFacturaAfectada"] = comentario_factura_afectada
+
     doc: dict = {
         "encabezado": {
-            "identificacionDocumento": {
-                "tipoDocumento": tipo_seniat,
-                "numeroDocumento": 0,  # Placeholder: assigned during emission
-                "tipoTransaccion": "01",
-                "fechaEmision": fecha.strftime("%d/%m/%Y"),
-                "horaEmision": fecha.strftime("%I:%M:%S %p").lower(),
-                "moneda": moneda,
-            },
+            "identificacionDocumento": ident_doc,
             "vendedor": {
                 "codigo": emisor_rif,
                 "nombre": emisor_razon_social,

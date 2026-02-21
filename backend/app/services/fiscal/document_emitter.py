@@ -80,7 +80,30 @@ async def emitir_documento(
     porcentaje_igtf = getattr(request, "porcentaje_igtf", 3.00)
     totales = calcular_totales(items_calculados, pago_en_divisas, porcentaje_igtf)
 
-    # 4b. Validación SENIAT V1.4 pre-emisión
+    # 4b. Buscar factura afectada si es NC o ND (necesario para validación SENIAT)
+    factura_afectada_kwargs: dict = {}
+    if request.tipo_documento in ("nota_credito", "nota_debito") and request.documento_referencia:
+        ref_result = await db.execute(
+            select(Invoice).where(
+                Invoice.control_number == request.documento_referencia,
+                Invoice.client_id == client_id,
+            )
+        )
+        factura_ref = ref_result.scalar_one_or_none()
+        if factura_ref:
+            fecha_fact = factura_ref.fecha_emision
+            if hasattr(fecha_fact, "strftime"):
+                fecha_fmt = fecha_fact.strftime("%d/%m/%Y")
+            else:
+                fecha_fmt = str(fecha_fact)
+            factura_afectada_kwargs = {
+                "numero_factura_afectada": int(factura_ref.document_number) if factura_ref.document_number and factura_ref.document_number.isdigit() else 0,
+                "fecha_factura_afectada": fecha_fmt,
+                "monto_factura_afectada": float(factura_ref.total),
+                "comentario_factura_afectada": request.motivo or "Anulación/devolución",
+            }
+
+    # 4c. Validación SENIAT V1.4 pre-emisión
     try:
         seniat_json = build_seniat_json(
             tipo_documento=request.tipo_documento,
@@ -96,6 +119,7 @@ async def emitir_documento(
             tasa_cambio=request.tasa_cambio,
             forma_pago=request.pagos[0].forma if request.pagos else "efectivo",
             observaciones=request.observaciones,
+            **factura_afectada_kwargs,
         )
         validator = SeniatValidator()
         seniat_result = validator.validate(seniat_json)
