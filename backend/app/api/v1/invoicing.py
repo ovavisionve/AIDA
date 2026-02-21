@@ -629,13 +629,11 @@ async def create_dispatch_guide(
     if not receptor_rif or not receptor_razon:
         raise HTTPException(status_code=400, detail="Datos del receptor incompletos (RIF y razón social requeridos)")
 
-    # Resolver items
+    # Resolver items (guías de despacho: solo cantidad/descripción, sin precio ni IVA)
     fiscal_items = []
     for i, item in enumerate(data.items):
         desc = item.description
         code = item.product_code
-        price = item.unit_price
-        tax_type = item.tax_type
 
         if item.product_id:
             prod_result = await db.execute(
@@ -645,10 +643,6 @@ async def create_dispatch_guide(
             if product:
                 desc = desc or product.name
                 code = code or product.code
-                if item.unit_price == 0:
-                    price = float(product.sale_price_1)
-                tax_map = {"gravado": "G", "reducido": "R", "exento": "E"}
-                tax_type = tax_map.get(product.tax_type, tax_type)
 
         fiscal_items.append(FiscalItem(
             numero_linea=i + 1,
@@ -656,9 +650,9 @@ async def create_dispatch_guide(
             descripcion=desc,
             unidad=item.unit_of_measure,
             cantidad=item.quantity,
-            precio_unitario=price,
-            descuento_porcentaje=item.discount_percent,
-            tipo_impuesto=tax_type,
+            precio_unitario=0,
+            descuento_porcentaje=0,
+            tipo_impuesto="E",  # Guías no generan crédito fiscal
         ))
 
     # Construir chofer como "Nombre (CI: xxxxx)"

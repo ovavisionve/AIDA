@@ -1008,9 +1008,10 @@ export default function InvoiceForm({ token }: Props) {
                 <tr className="border-b border-white/10 text-xs text-gray-500">
                   <th className="py-2 text-left">Descripcion</th>
                   <th className="py-2 text-right">Cant.</th>
-                  <th className="py-2 text-right">P.U.</th>
-                  <th className="py-2 text-center">IVA</th>
-                  <th className="py-2 text-right">Subtotal</th>
+                  <th className="py-2 text-center">Unidad</th>
+                  {!isGD && <th className="py-2 text-right">P.U.</th>}
+                  {!isGD && <th className="py-2 text-center">IVA</th>}
+                  {!isGD && <th className="py-2 text-right">Subtotal</th>}
                 </tr>
               </thead>
               <tbody>
@@ -1020,9 +1021,10 @@ export default function InvoiceForm({ token }: Props) {
                     <tr key={i} className="border-b border-white/5 text-gray-300">
                       <td className="py-2">{it.description || "(sin descripcion)"}</td>
                       <td className="py-2 text-right">{it.quantity}</td>
-                      <td className="py-2 text-right">{fmtMoney(it.unit_price)}</td>
-                      <td className="py-2 text-center">{TAX_LABELS[it.tax_type] || it.tax_type}</td>
-                      <td className="py-2 text-right">{fmtMoney(lineSub)}</td>
+                      <td className="py-2 text-center">{it.unit_of_measure}</td>
+                      {!isGD && <td className="py-2 text-right">{fmtMoney(it.unit_price)}</td>}
+                      {!isGD && <td className="py-2 text-center">{TAX_LABELS[it.tax_type] || it.tax_type}</td>}
+                      {!isGD && <td className="py-2 text-right">{fmtMoney(lineSub)}</td>}
                     </tr>
                   );
                 })}
@@ -1031,7 +1033,7 @@ export default function InvoiceForm({ token }: Props) {
           )}
 
           {/* Totals */}
-          {showItems && (
+          {showItems && !isGD && (
             <div className="space-y-1.5 text-sm mb-4">
               <DualRow label="Subtotal bruto:" amount={calcGrossSubtotal()} />
               {calcDiscount() > 0 && <DualRow label="Descuento:" amount={calcDiscount()} sign="- " color="text-red-400" />}
@@ -1077,6 +1079,23 @@ export default function InvoiceForm({ token }: Props) {
                   )}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Dispatch guide summary (no fiscal totals) */}
+          {isGD && (
+            <div className="space-y-1.5 text-sm mb-4">
+              <div className="rounded-lg bg-violet-500/10 border border-violet-500/20 px-3 py-2 text-xs text-violet-300">
+                Sin derecho a credito fiscal (Art. 10, Prov. SNAT/2024/000102)
+              </div>
+              <div className="flex justify-between text-gray-300">
+                <span>Total items:</span>
+                <span className="font-medium text-white">{items.length} linea{items.length !== 1 ? "s" : ""}</span>
+              </div>
+              <div className="flex justify-between text-gray-300">
+                <span>Total unidades:</span>
+                <span className="font-medium text-white">{items.reduce((s, it) => s + it.quantity, 0)}</span>
+              </div>
             </div>
           )}
 
@@ -1749,15 +1768,15 @@ export default function InvoiceForm({ token }: Props) {
                   {/* Item detail fields */}
                   <div className="grid grid-cols-12 gap-2 items-end">
                     {/* Description */}
-                    <div className="col-span-4">
+                    <div className={isGD ? "col-span-8" : "col-span-4"}>
                       {i === 0 && <label className="mb-1 block text-[11px] text-gray-500">Descripcion *</label>}
                       <input value={item.description} onChange={(e) => updateItem(i, "description", e.target.value)}
-                        required placeholder="Producto o servicio"
+                        required placeholder={isGD ? "Descripcion de la mercancia" : "Producto o servicio"}
                         className="w-full rounded bg-[#111827] border border-white/10 px-2 py-1.5 text-sm text-white placeholder-gray-600 focus:border-aida-accent focus:outline-none" />
                     </div>
 
                     {/* Quantity */}
-                    <div className="col-span-1">
+                    <div className={isGD ? "col-span-2" : "col-span-1"}>
                       {i === 0 && <label className="mb-1 block text-[11px] text-gray-500">Cant.</label>}
                       <input type="text" inputMode="decimal" value={item.quantity}
                         onChange={(e) => {
@@ -1769,7 +1788,8 @@ export default function InvoiceForm({ token }: Props) {
                         className="w-full rounded bg-[#111827] border border-white/10 px-2 py-1.5 text-sm text-white focus:border-aida-accent focus:outline-none" />
                     </div>
 
-                    {/* Price */}
+                    {/* Price (hidden for GD) */}
+                    {!isGD && (
                     <div className="col-span-2">
                       {i === 0 && <label className="mb-1 block text-[11px] text-gray-500">Precio ({moneda === "VES" ? "Bs." : "$"})</label>}
                       {/* USD reference helper when VES */}
@@ -1788,8 +1808,10 @@ export default function InvoiceForm({ token }: Props) {
                         placeholder="0,00"
                         className="w-full rounded bg-[#111827] border border-white/10 px-2 py-1.5 text-sm text-white placeholder-gray-600 focus:border-aida-accent focus:outline-none" />
                     </div>
+                    )}
 
-                    {/* IVA type */}
+                    {/* IVA type (hidden for GD) */}
+                    {!isGD && (
                     <div className="col-span-2">
                       {i === 0 && <label className="mb-1 block text-[11px] text-gray-500">IVA</label>}
                       <select value={item.tax_type} onChange={(e) => updateItem(i, "tax_type", e.target.value)}
@@ -1800,8 +1822,10 @@ export default function InvoiceForm({ token }: Props) {
                         <option value="E">Exento</option>
                       </select>
                     </div>
+                    )}
 
-                    {/* Discount */}
+                    {/* Discount (hidden for GD) */}
+                    {!isGD && (
                     <div className="col-span-1">
                       {i === 0 && <label className="mb-1 block text-[11px] text-gray-500">Desc%</label>}
                       <input type="text" inputMode="decimal" value={item.discount_percent || ""}
@@ -1812,9 +1836,11 @@ export default function InvoiceForm({ token }: Props) {
                         placeholder="0"
                         className="w-full rounded bg-[#111827] border border-white/10 px-2 py-1.5 text-sm text-white focus:border-aida-accent focus:outline-none" />
                     </div>
+                    )}
 
                     {/* Line total + delete */}
                     <div className="col-span-2 flex items-center justify-between">
+                      {!isGD && (
                       <div className="min-w-0">
                         <span className="text-xs text-gray-400 font-medium block">
                           {moneda === "VES" ? "Bs." : "$"} {fmtMoney(lineSubtotal(item))}
@@ -1823,6 +1849,7 @@ export default function InvoiceForm({ token }: Props) {
                           <span className="text-[10px] text-gray-600 block">{dualAmount(lineSubtotal(item))}</span>
                         )}
                       </div>
+                      )}
                       {items.length > 1 && (
                         <button type="button" onClick={() => removeItem(i)} className="ml-1 text-red-400 hover:text-red-300">
                           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1975,7 +2002,7 @@ export default function InvoiceForm({ token }: Props) {
                   )}
                 </div>
               </div>
-            ) : showItems ? (
+            ) : showItems && !isGD ? (
               /* Items-based totals (factura, NC parcial, ND) */
               <div className="space-y-2 text-sm">
                 <DualRow label="Subtotal bruto:" amount={calcGrossSubtotal()} />
@@ -2036,6 +2063,21 @@ export default function InvoiceForm({ token }: Props) {
                     )}
                   </div>
                 )}
+              </div>
+            ) : isGD ? (
+              /* Dispatch guide summary (no fiscal totals) */
+              <div className="space-y-2 text-sm">
+                <div className="rounded-lg bg-violet-500/10 border border-violet-500/20 px-3 py-2 text-xs text-violet-300">
+                  Sin derecho a credito fiscal (Art. 10, Prov. SNAT/2024/000102)
+                </div>
+                <div className="flex justify-between text-gray-300">
+                  <span>Total lineas:</span>
+                  <span className="font-medium text-white">{items.length}</span>
+                </div>
+                <div className="flex justify-between text-gray-300">
+                  <span>Total unidades:</span>
+                  <span className="font-medium text-white">{items.reduce((s, it) => s + it.quantity, 0)}</span>
+                </div>
               </div>
             ) : (isRetIva || isRetIslr) && refDoc ? (
               /* Retention totals */
