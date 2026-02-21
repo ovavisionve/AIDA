@@ -32,6 +32,8 @@ export default function Home() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [needs2FA, setNeeds2FA] = useState(false);
+  const [totpCode, setTotpCode] = useState("");
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
@@ -48,6 +50,25 @@ export default function Home() {
     }
   }, [apiUrl]);
 
+  const tryRefreshToken = useCallback(async (): Promise<string | null> => {
+    const refreshToken = localStorage.getItem("refresh_token");
+    if (!refreshToken) return null;
+    try {
+      const res = await fetch(`${apiUrl}/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      localStorage.setItem("access_token", data.access_token);
+      if (data.refresh_token) localStorage.setItem("refresh_token", data.refresh_token);
+      return data.access_token;
+    } catch {
+      return null;
+    }
+  }, [apiUrl]);
+
   // Check existing token on mount
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -55,31 +76,64 @@ export default function Home() {
       setChecking(false);
       return;
     }
-    fetchProfile(token).then((p) => {
+    fetchProfile(token).then(async (p) => {
       if (p) {
         setProfile(p);
         setIsAuthenticated(true);
       } else {
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("refresh_token");
+        // Token might be expired — try refreshing
+        const newToken = await tryRefreshToken();
+        if (newToken) {
+          const retryProfile = await fetchProfile(newToken);
+          if (retryProfile) {
+            setProfile(retryProfile);
+            setIsAuthenticated(true);
+          } else {
+            localStorage.removeItem("access_token");
+            localStorage.removeItem("refresh_token");
+          }
+        } else {
+          localStorage.removeItem("access_token");
+          localStorage.removeItem("refresh_token");
+        }
       }
       setChecking(false);
     });
-  }, [fetchProfile]);
+  }, [fetchProfile, tryRefreshToken]);
+
+  // Periodic token refresh (every 14 minutes for 15-min tokens)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const interval = setInterval(async () => {
+      const newToken = await tryRefreshToken();
+      if (!newToken) {
+        setIsAuthenticated(false);
+        setProfile(null);
+      }
+    }, 14 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, tryRefreshToken]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
+      const body: Record<string, string> = { email, password };
+      if (needs2FA && totpCode) body.totp_code = totpCode;
+
       const res = await fetch(`${apiUrl}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.detail || "Error al iniciar sesión"); return; }
-      if (data.requires_2fa) { setError("Se requiere código 2FA"); return; }
+      if (data.requires_2fa) {
+        setNeeds2FA(true);
+        setTotpCode("");
+        return;
+      }
       localStorage.setItem("access_token", data.access_token);
       localStorage.setItem("refresh_token", data.refresh_token);
       const p = await fetchProfile(data.access_token);
@@ -98,6 +152,7 @@ export default function Home() {
         });
       }
       setIsAuthenticated(true);
+      setNeeds2FA(false);
     } catch { setError("Error de conexión con el servidor"); }
     finally { setLoading(false); }
   };
@@ -128,19 +183,38 @@ export default function Home() {
           </div>
           <form onSubmit={handleLogin} className="space-y-5">
             {error && <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-400">{error}</div>}
-            <div>
-              <label className="block text-sm font-medium text-gray-300">Correo electrónico</label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
-                className="mt-1 w-full rounded-lg bg-white/5 border border-white/10 px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none focus:ring-2 focus:ring-aida-accent/20" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300">Contraseña</label>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required
-                className="mt-1 w-full rounded-lg bg-white/5 border border-white/10 px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none focus:ring-2 focus:ring-aida-accent/20" />
-            </div>
-            <button type="submit" disabled={loading}
+            {!needs2FA ? (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300">Correo electrónico</label>
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
+                    className="mt-1 w-full rounded-lg bg-white/5 border border-white/10 px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none focus:ring-2 focus:ring-aida-accent/20" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300">Contraseña</label>
+                  <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required
+                    className="mt-1 w-full rounded-lg bg-white/5 border border-white/10 px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none focus:ring-2 focus:ring-aida-accent/20" />
+                </div>
+              </>
+            ) : (
+              <div>
+                <div className="rounded-lg bg-aida-accent/10 border border-aida-accent/20 p-3 mb-4">
+                  <p className="text-sm text-aida-cyan">Se requiere verificación en dos pasos. Ingresa el código de tu aplicación autenticadora.</p>
+                </div>
+                <label className="block text-sm font-medium text-gray-300">Código 2FA</label>
+                <input type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6}
+                  value={totpCode} onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ""))}
+                  placeholder="000000" required autoFocus
+                  className="mt-1 w-full rounded-lg bg-white/5 border border-white/10 px-4 py-2.5 text-sm text-white text-center tracking-[0.5em] font-mono placeholder-gray-500 focus:border-aida-accent focus:outline-none focus:ring-2 focus:ring-aida-accent/20" />
+                <button type="button" onClick={() => { setNeeds2FA(false); setTotpCode(""); setError(""); }}
+                  className="mt-2 text-xs text-gray-500 hover:text-gray-300 transition">
+                  Volver al inicio de sesión
+                </button>
+              </div>
+            )}
+            <button type="submit" disabled={loading || (needs2FA && totpCode.length < 6)}
               className="w-full rounded-lg bg-aida-accent px-4 py-2.5 text-sm font-medium text-white hover:bg-aida-accent/80 transition shadow-lg shadow-aida-accent/25 disabled:opacity-50">
-              {loading ? "Ingresando..." : "Ingresar"}
+              {loading ? "Verificando..." : needs2FA ? "Verificar código" : "Ingresar"}
             </button>
           </form>
         </div>
@@ -352,10 +426,18 @@ function DashboardSection({ token, apiUrl, profile }: { token: string; apiUrl: s
 }
 
 function DocumentsSection({ token, apiUrl }: { token: string; apiUrl: string }) {
+  type DocTypeFilter = "all" | "factura" | "nota_credito" | "nota_debito" | "guia_despacho";
+  type StatusFilter = "all" | "emitido" | "anulado" | "pagado";
+
   const [docs, setDocs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [downloadMsg, setDownloadMsg] = useState("");
   const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState<DocTypeFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [total, setTotal] = useState(0);
@@ -366,6 +448,10 @@ function DocumentsSection({ token, apiUrl }: { token: string; apiUrl: string }) 
     try {
       const params = new URLSearchParams({ page: String(p), page_size: "20" });
       if (q) params.set("search", q);
+      if (typeFilter !== "all") params.set("document_type", typeFilter);
+      if (statusFilter !== "all") params.set("status", statusFilter);
+      if (dateFrom) params.set("date_from", dateFrom);
+      if (dateTo) params.set("date_to", dateTo);
       const res = await fetch(`${apiUrl}/documents?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -383,7 +469,7 @@ function DocumentsSection({ token, apiUrl }: { token: string; apiUrl: string }) 
       setDocs([]);
     }
     setLoading(false);
-  }, [token, apiUrl]);
+  }, [token, apiUrl, typeFilter, statusFilter, dateFrom, dateTo]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -394,25 +480,75 @@ function DocumentsSection({ token, apiUrl }: { token: string; apiUrl: string }) 
       const res = await fetch(`${apiUrl}/documents/${docId}/${format}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) return;
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setDownloadMsg(err.detail || `Error ${res.status} al descargar ${format.toUpperCase()}`);
+        setTimeout(() => setDownloadMsg(""), 4000);
+        return;
+      }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       window.open(url, "_blank");
       setTimeout(() => URL.revokeObjectURL(url), 60000);
-    } catch {}
+    } catch {
+      setDownloadMsg(`Error de conexión al descargar ${format.toUpperCase()}`);
+      setTimeout(() => setDownloadMsg(""), 4000);
+    }
   };
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <input value={search} onChange={(e) => setSearch(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-          placeholder="Buscar por N. Control, RIF, razón social..."
-          className="flex-1 rounded-lg bg-white/5 border border-white/10 px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none focus:ring-2 focus:ring-aida-accent/20" />
-        <button onClick={handleSearch} className="rounded-lg bg-aida-accent/10 border border-aida-accent/20 px-4 py-2.5 text-sm text-aida-accent hover:bg-aida-accent/20 transition">
-          Buscar
-        </button>
-        <span className="text-sm text-gray-500">{total} documentos</span>
+      {downloadMsg && (
+        <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-2 text-sm text-red-400">{downloadMsg}</div>
+      )}
+
+      {/* Filters */}
+      <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex-1 min-w-[200px]">
+            <label className="mb-1 block text-[11px] font-medium text-gray-500">Buscar</label>
+            <input value={search} onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              placeholder="N. Control, RIF, razón social..."
+              className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-aida-accent focus:outline-none focus:ring-2 focus:ring-aida-accent/20" />
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-medium text-gray-500">Tipo</label>
+            <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value as DocTypeFilter); setPage(1); }}
+              className="rounded-lg bg-[#0a0f1a] border border-white/10 px-3 py-2 text-sm text-white focus:border-aida-accent focus:outline-none">
+              <option value="all">Todos</option>
+              <option value="factura">Facturas</option>
+              <option value="nota_credito">Notas de Crédito</option>
+              <option value="nota_debito">Notas de Débito</option>
+              <option value="guia_despacho">Guías de Despacho</option>
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-medium text-gray-500">Estado</label>
+            <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value as StatusFilter); setPage(1); }}
+              className="rounded-lg bg-[#0a0f1a] border border-white/10 px-3 py-2 text-sm text-white focus:border-aida-accent focus:outline-none">
+              <option value="all">Todos</option>
+              <option value="emitido">Emitido</option>
+              <option value="anulado">Anulado</option>
+              <option value="pagado">Pagado</option>
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-medium text-gray-500">Desde</label>
+            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
+              className="rounded-lg bg-[#0a0f1a] border border-white/10 px-3 py-2 text-sm text-white focus:border-aida-accent focus:outline-none" />
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-medium text-gray-500">Hasta</label>
+            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
+              className="rounded-lg bg-[#0a0f1a] border border-white/10 px-3 py-2 text-sm text-white focus:border-aida-accent focus:outline-none" />
+          </div>
+          <button onClick={handleSearch}
+            className="rounded-lg bg-aida-accent px-4 py-2 text-sm font-medium text-white hover:bg-aida-accent/80 transition">
+            Buscar
+          </button>
+          <span className="text-sm text-gray-500">{total} documentos</span>
+        </div>
       </div>
 
       {error && (
@@ -489,10 +625,12 @@ function TemplateSection({ token, apiUrl }: { token: string; apiUrl: string }) {
   const [banners, setBanners] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState("");
+  const [loadError, setLoadError] = useState("");
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     const load = async () => {
+      const errors: string[] = [];
       try {
         const headers = { Authorization: `Bearer ${token}` };
         const [tRes, pRes, bRes] = await Promise.all([
@@ -501,9 +639,15 @@ function TemplateSection({ token, apiUrl }: { token: string; apiUrl: string }) {
           fetch(`${apiUrl}/uploads/banners`, { headers }),
         ]);
         if (tRes.ok) setTemplates(await tRes.json());
+        else errors.push("plantillas");
         if (pRes.ok) setPreferences(await pRes.json());
+        else errors.push("preferencias");
         if (bRes.ok) setBanners(await bRes.json());
-      } catch { /* templates are non-critical */ }
+        else errors.push("banners");
+      } catch {
+        errors.push("conexión");
+      }
+      if (errors.length > 0) setLoadError(`Error al cargar: ${errors.join(", ")}`);
       setLoading(false);
     };
     load();
@@ -585,6 +729,7 @@ function TemplateSection({ token, apiUrl }: { token: string; apiUrl: string }) {
 
   return (
     <div className="space-y-8">
+      {loadError && <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 px-4 py-2 text-sm text-amber-400">{loadError}</div>}
       {msg && <div className="rounded-lg bg-aida-accent/10 border border-aida-accent/20 px-4 py-2 text-sm text-aida-accent">{msg}</div>}
 
       {/* Logo Upload */}

@@ -363,96 +363,64 @@ class TestMirrorAIChat:
 # STATIC ANALYSIS: Known Frontend Issues in Mirror
 # ===========================================================================
 
-class TestMirrorFrontendIssues:
+class TestMirrorFrontendFixes:
     """
-    Static checks that verify known issues in the Mirror portal frontend.
-    These tests document bugs/gaps and will FAIL when the issues are fixed
-    (at which point the assertions should be updated).
+    Static checks that verify the previously reported bugs have been fixed.
+    Each test confirms the fix is in place.
     """
 
-    def test_2fa_not_implemented(self):
-        """
-        BUG: 2FA detection shows error but no input form.
-        Users with 2FA enabled cannot log in.
-        """
+    def test_2fa_implemented(self):
+        """FIXED: 2FA now has a TOTP input form so users can log in."""
         content = MIRROR_PAGE.read_text()
-        # The portal detects 2FA but only shows an error message
         assert 'requires_2fa' in content, "2FA detection should exist"
-        # There is no TOTP input field
-        assert 'totp' not in content.lower() or 'totp_code' not in content, \
-            "No TOTP input field implemented — 2FA users are blocked"
+        assert 'totp_code' in content, "TOTP code field should be present"
+        assert 'needs2FA' in content, "2FA state management should exist"
+        assert 'one-time-code' in content, "TOTP input with autoComplete should exist"
 
-    def test_download_silent_failure(self):
-        """
-        BUG: handleDownload returns silently on error (no user feedback).
-        Line ~397: if (!res.ok) return;
-        """
+    def test_download_has_error_feedback(self):
+        """FIXED: handleDownload now shows error message to user."""
         content = MIRROR_PAGE.read_text()
-        assert "if (!res.ok) return;" in content, \
-            "Download still silently fails on error (no feedback to user)"
+        assert "if (!res.ok) return;" not in content, \
+            "Silent return on download error should be removed"
+        assert "downloadMsg" in content, \
+            "Download error message state should exist"
+        assert "Error de conexión al descargar" in content, \
+            "Network error message should be shown"
 
-    def test_empty_catch_in_download(self):
-        """
-        BUG: Empty catch block in handleDownload swallows errors.
-        """
-        content = MIRROR_PAGE.read_text()
-        # The function has a catch {} with no error handling
-        assert "catch {}" in content or "} catch {" in content, \
-            "Empty catch block still present in document download"
-
-    def test_ai_chat_api_path_mismatch(self):
-        """
-        BUG: AIChatWidget uses a different API base than the main app.
-        Main app: NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
-        Chat widget: NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-        Then calls: ${API}/api/v1/ai/chat
-
-        This works but is inconsistent — if NEXT_PUBLIC_API_URL includes
-        /api/v1, the chat widget will double-up the path.
-        """
+    def test_ai_chat_api_path_consistent(self):
+        """FIXED: AIChatWidget uses same API base as main app."""
         chat_content = MIRROR_CHAT.read_text()
-        page_content = MIRROR_PAGE.read_text()
+        assert 'http://localhost:8000/api/v1' in chat_content, \
+            "Chat widget should use /api/v1 base like main app"
+        assert '${API}/api/v1/' not in chat_content, \
+            "Should not double-up /api/v1 path"
 
-        # Main page defaults to /api/v1
-        assert 'http://localhost:8000/api/v1' in page_content
-
-        # Chat widget defaults WITHOUT /api/v1
-        assert 'http://localhost:8000"' in chat_content, \
-            "Chat widget API base is different from main app"
-
-    def test_no_token_refresh_mechanism(self):
-        """
-        GAP: No token refresh logic — sessions expire silently.
-        """
+    def test_token_refresh_implemented(self):
+        """FIXED: Token refresh mechanism is now in place."""
         content = MIRROR_PAGE.read_text()
-        assert "refresh_token" in content, "refresh_token is stored"
-        # But it's never USED for refreshing
-        assert "/auth/refresh" not in content, \
-            "No refresh endpoint called — tokens expire silently"
+        assert "/auth/refresh" in content, \
+            "Refresh endpoint should be called"
+        assert "tryRefreshToken" in content, \
+            "Token refresh function should exist"
 
-    def test_template_load_silent_failure(self):
-        """
-        BUG: Template section catch block silently swallows errors.
-        catch { /* templates are non-critical */ }
-        """
+    def test_template_load_shows_errors(self):
+        """FIXED: Template section now shows error messages on failure."""
         content = MIRROR_PAGE.read_text()
-        assert "templates are non-critical" in content, \
-            "Template load errors are silently ignored"
+        assert "templates are non-critical" not in content, \
+            "Silent error comment should be removed"
+        assert "loadError" in content, \
+            "Template load error state should exist"
+
+    def test_document_filters_present(self):
+        """FIXED: Document list now has type, status, and date filters."""
+        content = MIRROR_PAGE.read_text()
+        doc_section = content.split("function DocumentsSection")[1].split("function ")[0] if "function DocumentsSection" in content else ""
+        assert "typeFilter" in doc_section, "Type filter should exist"
+        assert "statusFilter" in doc_section, "Status filter should exist"
+        assert "dateFrom" in doc_section, "Date from filter should exist"
+        assert "dateTo" in doc_section, "Date to filter should exist"
 
     def test_currency_format_hardcoded(self):
-        """
-        GAP: Currency is hardcoded to Bolívares (Bs.) — no USD support.
-        """
+        """INFO: Currency remains Bs. — acceptable for Venezuelan market."""
         content = MIRROR_PAGE.read_text()
-        assert "Bs." in content, "Currency hardcoded to Bolivares"
-
-    def test_no_document_filters(self):
-        """
-        GAP: Document list has basic search but no type/status/date filters
-        (unlike the facturador portal which has full filters).
-        """
-        content = MIRROR_PAGE.read_text()
-        # DocumentsSection in Mirror only has a search input
-        # No select dropdowns for doc_type or status
-        assert "doc_type" not in content.split("function DocumentsSection")[1].split("function ")[0] if "function DocumentsSection" in content else True, \
-            "No document type filter in client portal"
+        assert "Bs." in content, "Currency is Bolivares (expected for SENIAT system)"

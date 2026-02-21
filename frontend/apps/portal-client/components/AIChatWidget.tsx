@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
 interface Message {
   role: "user" | "assistant";
@@ -36,7 +36,7 @@ export default function AIChatWidget({ token }: { token: string }) {
 
     try {
       const history = messages.slice(-8).map(m => ({ role: m.role, content: m.content }));
-      const res = await fetch(`${API}/api/v1/ai/chat`, {
+      const res = await fetch(`${API}/ai/chat`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify({ message: msg, conversation_history: history, include_context: true }),
