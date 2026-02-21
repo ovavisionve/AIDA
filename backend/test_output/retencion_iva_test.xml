@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<aida:RetencionIVA xmlns:aida="urn:aida:seniat:ve:fiscal:1.0" xmlns:seniat="urn:seniat:ve:retencion:1.0">
+  <aida:Version>1.0</aida:Version>
+  <aida:TipoDocumento>05</aida:TipoDocumento>
+  <aida:NumeroComprobante>20260200000001234</aida:NumeroComprobante>
+  <aida:FechaEmision>2026-02-15</aida:FechaEmision>
+  <aida:PeriodoFiscal>2026-02</aida:PeriodoFiscal>
+  <aida:AgenteRetencion>
+    <aida:RIF>J-30000001-5</aida:RIF>
+    <aida:RazonSocial>Distribuidora Nacional de Alimentos, C.A.</aida:RazonSocial>
+    <aida:Direccion>Av. Libertador, Torre Empresarial Piso 12, Caracas, Dtto. Capital</aida:Direccion>
+  </aida:AgenteRetencion>
+  <aida:SujetoRetenido>
+    <aida:RIF>J-40512387-9</aida:RIF>
+    <aida:RazonSocial>Inversiones y Tecnología Avanzada, C.A.</aida:RazonSocial>
+    <aida:Direccion>Calle 5, Edif. Centro Profesional, Ofc. 4-B, Valencia, Edo. Carabobo</aida:Direccion>
+    <aida:Email>admin@invtecavanzada.com.ve</aida:Email>
+  </aida:SujetoRetenido>
+  <aida:DetalleRetencion>
+    <aida:Linea>
+      <aida:NumeroOperacion>1</aida:NumeroOperacion>
+      <aida:NumeroFactura>FAC-2026-000847</aida:NumeroFactura>
+      <aida:FechaFactura>2026-02-10</aida:FechaFactura>
+      <aida:MontoFactura>15800.00</aida:MontoFactura>
+      <aida:BaseImponible>13620.69</aida:BaseImponible>
+      <aida:ImpuestoCausado>2179.31</aida:ImpuestoCausado>
+      <aida:PorcentajeRetencion>75.00</aida:PorcentajeRetencion>
+      <aida:MontoRetenido>1634.48</aida:MontoRetenido>
+    </aida:Linea>
+  </aida:DetalleRetencion>
+  <aida:Totales>
+    <aida:TotalBaseImponible>13620.69</aida:TotalBaseImponible>
+    <aida:TotalImpuestoCausado>2179.31</aida:TotalImpuestoCausado>
+    <aida:TotalRetenido>1634.48</aida:TotalRetenido>
+  </aida:Totales>
+</aida:RetencionIVA>

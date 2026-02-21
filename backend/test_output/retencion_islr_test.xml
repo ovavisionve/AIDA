@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<aida:RetencionISLR xmlns:aida="urn:aida:seniat:ve:fiscal:1.0" xmlns:seniat="urn:seniat:ve:retencion:1.0">
+  <aida:Version>1.0</aida:Version>
+  <aida:TipoDocumento>06</aida:TipoDocumento>
+  <aida:NumeroComprobante>20260200000005678</aida:NumeroComprobante>
+  <aida:FechaEmision>2026-02-18</aida:FechaEmision>
+  <aida:PeriodoFiscal>2026-02</aida:PeriodoFiscal>
+  <aida:AgenteRetencion>
+    <aida:RIF>G-20000045-0</aida:RIF>
+    <aida:RazonSocial>Gobernación del Estado Zulia</aida:RazonSocial>
+    <aida:Direccion>Palacio de Gobierno, Maracaibo, Edo. Zulia</aida:Direccion>
+  </aida:AgenteRetencion>
+  <aida:SujetoRetenido>
+    <aida:RIF>J-40512387-9</aida:RIF>
+    <aida:RazonSocial>Inversiones y Tecnología Avanzada, C.A.</aida:RazonSocial>
+    <aida:Direccion>Calle 5, Edif. Centro Profesional, Ofc. 4-B, Valencia, Edo. Carabobo</aida:Direccion>
+    <aida:Email>admin@invtecavanzada.com.ve</aida:Email>
+  </aida:SujetoRetenido>
+  <aida:DetalleRetencion>
+    <aida:Linea>
+      <aida:NumeroOperacion>1</aida:NumeroOperacion>
+      <aida:NumeroFactura>FAC-2026-000902</aida:NumeroFactura>
+      <aida:FechaFactura>2026-02-12</aida:FechaFactura>
+      <aida:MontoFactura>42500.00</aida:MontoFactura>
+      <aida:BaseImponible>42500.00</aida:BaseImponible>
+      <aida:CodigoConcepto>Servicios profesionales no mercantiles (Art. 9 LISLR)</aida:CodigoConcepto>
+      <aida:PorcentajeRetencion>2.00</aida:PorcentajeRetencion>
+      <aida:MontoRetenido>850.00</aida:MontoRetenido>
+    </aida:Linea>
+  </aida:DetalleRetencion>
+  <aida:Totales>
+    <aida:TotalBaseImponible>42500.00</aida:TotalBaseImponible>
+    <aida:TotalRetenido>850.00</aida:TotalRetenido>
+  </aida:Totales>
+</aida:RetencionISLR>
