@@ -989,7 +989,7 @@ async def download_document_pdf(
 ):
     """Download PDF for a document (JWT-authenticated for portal users)."""
     client = await _get_client(user, db)
-    from app.services.fiscal.pdf_generator import generate_invoice_pdf
+    from app.services.fiscal.pdf_generator import generate_invoice_pdf, generate_withholding_pdf
     from app.api.v1.fiscal.downloads import _find_document, _resolve_template_config, _resolve_banner_path
 
     doc, doc_type, items = await _find_document(db, doc_id, client.id)
@@ -999,21 +999,24 @@ async def download_document_pdf(
     layout_config = await _resolve_template_config(db, client.id, doc_type)
     banner_path, banner_position = await _resolve_banner_path(db, client.id, doc_type)
 
-    # Resolve relative URL paths to absolute filesystem paths
     import os
     from app.config import get_settings
     _settings = get_settings()
     logo_fs = os.path.join(_settings.STORAGE_PATH, client.logo_url.lstrip("/")) if client.logo_url else None
     banner_fs = os.path.join(_settings.STORAGE_PATH, banner_path.lstrip("/")) if banner_path else None
 
-    pdf_bytes = generate_invoice_pdf(
-        doc, items, doc_type,
-        layout_config=layout_config,
-        logo_path=logo_fs,
-        banner_path=banner_fs,
-        banner_position=banner_position,
-    )
-    filename = f"{doc_type}_{doc.control_number or doc.document_number}.pdf"
+    if doc_type.startswith("retencion"):
+        pdf_bytes = generate_withholding_pdf(
+            doc, layout_config=layout_config,
+            logo_path=logo_fs, banner_path=banner_fs, banner_position=banner_position,
+        )
+    else:
+        pdf_bytes = generate_invoice_pdf(
+            doc, items, doc_type,
+            layout_config=layout_config,
+            logo_path=logo_fs, banner_path=banner_fs, banner_position=banner_position,
+        )
+    filename = f"{doc_type}_{doc.document_number}.pdf"
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
@@ -1029,15 +1032,18 @@ async def download_document_xml(
 ):
     """Download XML for a document (JWT-authenticated for portal users)."""
     client = await _get_client(user, db)
-    from app.services.fiscal.xml_generator import generate_document_xml
+    from app.services.fiscal.xml_generator import generate_document_xml, generate_withholding_xml
     from app.api.v1.fiscal.downloads import _find_document
 
     doc, doc_type, items = await _find_document(db, doc_id, client.id)
     if not doc:
         raise HTTPException(status_code=404, detail="Documento no encontrado")
 
-    xml_bytes = generate_document_xml(doc, items, doc_type)
-    filename = f"{doc_type}_{doc.control_number or doc.document_number}.xml"
+    if doc_type.startswith("retencion"):
+        xml_bytes = generate_withholding_xml(doc)
+    else:
+        xml_bytes = generate_document_xml(doc, items, doc_type)
+    filename = f"{doc_type}_{doc.document_number}.xml"
     return Response(
         content=xml_bytes,
         media_type="application/xml",

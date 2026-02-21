@@ -204,7 +204,7 @@ async def download_document_pdf(
 ):
     """Download PDF for a document (Portal 1 - JWT authenticated)."""
     from app.models.clients import Client
-    from app.services.fiscal.pdf_generator import generate_invoice_pdf
+    from app.services.fiscal.pdf_generator import generate_invoice_pdf, generate_withholding_pdf
     from app.api.v1.fiscal.downloads import _find_document, _resolve_template_config, _resolve_banner_path
 
     if not user.is_superadmin:
@@ -225,7 +225,7 @@ async def download_document_pdf(
                 client_id = cid
                 break
     else:
-        # Superadmin: search all models
+        # Superadmin: search all models (including Withholding)
         for Model, dtype in [(Invoice, "factura"), (CreditNote, "nota_credito"), (DebitNote, "nota_debito"), (DispatchGuide, "guia_despacho")]:
             result = await db.execute(
                 select(Model).options(selectinload(Model.items)).where(Model.id == doc_id)
@@ -236,6 +236,13 @@ async def download_document_pdf(
                 items = doc.items
                 client_id = doc.client_id
                 break
+        if not doc:
+            result = await db.execute(select(Withholding).where(Withholding.id == doc_id))
+            doc = result.scalar_one_or_none()
+            if doc:
+                doc_type = "retencion_iva" if doc.tipo == "iva" else "retencion_islr"
+                items = []
+                client_id = doc.client_id
 
     if not doc:
         raise HTTPException(status_code=404, detail="Documento no encontrado")
@@ -246,14 +253,20 @@ async def download_document_pdf(
     layout_config = await _resolve_template_config(db, client_id, doc_type)
     banner_path, banner_position = await _resolve_banner_path(db, client_id, doc_type)
 
-    pdf_bytes = generate_invoice_pdf(
-        doc, items, doc_type,
-        layout_config=layout_config,
-        logo_path=client.logo_url if client else None,
-        banner_path=banner_path,
-        banner_position=banner_position,
-    )
-    filename = f"{doc_type}_{doc.control_number or doc.document_number}.pdf"
+    if doc_type.startswith("retencion"):
+        pdf_bytes = generate_withholding_pdf(
+            doc, layout_config=layout_config,
+            logo_path=client.logo_url if client else None,
+            banner_path=banner_path, banner_position=banner_position,
+        )
+    else:
+        pdf_bytes = generate_invoice_pdf(
+            doc, items, doc_type,
+            layout_config=layout_config,
+            logo_path=client.logo_url if client else None,
+            banner_path=banner_path, banner_position=banner_position,
+        )
+    filename = f"{doc_type}_{doc.document_number}.pdf"
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
@@ -268,7 +281,7 @@ async def download_document_xml(
     db: AsyncSession = Depends(get_db),
 ):
     """Download XML for a document (Portal 1 - JWT authenticated)."""
-    from app.services.fiscal.xml_generator import generate_document_xml
+    from app.services.fiscal.xml_generator import generate_document_xml, generate_withholding_xml
     from app.api.v1.fiscal.downloads import _find_document
 
     if not user.is_superadmin:
@@ -295,12 +308,21 @@ async def download_document_xml(
                 doc_type = dtype
                 items = doc.items
                 break
+        if not doc:
+            result = await db.execute(select(Withholding).where(Withholding.id == doc_id))
+            doc = result.scalar_one_or_none()
+            if doc:
+                doc_type = "retencion_iva" if doc.tipo == "iva" else "retencion_islr"
+                items = []
 
     if not doc:
         raise HTTPException(status_code=404, detail="Documento no encontrado")
 
-    xml_bytes = generate_document_xml(doc, items, doc_type)
-    filename = f"{doc_type}_{doc.control_number or doc.document_number}.xml"
+    if doc_type.startswith("retencion"):
+        xml_bytes = generate_withholding_xml(doc)
+    else:
+        xml_bytes = generate_document_xml(doc, items, doc_type)
+    filename = f"{doc_type}_{doc.document_number}.xml"
     return Response(
         content=xml_bytes,
         media_type="application/xml",

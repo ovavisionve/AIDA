@@ -17,11 +17,11 @@ from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.models.clients import Client
-from app.models.documents import Invoice, CreditNote, DebitNote, DispatchGuide, DocumentItem
+from app.models.documents import Invoice, CreditNote, DebitNote, DispatchGuide, Withholding, DocumentItem
 from app.models.templates import DocumentTemplate, ClientTemplatePreference, ClientBanner
 from app.services.fiscal.api_auth import get_client_from_api_key
-from app.services.fiscal.pdf_generator import generate_invoice_pdf
-from app.services.fiscal.xml_generator import generate_document_xml
+from app.services.fiscal.pdf_generator import generate_invoice_pdf, generate_withholding_pdf
+from app.services.fiscal.xml_generator import generate_document_xml, generate_withholding_xml
 from app.services.fiscal.export_service import (
     export_documents_csv, export_documents_excel, export_documents_seniat_txt,
 )
@@ -46,6 +46,14 @@ async def _find_document(db: AsyncSession, doc_id: uuid.UUID, client_id: uuid.UU
         doc = result.scalar_one_or_none()
         if doc:
             return doc, dtype, doc.items
+    # Withholding no tiene items — retorna lista vacía
+    result = await db.execute(
+        select(Withholding).where(Withholding.id == doc_id, Withholding.client_id == client_id)
+    )
+    doc = result.scalar_one_or_none()
+    if doc:
+        dtype = "retencion_iva" if doc.tipo == "iva" else "retencion_islr"
+        return doc, dtype, []
     return None, None, None
 
 
@@ -176,17 +184,26 @@ async def download_pdf(
     logo_fs = _os.path.join(_stg.STORAGE_PATH, client.logo_url.lstrip("/")) if client.logo_url else None
     banner_fs = _os.path.join(_stg.STORAGE_PATH, banner_path.lstrip("/")) if banner_path else None
 
-    pdf_bytes = generate_invoice_pdf(
-        doc, items, doc_type,
-        layout_config=layout_config,
-        logo_path=logo_fs,
-        banner_path=banner_fs,
-        banner_position=banner_position,
-    )
+    if doc_type.startswith("retencion"):
+        pdf_bytes = generate_withholding_pdf(
+            doc,
+            layout_config=layout_config,
+            logo_path=logo_fs,
+            banner_path=banner_fs,
+            banner_position=banner_position,
+        )
+    else:
+        pdf_bytes = generate_invoice_pdf(
+            doc, items, doc_type,
+            layout_config=layout_config,
+            logo_path=logo_fs,
+            banner_path=banner_fs,
+            banner_position=banner_position,
+        )
 
     # Store in cache
     storage = get_storage()
-    filename = f"{doc_type}_{doc.control_number or doc.document_number}.pdf"
+    filename = f"{doc_type}_{doc.document_number}.pdf"
     await storage.save(pdf_bytes, str(client.id), "pdf", filename)
 
     return Response(
@@ -212,9 +229,12 @@ async def download_xml(
     if not doc:
         raise HTTPException(status_code=404, detail="Documento no encontrado")
 
-    xml_bytes = generate_document_xml(doc, items, doc_type)
+    if doc_type.startswith("retencion"):
+        xml_bytes = generate_withholding_xml(doc)
+    else:
+        xml_bytes = generate_document_xml(doc, items, doc_type)
 
-    filename = f"{doc_type}_{doc.control_number or doc.document_number}.xml"
+    filename = f"{doc_type}_{doc.document_number}.xml"
     storage = get_storage()
     await storage.save(xml_bytes, str(client.id), "xml", filename)
 
@@ -303,34 +323,54 @@ async def send_document_email(
     if not doc:
         raise HTTPException(status_code=404, detail="Documento no encontrado")
 
-    recipient = email_to or getattr(doc, "receptor_email", None)
+    # For withholdings, email goes to sujeto_retenido_email
+    if doc_type.startswith("retencion"):
+        recipient = email_to or getattr(doc, "sujeto_retenido_email", None)
+    else:
+        recipient = email_to or getattr(doc, "receptor_email", None)
     if not recipient:
         raise HTTPException(status_code=400, detail="No se especifico email destinatario y el documento no tiene email del receptor")
+
+    import os as _os
+    from app.config import get_settings as _get_settings
+    _stg = _get_settings()
 
     layout_config = await _resolve_template_config(db, client.id, doc_type)
     banner_path, banner_position = await _resolve_banner_path(db, client.id, doc_type)
 
-    # Resolve relative URL paths to absolute filesystem paths
     logo_fs2 = _os.path.join(_stg.STORAGE_PATH, client.logo_url.lstrip("/")) if client.logo_url else None
     banner_fs2 = _os.path.join(_stg.STORAGE_PATH, banner_path.lstrip("/")) if banner_path else None
 
-    pdf_bytes = generate_invoice_pdf(
-        doc, items, doc_type,
-        layout_config=layout_config,
-        logo_path=logo_fs2,
-        banner_path=banner_fs2,
-        banner_position=banner_position,
-    )
-    xml_bytes = generate_document_xml(doc, items, doc_type)
+    if doc_type.startswith("retencion"):
+        pdf_bytes = generate_withholding_pdf(
+            doc, layout_config=layout_config,
+            logo_path=logo_fs2, banner_path=banner_fs2, banner_position=banner_position,
+        )
+        xml_bytes = generate_withholding_xml(doc)
+        doc_number = doc.document_number
+        emisor_razon = getattr(doc, "sujeto_retenido_nombre", "")
+        receptor_razon = getattr(doc, "agente_retencion_nombre", "")
+        total_amount = float(getattr(doc, "monto_retenido", 0))
+    else:
+        pdf_bytes = generate_invoice_pdf(
+            doc, items, doc_type,
+            layout_config=layout_config,
+            logo_path=logo_fs2, banner_path=banner_fs2, banner_position=banner_position,
+        )
+        xml_bytes = generate_document_xml(doc, items, doc_type)
+        doc_number = doc.control_number or doc.document_number
+        emisor_razon = doc.emisor_razon_social
+        receptor_razon = doc.receptor_razon_social
+        total_amount = float(doc.total)
 
     email_svc = get_email_service()
     success = await email_svc.send_document_email(
         to=recipient,
         doc_type=doc_type,
-        numero_control=doc.control_number or doc.document_number,
-        emisor_razon=doc.emisor_razon_social,
-        receptor_razon=doc.receptor_razon_social,
-        total=float(doc.total),
+        numero_control=doc_number,
+        emisor_razon=emisor_razon,
+        receptor_razon=receptor_razon,
+        total=total_amount,
         moneda=getattr(doc, "moneda", "VES"),
         pdf_bytes=pdf_bytes,
         xml_bytes=xml_bytes,

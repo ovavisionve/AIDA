@@ -227,3 +227,83 @@ def _type_code(doc_type: str) -> str:
 def _pago_code(forma: str) -> str:
     return {"efectivo": "10", "transferencia": "42", "cheque": "20", "tarjeta_credito": "48",
             "tarjeta_debito": "49", "criptomoneda": "ZZZ"}.get(forma, "10")
+
+
+def generate_withholding_xml(doc) -> bytes:
+    """
+    Genera XML para Comprobante de Retención IVA/ISLR.
+
+    Formato conforme a Art. 11, Providencia SNAT/2024/000102.
+    Estructura propia (no UBL) ya que las retenciones tienen formato SENIAT específico.
+    """
+    tipo = getattr(doc, "tipo", "iva")
+    tipo_code = "05" if tipo == "iva" else "06"
+    tipo_label = "RetencionIVA" if tipo == "iva" else "RetencionISLR"
+
+    root = Element(f"aida:{tipo_label}")
+    root.set("xmlns:aida", "urn:aida:seniat:ve:fiscal:1.0")
+    root.set("xmlns:seniat", "urn:seniat:ve:retencion:1.0")
+
+    # Document identification
+    _add_text(root, "aida:Version", "1.0")
+    _add_text(root, "aida:TipoDocumento", tipo_code)
+    _add_text(root, "aida:NumeroComprobante", getattr(doc, "document_number", ""))
+    _add_text(root, "aida:FechaEmision", _fmt_date(doc.fecha_emision))
+    _add_text(root, "aida:PeriodoFiscal", getattr(doc, "periodo_fiscal", ""))
+
+    # Agente de retención (el comprador/SPE que retuvo)
+    agente = SubElement(root, "aida:AgenteRetencion")
+    _add_text(agente, "aida:RIF", getattr(doc, "agente_retencion_rif", ""))
+    _add_text(agente, "aida:RazonSocial", getattr(doc, "agente_retencion_nombre", ""))
+    agente_dir = getattr(doc, "agente_retencion_direccion", "")
+    if agente_dir:
+        _add_text(agente, "aida:Direccion", agente_dir)
+
+    # Sujeto retenido (el vendedor/usuario)
+    sujeto = SubElement(root, "aida:SujetoRetenido")
+    _add_text(sujeto, "aida:RIF", getattr(doc, "sujeto_retenido_rif", ""))
+    _add_text(sujeto, "aida:RazonSocial", getattr(doc, "sujeto_retenido_nombre", ""))
+    sujeto_dir = getattr(doc, "sujeto_retenido_direccion", "")
+    if sujeto_dir:
+        _add_text(sujeto, "aida:Direccion", sujeto_dir)
+    sujeto_email = getattr(doc, "sujeto_retenido_email", "")
+    if sujeto_email:
+        _add_text(sujeto, "aida:Email", sujeto_email)
+
+    # Detalle de retención
+    detalle = SubElement(root, "aida:DetalleRetencion")
+    linea = SubElement(detalle, "aida:Linea")
+    _add_text(linea, "aida:NumeroOperacion", "1")
+
+    factura_num = getattr(doc, "factura_numero", "") or getattr(doc, "document_number", "")
+    _add_text(linea, "aida:NumeroFactura", factura_num)
+
+    factura_fecha = getattr(doc, "factura_fecha", None)
+    _add_text(linea, "aida:FechaFactura", _fmt_date(factura_fecha) if factura_fecha else _fmt_date(doc.fecha_emision))
+
+    _add_text(linea, "aida:MontoFactura", f"{float(getattr(doc, 'monto_factura', 0) or 0):.2f}")
+    _add_text(linea, "aida:BaseImponible", f"{float(getattr(doc, 'base_imponible', 0) or 0):.2f}")
+
+    if tipo == "iva":
+        _add_text(linea, "aida:ImpuestoCausado", f"{float(getattr(doc, 'impuesto_causado', 0) or 0):.2f}")
+    else:
+        _add_text(linea, "aida:CodigoConcepto", getattr(doc, "concepto", ""))
+
+    _add_text(linea, "aida:PorcentajeRetencion", f"{float(getattr(doc, 'porcentaje_retencion', 0)):.2f}")
+    _add_text(linea, "aida:MontoRetenido", f"{float(getattr(doc, 'monto_retenido', 0)):.2f}")
+
+    # Totales
+    totales = SubElement(root, "aida:Totales")
+    _add_text(totales, "aida:TotalBaseImponible", f"{float(getattr(doc, 'base_imponible', 0) or 0):.2f}")
+    if tipo == "iva":
+        _add_text(totales, "aida:TotalImpuestoCausado", f"{float(getattr(doc, 'impuesto_causado', 0) or 0):.2f}")
+    _add_text(totales, "aida:TotalRetenido", f"{float(getattr(doc, 'monto_retenido', 0)):.2f}")
+
+    # Convert to pretty XML
+    raw_xml = tostring(root, encoding="unicode", xml_declaration=False)
+    pretty_xml = parseString(f'<?xml version="1.0" encoding="UTF-8"?>\n{raw_xml}').toprettyxml(indent="  ")
+    lines = pretty_xml.split("\n")
+    if lines[0].startswith("<?xml"):
+        lines[0] = '<?xml version="1.0" encoding="UTF-8"?>'
+
+    return "\n".join(lines).encode("utf-8")

@@ -742,5 +742,289 @@ def generate_dispatch_guide_pdf(doc, items, **kwargs) -> bytes:
     return generate_invoice_pdf(doc, items, doc_type="guia_despacho", **kwargs)
 
 
-def generate_withholding_pdf(doc, **kwargs) -> bytes:
-    return generate_invoice_pdf(doc, items=[], doc_type="retencion", **kwargs)
+def generate_withholding_pdf(
+    doc,
+    layout_config=None,
+    logo_path: str | None = None,
+    banner_path: str | None = None,
+    banner_position: str = "footer",
+) -> bytes:
+    """
+    Genera un PDF completo para Comprobante de Retención IVA/ISLR.
+
+    Conforme a Art. 11, Providencia SNAT/2024/000102:
+    - Agente de retención (el comprador/SPE que retuvo)
+    - Sujeto retenido (el vendedor/usuario a quien le retuvieron)
+    - Detalle de retención por factura
+    - Totales
+
+    El Withholding model no tiene emisor_rif/receptor_rif como las facturas,
+    sino agente_retencion_* y sujeto_retenido_*.
+    """
+    layout = _parse_layout(layout_config)
+    styles = _build_styles(layout)
+
+    buffer = io.BytesIO()
+    pdf = SimpleDocTemplate(
+        buffer, pagesize=letter,
+        leftMargin=MARGIN_LR, rightMargin=MARGIN_LR,
+        topMargin=MARGIN_T, bottomMargin=MARGIN_B,
+    )
+
+    elements = []
+    hc = colors.HexColor(layout["header_color"])
+    ac = colors.HexColor(layout["accent_color"])
+    bc = colors.HexColor(layout["border_color"])
+    header_bg = colors.HexColor(layout["header_bg"])
+    thbg = colors.HexColor(layout["table_header_bg"])
+    thtxt = colors.HexColor(layout["table_header_text"])
+    alt_row = colors.HexColor(layout["table_alt_row"])
+    font = layout.get("font_family", "Helvetica")
+    factor = float(layout.get("font_size_factor", 1.0))
+
+    tipo_ret = "IVA" if _safe(doc, "tipo") == "iva" else "ISLR"
+
+    # ── Banner header ──
+    if banner_path and banner_position == "header" and os.path.isfile(banner_path):
+        try:
+            elements.append(Image(banner_path, width=USABLE_W, height=18 * mm))
+            elements.append(Spacer(1, 1 * mm))
+        except Exception:
+            pass
+
+    # ═══════════════════════════════════════════════════════════════
+    # HEADER: Logo | Agente de Retención | Tipo documento
+    # ═══════════════════════════════════════════════════════════════
+    logo_cell = ""
+    if logo_path and os.path.isfile(logo_path):
+        try:
+            logo_cell = Image(logo_path, width=28 * mm, height=16 * mm)
+        except Exception:
+            logo_cell = Paragraph(f"<b>{_trunc(_safe(doc, 'sujeto_retenido_nombre', 'AIDA'), 30)}</b>", styles["EmisLabel"])
+    else:
+        logo_cell = Paragraph(f"<b>{_trunc(_safe(doc, 'sujeto_retenido_nombre', 'AIDA'), 30)}</b>", styles["EmisLabel"])
+
+    # Center: Sujeto retenido (el usuario — dueño del comprobante)
+    emisor_parts = [f"<b>{_trunc(_safe(doc, 'sujeto_retenido_nombre'), 50)}</b>"]
+    emisor_parts.append(f"RIF: {_safe(doc, 'sujeto_retenido_rif')}")
+    dir_sr = _safe(doc, "sujeto_retenido_direccion")
+    if dir_sr:
+        emisor_parts.append(_trunc(dir_sr, 80))
+    emisor_cell = Paragraph("<br/>".join(emisor_parts), styles["EmisValue"])
+
+    # Right: Document type box
+    doc_number = _safe(doc, "document_number")
+    fecha = _fmt_datetime(_safe(doc, "fecha_emision"))
+    periodo = _safe(doc, "periodo_fiscal")
+
+    right_data = [
+        [Paragraph(f"<b>COMPROBANTE DE<br/>RETENCIÓN {tipo_ret}</b>", styles["DocType"])],
+        [Paragraph(f"N° {doc_number}", styles["HeaderInfo"])],
+        [Paragraph(f"Período: {periodo}", styles["HeaderInfo"])],
+        [Paragraph(f"Fecha: {fecha}", styles["HeaderInfo"])],
+    ]
+    right_table = Table(right_data, colWidths=["100%"])
+    right_table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), hc),
+        ("BACKGROUND", (0, 1), (-1, -1), ac),
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("PADDING", (0, 0), (-1, -1), 2),
+        ("BOX", (0, 0), (-1, -1), 0.5, hc),
+    ]))
+
+    header_table = Table(
+        [[logo_cell, emisor_cell, right_table]],
+        colWidths=[0.18 * USABLE_W, 0.40 * USABLE_W, 0.42 * USABLE_W],
+    )
+    header_table.setStyle(TableStyle([
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("BACKGROUND", (0, 0), (1, 0), header_bg),
+        ("PADDING", (0, 0), (-1, -1), 3),
+        ("BOX", (0, 0), (-1, -1), 0.5, hc),
+    ]))
+    elements.append(header_table)
+    elements.append(Spacer(1, 2.5 * mm))
+
+    # ═══════════════════════════════════════════════════════════════
+    # AGENTE DE RETENCIÓN (quien retuvo — el comprador/SPE)
+    # ═══════════════════════════════════════════════════════════════
+    agente_data = [
+        [
+            Paragraph("<b>AGENTE DE RETENCIÓN</b>",
+                       ParagraphStyle("ah", parent=styles["SmallBold"], textColor=colors.white)),
+            "", "",
+        ],
+        [
+            Paragraph(f"<b>RIF:</b> {_safe(doc, 'agente_retencion_rif')}", styles["CellValue"]),
+            Paragraph(f"<b>Nombre/Razón Social:</b> {_trunc(_safe(doc, 'agente_retencion_nombre'), 50)}", styles["CellValue"]),
+            Paragraph(f"<b>Dir:</b> {_trunc(_safe(doc, 'agente_retencion_direccion', ''), 60)}", styles["CellValue"]),
+        ],
+    ]
+    agente_table = Table(agente_data, colWidths=[0.22 * USABLE_W, 0.45 * USABLE_W, 0.33 * USABLE_W])
+    agente_table.setStyle(TableStyle([
+        ("SPAN", (0, 0), (-1, 0)),
+        ("BACKGROUND", (0, 0), (-1, 0), hc),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("GRID", (0, 0), (-1, -1), 0.4, bc),
+        ("PADDING", (0, 0), (-1, -1), 2.5),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+    ]))
+    elements.append(agente_table)
+    elements.append(Spacer(1, 2 * mm))
+
+    # ═══════════════════════════════════════════════════════════════
+    # SUJETO RETENIDO (a quien le retuvieron — el vendedor/usuario)
+    # ═══════════════════════════════════════════════════════════════
+    sujeto_data = [
+        [
+            Paragraph("<b>SUJETO RETENIDO</b>",
+                       ParagraphStyle("sh", parent=styles["SmallBold"], textColor=colors.white)),
+            "", "",
+        ],
+        [
+            Paragraph(f"<b>RIF:</b> {_safe(doc, 'sujeto_retenido_rif')}", styles["CellValue"]),
+            Paragraph(f"<b>Nombre/Razón Social:</b> {_trunc(_safe(doc, 'sujeto_retenido_nombre'), 50)}", styles["CellValue"]),
+            Paragraph(f"<b>Email:</b> {_safe(doc, 'sujeto_retenido_email', '')}", styles["CellValue"]),
+        ],
+    ]
+    sujeto_table = Table(sujeto_data, colWidths=[0.22 * USABLE_W, 0.45 * USABLE_W, 0.33 * USABLE_W])
+    sujeto_table.setStyle(TableStyle([
+        ("SPAN", (0, 0), (-1, 0)),
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#5a7052")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("GRID", (0, 0), (-1, -1), 0.4, bc),
+        ("PADDING", (0, 0), (-1, -1), 2.5),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+    ]))
+    elements.append(sujeto_table)
+    elements.append(Spacer(1, 3 * mm))
+
+    # ═══════════════════════════════════════════════════════════════
+    # DETALLE DE RETENCIÓN (tabla con los datos de la factura)
+    # ═══════════════════════════════════════════════════════════════
+    item_font_size = max(6, int(6.5 * factor))
+
+    if tipo_ret == "IVA":
+        headers = ["Oper.", "N° Factura", "Fecha Fact.", "Monto Fact.", "Base Imp.", "IVA Causado", "% Ret.", "IVA Retenido"]
+        col_w = [28, 60, 52, 62, 62, 58, 32, 62]
+    else:
+        headers = ["Oper.", "N° Factura", "Fecha Fact.", "Monto Fact.", "Base Imp.", "Concepto", "% Ret.", "ISLR Retenido"]
+        col_w = [28, 60, 52, 62, 62, 58, 32, 62]
+
+    table_data = [headers]
+
+    # Single row — each withholding is one factura
+    factura_num = _safe(doc, "factura_numero") or _safe(doc, "document_number", "")
+    factura_fecha = _fmt_date(_safe(doc, "factura_fecha")) or _fmt_date(_safe(doc, "fecha_emision"))
+    monto_factura = _fmt_money_short(_safe(doc, "monto_factura", 0))
+    base_imp = _fmt_money_short(_safe(doc, "base_imponible", 0))
+    pct_ret = f"{float(_safe(doc, 'porcentaje_retencion', 0)):.2f}%"
+    monto_ret = _fmt_money_short(_safe(doc, "monto_retenido", 0))
+
+    if tipo_ret == "IVA":
+        impuesto_causado = _fmt_money_short(_safe(doc, "impuesto_causado", 0))
+        row = ["1", factura_num, factura_fecha, monto_factura, base_imp, impuesto_causado, pct_ret, monto_ret]
+    else:
+        concepto = _safe(doc, "concepto", "")
+        row = ["1", factura_num, factura_fecha, monto_factura, base_imp, concepto, pct_ret, monto_ret]
+
+    table_data.append(row)
+
+    detail_table = Table(table_data, colWidths=col_w)
+    detail_table.setStyle(TableStyle([
+        # Header
+        ("BACKGROUND", (0, 0), (-1, 0), thbg),
+        ("TEXTCOLOR", (0, 0), (-1, 0), thtxt),
+        ("FONTNAME", (0, 0), (-1, 0), f"{font}-Bold"),
+        ("FONTSIZE", (0, 0), (-1, 0), item_font_size),
+        ("ALIGN", (0, 0), (-1, 0), "CENTER"),
+        # Data
+        ("FONTNAME", (0, 1), (-1, -1), font),
+        ("FONTSIZE", (0, 1), (-1, -1), item_font_size),
+        ("ALIGN", (0, 1), (0, -1), "CENTER"),
+        ("ALIGN", (2, 1), (2, -1), "CENTER"),
+        ("ALIGN", (3, 1), (-1, -1), "RIGHT"),
+        # Grid
+        ("GRID", (0, 0), (-1, -1), 0.3, bc),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, alt_row]),
+        ("TOPPADDING", (0, 0), (-1, -1), 2),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+        ("LEFTPADDING", (0, 0), (-1, -1), 2),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 2),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+    ]))
+    elements.append(detail_table)
+    elements.append(Spacer(1, 3 * mm))
+
+    # ═══════════════════════════════════════════════════════════════
+    # TOTALES
+    # ═══════════════════════════════════════════════════════════════
+    fs_label = max(6, int(7 * factor))
+    fs_total = max(7, int(8.5 * factor))
+
+    total_rows = [
+        ["Base Imponible:", _fmt_money(_safe(doc, "base_imponible", 0))],
+    ]
+    if tipo_ret == "IVA":
+        total_rows.append(["IVA Causado:", _fmt_money(_safe(doc, "impuesto_causado", 0))])
+    total_rows.append([f"% Retención:", f"{float(_safe(doc, 'porcentaje_retencion', 0)):.2f}%"])
+    total_rows.append([f"TOTAL RETENIDO:", _fmt_money(_safe(doc, "monto_retenido", 0))])
+
+    totals_table = Table(total_rows, colWidths=[95, 100])
+    style_cmds = [
+        ("ALIGN", (0, 0), (0, -1), "RIGHT"),
+        ("ALIGN", (1, 0), (1, -1), "RIGHT"),
+        ("FONTNAME", (0, 0), (-1, -1), font),
+        ("FONTSIZE", (0, 0), (-1, -1), fs_label),
+        ("TOPPADDING", (0, 0), (-1, -1), 1.5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 1.5),
+        ("LEFTPADDING", (0, 0), (-1, -1), 2),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 2),
+    ]
+    # Bold total row
+    last_idx = len(total_rows) - 1
+    style_cmds.append(("FONTNAME", (0, last_idx), (-1, last_idx), f"{font}-Bold"))
+    style_cmds.append(("FONTSIZE", (0, last_idx), (-1, last_idx), fs_total))
+    style_cmds.append(("LINEABOVE", (0, last_idx), (-1, last_idx), 0.5, hc))
+
+    totals_table.setStyle(TableStyle(style_cmds))
+
+    container = Table(
+        [[Spacer(1, 1), totals_table]],
+        colWidths=[USABLE_W - 195, 195],
+    )
+    elements.append(container)
+    elements.append(Spacer(1, 3 * mm))
+
+    # ═══════════════════════════════════════════════════════════════
+    # LEGAL NOTE
+    # ═══════════════════════════════════════════════════════════════
+    elements.append(HRFlowable(width="100%", thickness=0.3, color=colors.HexColor("#cccccc")))
+    elements.append(Spacer(1, 1 * mm))
+    elements.append(Paragraph(
+        f"Este comprobante de retención de {tipo_ret} ha sido registrado conforme al Art. 11 de la "
+        f"Providencia Administrativa SNAT/2024/000102. Período fiscal: {periodo}.",
+        styles["LegalText"],
+    ))
+    elements.append(Spacer(1, 1 * mm))
+
+    # ═══════════════════════════════════════════════════════════════
+    # FOOTER
+    # ═══════════════════════════════════════════════════════════════
+    elements.append(HRFlowable(width="100%", thickness=0.3, color=colors.HexColor("#cccccc")))
+    elements.append(Paragraph(
+        f"Generado por AIDA Sistema de Facturación Digital | {datetime.now().strftime('%d/%m/%Y %H:%M')}",
+        styles["TinyText"],
+    ))
+
+    # ── Banner footer ──
+    if banner_path and banner_position == "footer" and os.path.isfile(banner_path):
+        try:
+            elements.append(Spacer(1, 1 * mm))
+            elements.append(Image(banner_path, width=USABLE_W, height=15 * mm))
+        except Exception:
+            pass
+
+    pdf.build(elements)
+    return buffer.getvalue()
