@@ -59,6 +59,36 @@ class DebitNoteCreate(BaseModel):
     items: list[InvoiceItemCreate]
 
 
+class DispatchGuideCreate(BaseModel):
+    """Crear guía de despacho desde el Portal 2."""
+    customer_id: uuid.UUID | None = None
+    receptor_rif: str
+    receptor_razon_social: str
+    receptor_direccion: str = "N/A"
+    receptor_email: str | None = None
+
+    # Destinatario (puede diferir del receptor)
+    destinatario_rif: str | None = None
+    destinatario_razon_social: str | None = None
+    destinatario_direccion: str | None = None
+    direccion_destino: str | None = None
+
+    # Transporte
+    motivo_traslado: str | None = None
+    transporte_placa: str | None = None
+    transporte_chofer: str | None = None
+    transporte_ci_chofer: str | None = None
+
+    # Items
+    items: list[InvoiceItemCreate] = Field(..., min_length=1)
+
+    # Moneda
+    moneda: str = "VES"
+    tasa_cambio: float | None = None
+
+    observaciones: str | None = None
+
+
 class InvoiceFullResponse(BaseModel):
     """Respuesta completa de factura con número de control."""
     id: uuid.UUID

@@ -22,9 +22,9 @@ from app.models.security import User
 from app.models.clients import Client, ClientUser
 from app.models.customers import Customer
 from app.models.products import Product
-from app.models.documents import Invoice, CreditNote, DebitNote
+from app.models.documents import Invoice, CreditNote, DebitNote, DispatchGuide
 from app.schemas.invoicing import (
-    InvoiceCreate, CreditNoteCreate, DebitNoteCreate,
+    InvoiceCreate, CreditNoteCreate, DebitNoteCreate, DispatchGuideCreate,
     InvoiceFullResponse, FacturadorDashboard,
 )
 from app.schemas.fiscal import (
@@ -601,6 +601,126 @@ async def create_debit_note(
     }
 
 
+@router.post("/dispatch-guides", status_code=201)
+async def create_dispatch_guide(
+    data: DispatchGuideCreate,
+    request: Request,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Crear guía de despacho desde el Portal 2."""
+    client = await _get_client(user, db)
+
+    # Resolver datos del receptor
+    receptor_rif = data.receptor_rif
+    receptor_razon = data.receptor_razon_social
+    receptor_dir = data.receptor_direccion or ""
+
+    if data.customer_id:
+        cust_result = await db.execute(
+            select(Customer).where(Customer.id == data.customer_id, Customer.client_id == client.id)
+        )
+        customer = cust_result.scalar_one_or_none()
+        if customer:
+            receptor_rif = receptor_rif or customer.rif
+            receptor_razon = receptor_razon or customer.razon_social
+            receptor_dir = receptor_dir or customer.direccion_fiscal
+
+    if not receptor_rif or not receptor_razon:
+        raise HTTPException(status_code=400, detail="Datos del receptor incompletos (RIF y razón social requeridos)")
+
+    # Resolver items
+    fiscal_items = []
+    for i, item in enumerate(data.items):
+        desc = item.description
+        code = item.product_code
+        price = item.unit_price
+        tax_type = item.tax_type
+
+        if item.product_id:
+            prod_result = await db.execute(
+                select(Product).where(Product.id == item.product_id, Product.client_id == client.id)
+            )
+            product = prod_result.scalar_one_or_none()
+            if product:
+                desc = desc or product.name
+                code = code or product.code
+                if item.unit_price == 0:
+                    price = float(product.sale_price_1)
+                tax_map = {"gravado": "G", "reducido": "R", "exento": "E"}
+                tax_type = tax_map.get(product.tax_type, tax_type)
+
+        fiscal_items.append(FiscalItem(
+            numero_linea=i + 1,
+            codigo=code,
+            descripcion=desc,
+            unidad=item.unit_of_measure,
+            cantidad=item.quantity,
+            precio_unitario=price,
+            descuento_porcentaje=item.discount_percent,
+            tipo_impuesto=tax_type,
+        ))
+
+    # Construir chofer como "Nombre (CI: xxxxx)"
+    transportista_nombre = data.transporte_chofer
+    if data.transporte_ci_chofer and transportista_nombre:
+        transportista_nombre = f"{data.transporte_chofer} (CI: {data.transporte_ci_chofer})"
+
+    # Construir ruta destino
+    ruta_destino = data.direccion_destino
+    if data.destinatario_direccion and not ruta_destino:
+        ruta_destino = data.destinatario_direccion
+
+    fiscal_request = EmitirDocumentoRequest(
+        tipo_documento="guia_despacho",
+        receptor=FiscalReceptor(
+            rif=data.destinatario_rif or receptor_rif,
+            razon_social=data.destinatario_razon_social or receptor_razon,
+            direccion=data.destinatario_direccion or receptor_dir,
+        ),
+        items=fiscal_items,
+        moneda=data.moneda,
+        tasa_cambio=data.tasa_cambio,
+        observaciones=data.observaciones,
+        transportista=transportista_nombre,
+        vehiculo_placa=data.transporte_placa,
+        ruta_destino=ruta_destino,
+        motivo_traslado=data.motivo_traslado,
+    )
+
+    try:
+        result = await emitir_documento(
+            db=db, client_id=client.id, request=fiscal_request,
+            user_id=user.id, ip_address=request.client.host if request.client else None,
+        )
+    except DocumentEmissionError as e:
+        detail = e.message
+        if e.details:
+            detail += ": " + "; ".join(e.details)
+        raise HTTPException(status_code=400, detail=detail)
+    except ControlNumberError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Error de numeración de control: {e}. Contacte al administrador para configurar rangos.",
+        )
+    except Exception as e:
+        logger.exception("Error inesperado al emitir guía de despacho")
+        raise HTTPException(status_code=500, detail=f"Error interno al emitir guía de despacho: {str(e)}")
+
+    await log_audit(
+        db, user.id, "create_dispatch_guide", "dispatch_guide", str(result.document_id),
+        details=f"NC:{result.numero_control}",
+        request=request, client_id=client.id,
+    )
+
+    return {
+        "success": True,
+        "document_id": str(result.document_id),
+        "numero_control": result.numero_control,
+        "total": result.totales.total,
+    }
+
+
 @router.post("/invoices/{invoice_id}/void")
 async def void_invoice(
     invoice_id: uuid.UUID,
@@ -788,6 +908,47 @@ async def list_invoicing_documents(
                 pass
 
         rows.append(dn_q)
+
+    # Dispatch guides
+    if not doc_type or doc_type == "guia_despacho":
+        gd_q = select(
+            DispatchGuide.id,
+            literal("guia_despacho").label("tipo"),
+            DispatchGuide.document_number.label("numero"),
+            DispatchGuide.control_number,
+            DispatchGuide.receptor_rif,
+            DispatchGuide.receptor_razon_social,
+            DispatchGuide.fecha_emision.label("fecha"),
+            literal(0).label("total"),
+            literal("VES").label("moneda"),
+            DispatchGuide.status,
+            DispatchGuide.pdf_url,
+            literal(None).label("xml_url"),
+        ).where(DispatchGuide.client_id == client.id)
+
+        if status:
+            gd_q = gd_q.where(DispatchGuide.status == status)
+        if search:
+            gd_q = gd_q.where(
+                func.coalesce(DispatchGuide.control_number, "").ilike(f"%{search}%")
+                | DispatchGuide.document_number.ilike(f"%{search}%")
+                | DispatchGuide.receptor_rif.ilike(f"%{search}%")
+                | DispatchGuide.receptor_razon_social.ilike(f"%{search}%")
+            )
+        if date_from:
+            try:
+                d = datetime.strptime(date_from, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+                gd_q = gd_q.where(DispatchGuide.fecha_emision >= d)
+            except ValueError:
+                pass
+        if date_to:
+            try:
+                d = datetime.strptime(date_to, "%Y-%m-%d").replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
+                gd_q = gd_q.where(DispatchGuide.fecha_emision <= d)
+            except ValueError:
+                pass
+
+        rows.append(gd_q)
 
     if not rows:
         return {"items": [], "total": 0, "page": page, "total_pages": 0}
