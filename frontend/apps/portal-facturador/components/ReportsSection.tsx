@@ -17,7 +17,7 @@ const REPORTS: { id: ReportType; name: string; description: string; icon: string
 ];
 
 export default function ReportsSection({ token }: Props) {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001/api/v1";
   const [selected, setSelected] = useState<ReportType | null>(null);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");

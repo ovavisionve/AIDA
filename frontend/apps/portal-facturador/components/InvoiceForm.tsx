@@ -89,7 +89,7 @@ function emptyItem(): LineItem {
 // COMPONENT
 // ═══════════════════════════════════════════════════════════════
 export default function InvoiceForm({ token }: Props) {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001/api/v1";
 
   // ── Document type ──
   const [docType, setDocType] = useState<DocumentType>("factura");

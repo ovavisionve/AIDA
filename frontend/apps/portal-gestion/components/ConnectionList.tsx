@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001/api/v1";
 
 export default function ConnectionList({ token }: { token: string }) {
   const [connections, setConnections] = useState<any[]>([]);

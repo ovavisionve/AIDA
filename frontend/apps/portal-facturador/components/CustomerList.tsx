@@ -5,7 +5,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 interface Props { token: string }
 
 export default function CustomerList({ token }: Props) {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001/api/v1";
   const [customers, setCustomers] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");

@@ -35,7 +35,7 @@ export default function Home() {
   const [needs2FA, setNeeds2FA] = useState(false);
   const [totpCode, setTotpCode] = useState("");
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001/api/v1";
 
   const fetchProfile = useCallback(async (token: string): Promise<UserProfile | null> => {
     try {

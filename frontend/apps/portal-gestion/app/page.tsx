@@ -16,7 +16,7 @@ import SeniatReference from "@/components/SeniatReference";
 import SeniatValidator from "@/components/SeniatValidator";
 import LoginForm from "@/components/LoginForm";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001/api/v1";
 
 type Section = "dashboard" | "wizard" | "connections" | "webhooks" | "errors" | "templates" | "projects" | "ai-chat" | "agent-chat" | "analytics" | "reports" | "seniat-reference" | "seniat-validator";
 

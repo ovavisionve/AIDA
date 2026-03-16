@@ -390,7 +390,7 @@ class TestMirrorFrontendFixes:
     def test_ai_chat_api_path_consistent(self):
         """FIXED: AIChatWidget uses same API base as main app."""
         chat_content = MIRROR_CHAT.read_text()
-        assert 'http://localhost:8000/api/v1' in chat_content, \
+        assert 'http://localhost:8001/api/v1' in chat_content, \
             "Chat widget should use /api/v1 base like main app"
         assert '${API}/api/v1/' not in chat_content, \
             "Should not double-up /api/v1 path"

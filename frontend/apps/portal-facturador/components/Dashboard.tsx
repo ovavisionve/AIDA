@@ -7,7 +7,7 @@ interface Props { token: string }
 export default function Dashboard({ token }: Props) {
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState("");
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001/api/v1";
 
   useEffect(() => {
     fetch(`${apiUrl}/invoicing/dashboard`, {

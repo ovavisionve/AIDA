@@ -39,7 +39,7 @@ export default function Home() {
   const [token, setToken] = useState("");
   const [profile, setProfile] = useState<UserProfile | null>(null);
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001/api/v1";
 
   const loadProfile = async (t: string) => {
     try {
